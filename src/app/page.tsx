@@ -84,14 +84,31 @@ export default function HomePage() {
       const saved = localStorage.getItem('reforma-current-user') as UserID
       const savedRole = localStorage.getItem('reforma-user-role')
       const savedAllowed = localStorage.getItem('reforma-allowed-users')
-      if (saved && USERS.some(u => u.id === saved)) {
+      if (savedAllowed) {
+        try {
+          const parsed = JSON.parse(savedAllowed) as UserID[]
+          setAllowedUsers(parsed)
+          // Only restore saved user if they're in the allowed list
+          if (saved && parsed.includes(saved)) {
+            setCurrentUser(saved)
+          } else {
+            // Default to first allowed user (owners default to bruno)
+            setCurrentUser(parsed[0] || 'bruno')
+          }
+        } catch {
+          // Corrupt data — reset to owner defaults
+          setCurrentUser('bruno')
+          setAllowedUsers(['bruno', 'graziela', 'mari', 'claude'])
+        }
+      } else if (saved && USERS.some(u => u.id === saved)) {
         setCurrentUser(saved)
+      } else {
+        // No saved state at all — default to bruno (owner)
+        setCurrentUser('bruno')
+        setAllowedUsers(['bruno', 'graziela', 'mari', 'claude'])
       }
       if (savedRole) {
         setUserRole(savedRole)
-      }
-      if (savedAllowed) {
-        try { setAllowedUsers(JSON.parse(savedAllowed)) } catch {}
       }
     }
   }, [])
