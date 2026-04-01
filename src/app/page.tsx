@@ -10,10 +10,11 @@ import AddItemModal from '@/components/AddItemModal'
 import CostSummary from '@/components/CostSummary'
 import ProfessionalsPanel from '@/components/ProfessionalsPanel'
 import ObraPanel from '@/components/ObraPanel'
+import FinanceiroPanel from '@/components/FinanceiroPanel'
 import WelcomeScreen from '@/components/WelcomeScreen'
-import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat } from 'lucide-react'
+import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign } from 'lucide-react'
 
-type TabType = 'mobilia' | 'obra' | 'profissionais'
+type TabType = 'mobilia' | 'obra' | 'financeiro' | 'profissionais'
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<TabType>('mobilia')
@@ -324,6 +325,29 @@ export default function HomePage() {
           Obra
         </button>
         <button
+          onClick={() => setActiveTab('financeiro')}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '12px 16px',
+            borderRadius: '10px',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: '14px',
+            transition: 'all 0.2s',
+            background: activeTab === 'financeiro' ? 'white' : 'transparent',
+            color: activeTab === 'financeiro' ? '#047857' : '#6b7280',
+            boxShadow: activeTab === 'financeiro' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+          }}
+        >
+          <DollarSign size={18} />
+          $
+        </button>
+        <button
           onClick={() => setActiveTab('profissionais')}
           style={{
             flex: 1,
@@ -471,6 +495,8 @@ export default function HomePage() {
         </>
       ) : activeTab === 'obra' ? (
         <ObraPanel />
+      ) : activeTab === 'financeiro' ? (
+        <FinanceiroPanel />
       ) : (
         <ProfessionalsPanel currentUser={currentUser} rooms={rooms} />
       )}

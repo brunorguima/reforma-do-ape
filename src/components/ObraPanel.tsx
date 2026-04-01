@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { ClipboardList, Lock, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, User, Flag, Hammer, Paintbrush, Zap, Flame, Droplets, Ruler } from 'lucide-react'
+import { ClipboardList, Lock, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Plus, X, LayoutGrid, List } from 'lucide-react'
 
 interface Task {
   id: string
@@ -50,8 +50,11 @@ export default function ObraPanel() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'status' | 'fase' | 'responsavel'>('status')
+  const [layoutMode, setLayoutMode] = useState<'list' | 'kanban'>('list')
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['em_andamento', 'a_fazer']))
   const [updatingTask, setUpdatingTask] = useState<string | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [newTask, setNewTask] = useState({ title: '', description: '', phase: PHASE_ORDER[0], priority: 'media', assigned_to: 'Bruno' })
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -81,6 +84,20 @@ export default function ObraPanel() {
     } finally {
       setUpdatingTask(null)
     }
+  }
+
+  const handleAddTask = async () => {
+    if (!newTask.title.trim()) return
+    try {
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newTask, status: 'a_fazer', sort_order: tasks.length + 1 }),
+      })
+      await fetchTasks()
+      setShowAddModal(false)
+      setNewTask({ title: '', description: '', phase: PHASE_ORDER[0], priority: 'media', assigned_to: 'Bruno' })
+    } catch (err) { console.error(err) }
   }
 
   const toggleGroup = (group: string) => {
@@ -207,69 +224,185 @@ export default function ObraPanel() {
         ))}
       </div>
 
-      {/* Task Groups */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {groups.map(group => {
-          const isExpanded = expandedGroups.has(group.key)
-          const statusConf = STATUS_CONFIG[group.key]
-          const groupColor = statusConf?.color || '#6B7280'
+      {/* Layout Toggle */}
+      {viewMode === 'status' && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px', gap: '4px' }}>
+          <button onClick={() => setLayoutMode('list')} style={{
+            padding: '6px 10px', borderRadius: '8px', border: '1px solid #E5E7EB', cursor: 'pointer',
+            background: layoutMode === 'list' ? '#1E40AF' : 'white', color: layoutMode === 'list' ? 'white' : '#6B7280',
+          }}>
+            <List size={16} />
+          </button>
+          <button onClick={() => setLayoutMode('kanban')} style={{
+            padding: '6px 10px', borderRadius: '8px', border: '1px solid #E5E7EB', cursor: 'pointer',
+            background: layoutMode === 'kanban' ? '#1E40AF' : 'white', color: layoutMode === 'kanban' ? 'white' : '#6B7280',
+          }}>
+            <LayoutGrid size={16} />
+          </button>
+        </div>
+      )}
 
-          return (
-            <div key={group.key} style={{
-              borderRadius: '12px',
-              border: `1px solid ${statusConf?.border || '#E5E7EB'}`,
-              overflow: 'hidden',
-              background: 'white',
-            }}>
-              {/* Group Header */}
-              <button
-                onClick={() => toggleGroup(group.key)}
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '14px 16px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: statusConf?.bg || '#F9FAFB',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {statusConf && <statusConf.icon size={18} color={groupColor} />}
-                  <span style={{ fontWeight: 700, fontSize: '14px', color: groupColor }}>{group.label}</span>
+      {/* KANBAN VIEW (side-by-side columns) */}
+      {viewMode === 'status' && layoutMode === 'kanban' ? (
+        <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '16px', minHeight: '400px' }}>
+          {STATUS_ORDER.map(status => {
+            const conf = STATUS_CONFIG[status]
+            const columnTasks = tasks.filter(t => t.status === status).sort((a, b) => a.sort_order - b.sort_order)
+            return (
+              <div key={status} style={{
+                minWidth: '260px', maxWidth: '300px', flex: '1 0 260px',
+                borderRadius: '12px', border: `1px solid ${conf.border}`, background: conf.bg, display: 'flex', flexDirection: 'column',
+              }}>
+                <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: `1px solid ${conf.border}` }}>
+                  <conf.icon size={16} color={conf.color} />
+                  <span style={{ fontWeight: 700, fontSize: '13px', color: conf.color }}>{conf.label}</span>
                   <span style={{
-                    background: groupColor,
-                    color: 'white',
-                    borderRadius: '12px',
-                    padding: '2px 10px',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                  }}>
-                    {group.tasks.length}
-                  </span>
+                    background: conf.color, color: 'white', borderRadius: '10px', padding: '1px 8px', fontSize: '11px', fontWeight: 700, marginLeft: 'auto',
+                  }}>{columnTasks.length}</span>
                 </div>
-                {isExpanded ? <ChevronUp size={18} color="#9CA3AF" /> : <ChevronDown size={18} color="#9CA3AF" />}
-              </button>
+                <div style={{ padding: '8px', flex: 1, overflowY: 'auto' }}>
+                  {columnTasks.map(task => {
+                    const assignee = ASSIGNEE_CONFIG[task.assigned_to]
+                    const priority = PRIORITY_CONFIG[task.priority]
+                    return (
+                      <div key={task.id} style={{
+                        padding: '10px 12px', borderRadius: '8px', marginBottom: '6px', background: 'white',
+                        border: '1px solid #E5E7EB', boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                      }}>
+                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: '0 0 6px', lineHeight: 1.3 }}>
+                          {task.title}
+                        </p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '1px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 600,
+                            background: assignee?.color ? `${assignee.color}15` : '#F3F4F6', color: assignee?.color || '#6B7280',
+                          }}>{assignee?.emoji || '👤'} {task.assigned_to}</span>
+                          {priority && (
+                            <span style={{ padding: '1px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, background: priority.bg, color: priority.color }}>
+                              {priority.label}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        /* LIST VIEW (collapsible groups) */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {groups.map(group => {
+            const isExpanded = expandedGroups.has(group.key)
+            const statusConf = STATUS_CONFIG[group.key]
+            const groupColor = statusConf?.color || '#6B7280'
 
-              {/* Tasks */}
-              {isExpanded && (
-                <div style={{ padding: '8px' }}>
-                  {group.tasks.map(task => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onStatusChange={handleStatusChange}
-                      updating={updatingTask === task.id}
-                      viewMode={viewMode}
-                    />
-                  ))}
-                </div>
-              )}
+            return (
+              <div key={group.key} style={{
+                borderRadius: '12px',
+                border: `1px solid ${statusConf?.border || '#E5E7EB'}`,
+                overflow: 'hidden',
+                background: 'white',
+              }}>
+                <button
+                  onClick={() => toggleGroup(group.key)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '14px 16px', border: 'none', cursor: 'pointer', background: statusConf?.bg || '#F9FAFB',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {statusConf && <statusConf.icon size={18} color={groupColor} />}
+                    <span style={{ fontWeight: 700, fontSize: '14px', color: groupColor }}>{group.label}</span>
+                    <span style={{
+                      background: groupColor, color: 'white', borderRadius: '12px', padding: '2px 10px', fontSize: '12px', fontWeight: 700,
+                    }}>{group.tasks.length}</span>
+                  </div>
+                  {isExpanded ? <ChevronUp size={18} color="#9CA3AF" /> : <ChevronDown size={18} color="#9CA3AF" />}
+                </button>
+                {isExpanded && (
+                  <div style={{ padding: '8px' }}>
+                    {group.tasks.map(task => (
+                      <TaskCard key={task.id} task={task} onStatusChange={handleStatusChange} updating={updatingTask === task.id} viewMode={viewMode} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Floating Add Task Button */}
+      <button
+        onClick={() => setShowAddModal(true)}
+        style={{
+          position: 'fixed', bottom: '24px', right: '24px', width: '56px', height: '56px', borderRadius: '50%',
+          background: 'linear-gradient(135deg, #D97706, #F59E0B)', color: 'white', border: 'none', cursor: 'pointer',
+          boxShadow: '0 4px 15px rgba(217, 119, 6, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 40,
+        }}
+        title="Nova tarefa"
+      >
+        <Plus size={26} />
+      </button>
+
+      {/* Add Task Modal */}
+      {showAddModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 50,
+        }} onClick={() => setShowAddModal(false)}>
+          <div style={{
+            background: 'white', borderRadius: '20px 20px 0 0', padding: '24px 20px', width: '100%', maxWidth: '500px', maxHeight: '80vh', overflowY: 'auto',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Nova Tarefa</h3>
+              <button onClick={() => setShowAddModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="#6B7280" /></button>
             </div>
-          )
-        })}
-      </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Título *</label>
+                <input value={newTask.title} onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))} placeholder="Ex: Comprar argamassa" style={{ width: '100%' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Descrição</label>
+                <input value={newTask.description} onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))} placeholder="Detalhes opcionais" style={{ width: '100%' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Fase</label>
+                  <select value={newTask.phase} onChange={e => setNewTask(p => ({ ...p, phase: e.target.value }))} style={{ width: '100%' }}>
+                    {PHASE_ORDER.map(ph => <option key={ph} value={ph}>{ph.replace(' — ', ' · ')}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Prioridade</label>
+                  <select value={newTask.priority} onChange={e => setNewTask(p => ({ ...p, priority: e.target.value }))} style={{ width: '100%' }}>
+                    <option value="alta">🔴 Alta</option>
+                    <option value="media">🟡 Média</option>
+                    <option value="baixa">🟢 Baixa</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Responsável</label>
+                <select value={newTask.assigned_to} onChange={e => setNewTask(p => ({ ...p, assigned_to: e.target.value }))} style={{ width: '100%' }}>
+                  {Object.entries(ASSIGNEE_CONFIG).map(([name, conf]) => (
+                    <option key={name} value={name}>{conf.emoji} {name}</option>
+                  ))}
+                </select>
+              </div>
+              <button onClick={handleAddTask} disabled={!newTask.title.trim()} style={{
+                padding: '14px', borderRadius: '12px', border: 'none', background: newTask.title.trim() ? 'linear-gradient(135deg, #D97706, #F59E0B)' : '#E5E7EB',
+                color: 'white', fontWeight: 700, fontSize: '15px', cursor: newTask.title.trim() ? 'pointer' : 'default',
+              }}>
+                Criar Tarefa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
