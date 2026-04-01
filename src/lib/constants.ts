@@ -2,7 +2,6 @@ export const USERS = [
   { id: 'bruno', name: 'Bruno', role: 'proprietário', color: '#3B82F6' },
   { id: 'graziela', name: 'Graziela', role: 'proprietária', color: '#EC4899' },
   { id: 'mari', name: 'Mari', role: 'designer', color: '#8B5CF6' },
-  { id: 'claude', name: 'Claude (AI)', role: 'assistente', color: '#10B981' },
 ] as const
 
 export type UserID = typeof USERS[number]['id']
@@ -11,7 +10,7 @@ export type UserID = typeof USERS[number]['id']
 // bruno_graziela key maps to either bruno or graziela (user still picks who they are)
 // mari key maps directly to mari
 export const ACCESS_KEY_USER_MAP: Record<string, { users: UserID[]; role: string }> = {
-  bruno_graziela: { users: ['bruno', 'graziela'], role: 'owner' },
+  bruno_graziela: { users: ['bruno', 'graziela', 'mari'], role: 'owner' },
   mari: { users: ['mari'], role: 'designer' },
 }
 
@@ -28,10 +27,6 @@ export const USER_GREETINGS: Record<string, { greeting: string; subtitle: string
   mari: {
     greeting: 'Bem-vinda Mari!',
     subtitle: 'Aqui está tudo sobre o projeto do Ap 62',
-  },
-  claude: {
-    greeting: 'Modo AI ativo',
-    subtitle: 'Assistente da reforma',
   },
 }
 

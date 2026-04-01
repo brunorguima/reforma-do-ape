@@ -31,7 +31,7 @@ export default function HomePage() {
   const [refreshing, setRefreshing] = useState(false)
 
   const [userRole, setUserRole] = useState<string>('owner')
-  const [allowedUsers, setAllowedUsers] = useState<UserID[]>(['bruno', 'graziela', 'mari', 'claude'])
+  const [allowedUsers, setAllowedUsers] = useState<UserID[]>(['bruno', 'graziela', 'mari'])
   const [showWelcome, setShowWelcome] = useState(false)
 
   // Load saved user or validate access key from URL
@@ -98,14 +98,14 @@ export default function HomePage() {
         } catch {
           // Corrupt data — reset to owner defaults
           setCurrentUser('bruno')
-          setAllowedUsers(['bruno', 'graziela', 'mari', 'claude'])
+          setAllowedUsers(['bruno', 'graziela', 'mari'])
         }
       } else if (saved && USERS.some(u => u.id === saved)) {
         setCurrentUser(saved)
       } else {
         // No saved state at all — default to bruno (owner)
         setCurrentUser('bruno')
-        setAllowedUsers(['bruno', 'graziela', 'mari', 'claude'])
+        setAllowedUsers(['bruno', 'graziela', 'mari'])
       }
       if (savedRole) {
         setUserRole(savedRole)
