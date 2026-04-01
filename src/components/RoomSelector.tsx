@@ -15,7 +15,7 @@ export default function RoomSelector({ rooms, selectedRoom, onRoomSelect, itemCo
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '10px' }}>
       <div
         className={`room-card ${selectedRoom === null ? 'active' : ''}`}
         onClick={() => onRoomSelect(null)}

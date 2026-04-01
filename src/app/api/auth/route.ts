@@ -27,13 +27,13 @@ export async function POST(req: NextRequest) {
     .eq('id', data.id)
 
   return NextResponse.json({
-    user_id: data.user_id,
+    user_id: data.user_id,  // e.g. 'bruno_graziela' or 'mari'
     role: data.role,
     access_key_id: data.id,
   })
 }
 
-// GET /api/auth/keys - List all access keys (for admin/owner only in future)
+// GET /api/auth - List access keys info (no secrets, just metadata)
 export async function GET() {
   const { data, error } = await supabase
     .from('access_keys')

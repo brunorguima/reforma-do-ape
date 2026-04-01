@@ -4,12 +4,17 @@ import { USERS, type UserID } from '@/lib/constants'
 interface UserSelectorProps {
   currentUser: UserID
   onUserChange: (user: UserID) => void
+  allowedUsers?: UserID[]
 }
 
-export default function UserSelector({ currentUser, onUserChange }: UserSelectorProps) {
+export default function UserSelector({ currentUser, onUserChange, allowedUsers }: UserSelectorProps) {
+  const visibleUsers = allowedUsers
+    ? USERS.filter(u => allowedUsers.includes(u.id))
+    : USERS
+
   return (
     <div className="user-selector">
-      {USERS.map((user) => (
+      {visibleUsers.map((user) => (
         <button
           key={user.id}
           onClick={() => onUserChange(user.id)}

@@ -17,10 +17,16 @@
   }
 }
 
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background: linear-gradient(135deg, #f0f4ff 0%, #fdf2f8 50%, #f0fdf4 100%);
   min-height: 100vh;
   font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .card {
@@ -50,6 +56,10 @@ body {
   transform: translateY(-1px);
 }
 
+.btn-primary:active {
+  transform: translateY(0);
+}
+
 .btn-secondary {
   background: #f3f4f6;
   color: #374151;
@@ -71,6 +81,7 @@ body {
   font-size: 12px;
   font-weight: 600;
   display: inline-block;
+  white-space: nowrap;
 }
 
 .modal-overlay {
@@ -78,7 +89,7 @@ body {
   inset: 0;
   background: rgba(0,0,0,0.5);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   z-index: 50;
   backdrop-filter: blur(4px);
@@ -86,23 +97,48 @@ body {
 
 .modal-content {
   background: white;
-  border-radius: 20px;
-  padding: 32px;
+  border-radius: 20px 20px 0 0;
+  padding: 24px;
   max-width: 600px;
-  width: 90%;
+  width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Desktop: center modal */
+@media (min-width: 640px) {
+  .modal-overlay {
+    align-items: center;
+  }
+  .modal-content {
+    border-radius: 20px;
+    padding: 32px;
+    width: 90%;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+    animation: fadeIn 0.2s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
 }
 
 input, select, textarea {
   width: 100%;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border: 2px solid #e5e7eb;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 16px; /* Prevents iOS zoom on focus */
   transition: border-color 0.2s;
   outline: none;
+  -webkit-appearance: none;
 }
 
 input:focus, select:focus, textarea:focus {
@@ -136,16 +172,21 @@ input:focus, select:focus, textarea:focus {
 .room-card {
   background: white;
   border-radius: 16px;
-  padding: 24px;
+  padding: 16px;
   cursor: pointer;
   transition: all 0.3s;
   border: 2px solid transparent;
+  text-align: center;
 }
 
 .room-card:hover {
   border-color: var(--primary);
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
+}
+
+.room-card:active {
+  transform: translateY(0);
 }
 
 .room-card.active {
@@ -157,26 +198,28 @@ input:focus, select:focus, textarea:focus {
   background: linear-gradient(135deg, #1e40af, #7c3aed);
   color: white;
   border-radius: 16px;
-  padding: 24px;
+  padding: 16px;
 }
 
 .user-selector {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .user-chip {
-  padding: 6px 16px;
+  padding: 6px 14px;
   border-radius: 20px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   border: 2px solid transparent;
+  white-space: nowrap;
 }
 
-.user-chip.active {
-  transform: scale(1.05);
+.user-chip:active {
+  transform: scale(0.95);
 }
 
 .image-grid {
@@ -190,4 +233,64 @@ input:focus, select:focus, textarea:focus {
   height: 100px;
   object-fit: cover;
   border-radius: 8px;
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+
+/* Small screens (phones) */
+@media (max-width: 639px) {
+  .total-banner {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .total-banner h3 {
+    font-size: 15px !important;
+  }
+
+  .room-card {
+    padding: 12px 8px;
+    border-radius: 12px;
+  }
+
+  .card {
+    border-radius: 14px;
+  }
+
+  .user-chip {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+
+  .btn-primary {
+    padding: 12px 16px;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Stack form grids on mobile */
+  .modal-content [style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Safe area padding for notched phones */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar but keep scrollable */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }

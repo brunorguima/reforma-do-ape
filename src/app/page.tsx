@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Room, Category, Item } from '@/lib/supabase'
 import type { UserID } from '@/lib/constants'
-import { USERS } from '@/lib/constants'
+import { USERS, USER_GREETINGS, APP_NAME, APP_SUBTITLE, ACCESS_KEY_USER_MAP } from '@/lib/constants'
 import UserSelector from '@/components/UserSelector'
 import RoomSelector from '@/components/RoomSelector'
 import ItemCard from '@/components/ItemCard'
@@ -28,6 +28,7 @@ export default function HomePage() {
   const [refreshing, setRefreshing] = useState(false)
 
   const [userRole, setUserRole] = useState<string>('owner')
+  const [allowedUsers, setAllowedUsers] = useState<UserID[]>(['bruno', 'graziela', 'mari', 'claude'])
 
   // Load saved user or validate access key from URL
   useEffect(() => {
@@ -44,9 +45,22 @@ export default function HomePage() {
         .then(r => r.json())
         .then(data => {
           if (data.user_id) {
-            setCurrentUser(data.user_id as UserID)
-            setUserRole(data.role)
-            localStorage.setItem('reforma-current-user', data.user_id)
+            const keyConfig = ACCESS_KEY_USER_MAP[data.user_id]
+            if (keyConfig) {
+              setAllowedUsers(keyConfig.users)
+              setCurrentUser(keyConfig.users[0])
+              setUserRole(keyConfig.role)
+              localStorage.setItem('reforma-current-user', keyConfig.users[0])
+              localStorage.setItem('reforma-allowed-users', JSON.stringify(keyConfig.users))
+            } else {
+              // Direct user_id match (e.g. 'mari')
+              const uid = data.user_id as UserID
+              setCurrentUser(uid)
+              setAllowedUsers([uid])
+              setUserRole(data.role)
+              localStorage.setItem('reforma-current-user', uid)
+              localStorage.setItem('reforma-allowed-users', JSON.stringify([uid]))
+            }
             localStorage.setItem('reforma-access-key', key)
             localStorage.setItem('reforma-user-role', data.role)
             // Clean URL
@@ -57,11 +71,15 @@ export default function HomePage() {
     } else {
       const saved = localStorage.getItem('reforma-current-user') as UserID
       const savedRole = localStorage.getItem('reforma-user-role')
+      const savedAllowed = localStorage.getItem('reforma-allowed-users')
       if (saved && USERS.some(u => u.id === saved)) {
         setCurrentUser(saved)
       }
       if (savedRole) {
         setUserRole(savedRole)
+      }
+      if (savedAllowed) {
+        try { setAllowedUsers(JSON.parse(savedAllowed)) } catch {}
       }
     }
   }, [])
@@ -191,27 +209,47 @@ export default function HomePage() {
     )
   }
 
+  const greeting = USER_GREETINGS[currentUser]
+  const currentUserObj = USERS.find(u => u.id === currentUser)
+
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 20px' }}>
       {/* Header */}
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Home size={28} color="#2563eb" />
-          <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1f2937', margin: 0 }}>Reforma do Apê</h1>
-            <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>Controle completo da reforma</p>
+      <header style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Home size={28} color="#2563eb" />
+            <div>
+              <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#1f2937', margin: 0 }}>{APP_NAME}</h1>
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{APP_SUBTITLE}</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              onClick={handleRefresh}
+              style={{ padding: '8px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: '#f3f4f6' }}
+              title="Atualizar"
+            >
+              <RefreshCw size={18} color="#6b7280" className={refreshing ? 'animate-spin' : ''} />
+            </button>
+            <UserSelector currentUser={currentUser} onUserChange={handleUserChange} allowedUsers={allowedUsers} />
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={handleRefresh}
-            style={{ padding: '8px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: '#f3f4f6' }}
-            title="Atualizar"
-          >
-            <RefreshCw size={18} color="#6b7280" className={refreshing ? 'animate-spin' : ''} />
-          </button>
-          <UserSelector currentUser={currentUser} onUserChange={handleUserChange} />
-        </div>
+        {/* Personalized Greeting */}
+        {greeting && (
+          <div style={{
+            marginTop: '12px',
+            padding: '12px 16px',
+            borderRadius: '12px',
+            background: `linear-gradient(135deg, ${currentUserObj?.color || '#2563eb'}15, ${currentUserObj?.color || '#2563eb'}08)`,
+            borderLeft: `4px solid ${currentUserObj?.color || '#2563eb'}`,
+          }}>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: '#1f2937', margin: '0 0 2px' }}>
+              {greeting.greeting}
+            </p>
+            <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>{greeting.subtitle}</p>
+          </div>
+        )}
       </header>
 
       {/* Tab Navigation */}
