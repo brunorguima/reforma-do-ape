@@ -186,6 +186,8 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
           amount: parseFloat(newQuote.amount) || 0,
           service_category_id: newQuote.service_category_id || null,
           room_id: newQuote.room_id || null,
+          scheduled_date: newQuote.scheduled_date || null,
+          notes: newQuote.notes || null,
           created_by: currentUser,
         }),
       })
