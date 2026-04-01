@@ -42,7 +42,7 @@ CREATE TABLE item_images (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Price Suggestions (from crawler or manual)
+-- Price Suggestions (from crawler, manual, or used marketplaces)
 CREATE TABLE price_suggestions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   item_id UUID REFERENCES items(id) ON DELETE CASCADE,
@@ -50,7 +50,8 @@ CREATE TABLE price_suggestions (
   price DECIMAL(10,2) NOT NULL,
   url TEXT NOT NULL,
   found_at TIMESTAMPTZ DEFAULT NOW(),
-  is_promotion BOOLEAN DEFAULT false
+  is_promotion BOOLEAN DEFAULT false,
+  condition TEXT DEFAULT 'novo' CHECK (condition IN ('novo', 'usado', 'seminovo'))
 );
 
 -- Activity Log

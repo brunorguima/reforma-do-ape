@@ -1,7 +1,8 @@
 export const USERS = [
   { id: 'bruno', name: 'Bruno', role: 'proprietário', color: '#3B82F6' },
-  { id: 'esposa', name: 'Esposa', role: 'proprietária', color: '#EC4899' },
-  { id: 'designer', name: 'Designer', role: 'designer', color: '#8B5CF6' },
+  { id: 'graziela', name: 'Graziela', role: 'proprietária', color: '#EC4899' },
+  { id: 'mari', name: 'Mari', role: 'designer', color: '#8B5CF6' },
+  { id: 'claude', name: 'Claude (AI)', role: 'assistente', color: '#10B981' },
 ] as const
 
 export type UserID = typeof USERS[number]['id']
