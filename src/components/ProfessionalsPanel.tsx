@@ -90,6 +90,8 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
   const [payments, setPayments] = useState<Payment[]>([])
   const [expandedContract, setExpandedContract] = useState<string | null>(null)
   const [markingPaid, setMarkingPaid] = useState<string | null>(null)
+  const [formError, setFormError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   // Form states
   const [newProfessional, setNewProfessional] = useState({ name: '', phone: '', email: '', specialty: '', notes: '', recommended_by: '' })
@@ -136,33 +138,71 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
   })
 
   const handleAddProfessional = async () => {
-    if (!newProfessional.name.trim()) return
-    await fetch('/api/professionals', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...newProfessional, created_by: currentUser }),
-    })
-    setNewProfessional({ name: '', phone: '', email: '', specialty: '', notes: '', recommended_by: '' })
-    setShowAddProfessional(false)
-    fetchData()
+    setFormError('')
+    if (!newProfessional.name.trim()) {
+      setFormError('Preencha o nome do profissional')
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch('/api/professionals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newProfessional, created_by: currentUser }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        setFormError(err.error || 'Erro ao salvar profissional')
+        return
+      }
+      setNewProfessional({ name: '', phone: '', email: '', specialty: '', notes: '', recommended_by: '' })
+      setShowAddProfessional(false)
+      setFormError('')
+      await fetchData()
+    } catch (err) {
+      setFormError('Erro de conexão. Tente novamente.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleAddQuote = async () => {
-    if (!newQuote.description.trim() || !newQuote.professional_id) return
-    await fetch('/api/quotes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...newQuote,
-        amount: parseFloat(newQuote.amount) || 0,
-        service_category_id: newQuote.service_category_id || null,
-        room_id: newQuote.room_id || null,
-        created_by: currentUser,
-      }),
-    })
-    setNewQuote({ professional_id: '', service_category_id: '', room_id: '', description: '', amount: '', notes: '', scheduled_date: '' })
-    setShowAddQuote(false)
-    fetchData()
+    setFormError('')
+    if (!newQuote.professional_id) {
+      setFormError('Selecione um profissional')
+      return
+    }
+    if (!newQuote.description.trim()) {
+      setFormError('Preencha a descrição do serviço')
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch('/api/quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newQuote,
+          amount: parseFloat(newQuote.amount) || 0,
+          service_category_id: newQuote.service_category_id || null,
+          room_id: newQuote.room_id || null,
+          created_by: currentUser,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        setFormError(err.error || 'Erro ao salvar orçamento')
+        return
+      }
+      setNewQuote({ professional_id: '', service_category_id: '', room_id: '', description: '', amount: '', notes: '', scheduled_date: '' })
+      setShowAddQuote(false)
+      setFormError('')
+      await fetchData()
+    } catch (err) {
+      setFormError('Erro de conexão. Tente novamente.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleStatusChange = async (quoteId: string, newStatus: string) => {
@@ -240,48 +280,70 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
 
       {/* Add Professional Form */}
       {showAddProfessional && (
-        <div className="card" style={{ marginBottom: '20px', padding: '20px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>Cadastrar Profissional</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <input placeholder="Nome *" value={newProfessional.name} onChange={e => setNewProfessional({...newProfessional, name: e.target.value})} />
-            <input placeholder="Telefone" value={newProfessional.phone} onChange={e => setNewProfessional({...newProfessional, phone: e.target.value})} />
-            <input placeholder="Email" value={newProfessional.email} onChange={e => setNewProfessional({...newProfessional, email: e.target.value})} />
-            <input placeholder="Especialidade" value={newProfessional.specialty} onChange={e => setNewProfessional({...newProfessional, specialty: e.target.value})} />
-            <input placeholder="Indicado por" value={newProfessional.recommended_by} onChange={e => setNewProfessional({...newProfessional, recommended_by: e.target.value})} />
-            <input placeholder="Observações" value={newProfessional.notes} onChange={e => setNewProfessional({...newProfessional, notes: e.target.value})} />
-          </div>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'flex-end' }}>
-            <button onClick={() => setShowAddProfessional(false)} style={{ padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', cursor: 'pointer' }}>Cancelar</button>
-            <button className="btn-primary" onClick={handleAddProfessional} style={{ padding: '8px 16px' }}>Salvar</button>
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowAddProfessional(false) }}>
+          <div className="modal-content">
+            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Cadastrar Profissional</h3>
+            {formError && (
+              <div style={{ padding: '10px 14px', borderRadius: '8px', background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: '13px', marginBottom: '12px' }}>
+                {formError}
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input placeholder="Nome do profissional *" value={newProfessional.name} onChange={e => setNewProfessional({...newProfessional, name: e.target.value})} autoFocus style={{ borderColor: formError && !newProfessional.name.trim() ? '#DC2626' : undefined }} />
+              <input placeholder="Telefone" type="tel" value={newProfessional.phone} onChange={e => setNewProfessional({...newProfessional, phone: e.target.value})} />
+              <input placeholder="Email" type="email" value={newProfessional.email} onChange={e => setNewProfessional({...newProfessional, email: e.target.value})} />
+              <input placeholder="Especialidade (ex: Eletricista, Pintor)" value={newProfessional.specialty} onChange={e => setNewProfessional({...newProfessional, specialty: e.target.value})} />
+              <input placeholder="Indicado por" value={newProfessional.recommended_by} onChange={e => setNewProfessional({...newProfessional, recommended_by: e.target.value})} />
+              <textarea placeholder="Observações" value={newProfessional.notes} onChange={e => setNewProfessional({...newProfessional, notes: e.target.value})} rows={2} />
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
+              <button onClick={() => { setShowAddProfessional(false); setFormError('') }} style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>Cancelar</button>
+              <button className="btn-primary" onClick={handleAddProfessional} disabled={saving} style={{ padding: '10px 20px', opacity: saving ? 0.6 : 1 }}>{saving ? 'Salvando...' : 'Salvar'}</button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Add Quote Form */}
       {showAddQuote && (
-        <div className="card" style={{ marginBottom: '20px', padding: '20px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>Novo Orçamento</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <select value={newQuote.professional_id} onChange={e => setNewQuote({...newQuote, professional_id: e.target.value})}>
-              <option value="">Selecione o Profissional *</option>
-              {professionals.map(p => <option key={p.id} value={p.id}>{p.name} {p.specialty ? `(${p.specialty})` : ''}</option>)}
-            </select>
-            <select value={newQuote.service_category_id} onChange={e => setNewQuote({...newQuote, service_category_id: e.target.value})}>
-              <option value="">Tipo de Serviço</option>
-              {serviceCategories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-            </select>
-            <input placeholder="Descrição do serviço *" value={newQuote.description} onChange={e => setNewQuote({...newQuote, description: e.target.value})} style={{ gridColumn: '1 / -1' }} />
-            <input type="number" placeholder="Valor (R$)" value={newQuote.amount} onChange={e => setNewQuote({...newQuote, amount: e.target.value})} />
-            <select value={newQuote.room_id} onChange={e => setNewQuote({...newQuote, room_id: e.target.value})}>
-              <option value="">Cômodo (opcional)</option>
-              {rooms.map(r => <option key={r.id} value={r.id}>{r.icon} {r.name}</option>)}
-            </select>
-            <input type="date" placeholder="Data prevista" value={newQuote.scheduled_date} onChange={e => setNewQuote({...newQuote, scheduled_date: e.target.value})} />
-            <input placeholder="Observações" value={newQuote.notes} onChange={e => setNewQuote({...newQuote, notes: e.target.value})} />
-          </div>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'flex-end' }}>
-            <button onClick={() => setShowAddQuote(false)} style={{ padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', cursor: 'pointer' }}>Cancelar</button>
-            <button className="btn-primary" onClick={handleAddQuote} style={{ padding: '8px 16px' }}>Salvar Orçamento</button>
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowAddQuote(false) }}>
+          <div className="modal-content">
+            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Novo Orçamento</h3>
+            {formError && (
+              <div style={{ padding: '10px 14px', borderRadius: '8px', background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: '13px', marginBottom: '12px' }}>
+                {formError}
+              </div>
+            )}
+            {professionals.length === 0 && (
+              <div style={{ padding: '12px 14px', borderRadius: '8px', background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', fontSize: '13px', marginBottom: '12px' }}>
+                Cadastre um profissional primeiro antes de criar um orçamento.
+                <button onClick={() => { setShowAddQuote(false); setShowAddProfessional(true); setFormError('') }} style={{ display: 'block', marginTop: '8px', color: '#2563EB', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '13px' }}>
+                  + Cadastrar Profissional
+                </button>
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <select value={newQuote.professional_id} onChange={e => setNewQuote({...newQuote, professional_id: e.target.value})} style={{ borderColor: formError && !newQuote.professional_id ? '#DC2626' : undefined }}>
+                <option value="">Selecione o Profissional *</option>
+                {professionals.map(p => <option key={p.id} value={p.id}>{p.name} {p.specialty ? `(${p.specialty})` : ''}</option>)}
+              </select>
+              <select value={newQuote.service_category_id} onChange={e => setNewQuote({...newQuote, service_category_id: e.target.value})}>
+                <option value="">Tipo de Serviço</option>
+                {serviceCategories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+              </select>
+              <input placeholder="Descrição do serviço *" value={newQuote.description} onChange={e => setNewQuote({...newQuote, description: e.target.value})} style={{ borderColor: formError && !newQuote.description.trim() ? '#DC2626' : undefined }} />
+              <input type="number" placeholder="Valor (R$)" inputMode="decimal" value={newQuote.amount} onChange={e => setNewQuote({...newQuote, amount: e.target.value})} />
+              <select value={newQuote.room_id} onChange={e => setNewQuote({...newQuote, room_id: e.target.value})}>
+                <option value="">Cômodo (opcional)</option>
+                {rooms.map(r => <option key={r.id} value={r.id}>{r.icon} {r.name}</option>)}
+              </select>
+              <input type="date" placeholder="Data prevista" value={newQuote.scheduled_date} onChange={e => setNewQuote({...newQuote, scheduled_date: e.target.value})} />
+              <textarea placeholder="Observações" value={newQuote.notes} onChange={e => setNewQuote({...newQuote, notes: e.target.value})} rows={2} />
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
+              <button onClick={() => { setShowAddQuote(false); setFormError('') }} style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>Cancelar</button>
+              <button className="btn-primary" onClick={handleAddQuote} disabled={saving} style={{ padding: '10px 20px', opacity: saving ? 0.6 : 1 }}>{saving ? 'Salvando...' : 'Salvar Orçamento'}</button>
+            </div>
           </div>
         </div>
       )}
