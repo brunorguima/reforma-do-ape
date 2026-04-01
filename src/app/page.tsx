@@ -9,6 +9,7 @@ import ItemCard from '@/components/ItemCard'
 import AddItemModal from '@/components/AddItemModal'
 import CostSummary from '@/components/CostSummary'
 import ProfessionalsPanel from '@/components/ProfessionalsPanel'
+import WelcomeScreen from '@/components/WelcomeScreen'
 import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench } from 'lucide-react'
 
 type TabType = 'mobilia' | 'profissionais'
@@ -29,6 +30,7 @@ export default function HomePage() {
 
   const [userRole, setUserRole] = useState<string>('owner')
   const [allowedUsers, setAllowedUsers] = useState<UserID[]>(['bruno', 'graziela', 'mari', 'claude'])
+  const [showWelcome, setShowWelcome] = useState(false)
 
   // Load saved user or validate access key from URL
   useEffect(() => {
@@ -50,6 +52,10 @@ export default function HomePage() {
               setAllowedUsers(keyConfig.users)
               setCurrentUser(keyConfig.users[0])
               setUserRole(keyConfig.role)
+              // Show welcome screen for designers on first visit
+              if (keyConfig.role === 'designer' && !localStorage.getItem('reforma-welcome-seen')) {
+                setShowWelcome(true)
+              }
               localStorage.setItem('reforma-current-user', keyConfig.users[0])
               localStorage.setItem('reforma-allowed-users', JSON.stringify(keyConfig.users))
             } else {
@@ -58,6 +64,10 @@ export default function HomePage() {
               setCurrentUser(uid)
               setAllowedUsers([uid])
               setUserRole(data.role)
+              // Show welcome screen for designers on first visit
+              if (data.role === 'designer' && !localStorage.getItem('reforma-welcome-seen')) {
+                setShowWelcome(true)
+              }
               localStorage.setItem('reforma-current-user', uid)
               localStorage.setItem('reforma-allowed-users', JSON.stringify([uid]))
             }
@@ -212,8 +222,20 @@ export default function HomePage() {
   const greeting = USER_GREETINGS[currentUser]
   const currentUserObj = USERS.find(u => u.id === currentUser)
 
+  const handleWelcomeDismiss = () => {
+    setShowWelcome(false)
+    localStorage.setItem('reforma-welcome-seen', 'true')
+  }
+
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 20px' }}>
+      {showWelcome && (
+        <WelcomeScreen
+          userRole={userRole}
+          userId={currentUser}
+          onDismiss={handleWelcomeDismiss}
+        />
+      )}
       {/* Header */}
       <header style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
