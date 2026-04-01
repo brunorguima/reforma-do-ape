@@ -27,11 +27,42 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
-  // Load saved user
+  const [userRole, setUserRole] = useState<string>('owner')
+
+  // Load saved user or validate access key from URL
   useEffect(() => {
-    const saved = localStorage.getItem('reforma-current-user') as UserID
-    if (saved && USERS.some(u => u.id === saved)) {
-      setCurrentUser(saved)
+    const params = new URLSearchParams(window.location.search)
+    const key = params.get('key')
+
+    if (key) {
+      // Validate access key
+      fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_key: key }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.user_id) {
+            setCurrentUser(data.user_id as UserID)
+            setUserRole(data.role)
+            localStorage.setItem('reforma-current-user', data.user_id)
+            localStorage.setItem('reforma-access-key', key)
+            localStorage.setItem('reforma-user-role', data.role)
+            // Clean URL
+            window.history.replaceState({}, '', window.location.pathname)
+          }
+        })
+        .catch(() => {})
+    } else {
+      const saved = localStorage.getItem('reforma-current-user') as UserID
+      const savedRole = localStorage.getItem('reforma-user-role')
+      if (saved && USERS.some(u => u.id === saved)) {
+        setCurrentUser(saved)
+      }
+      if (savedRole) {
+        setUserRole(savedRole)
+      }
     }
   }, [])
 
@@ -272,6 +303,7 @@ export default function HomePage() {
                 style={{ width: 'auto', minWidth: '140px' }}
               >
                 <option value="">Todos os status</option>
+                <option value="ja_temos">🟣 Já Temos</option>
                 <option value="desejado">🟡 Desejado</option>
                 <option value="aprovado">🟢 Aprovado</option>
                 <option value="comprado">🔵 Comprado</option>

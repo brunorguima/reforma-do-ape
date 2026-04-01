@@ -160,6 +160,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
             <div>
               <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '4px', display: 'block' }}>Status</label>
               <select value={status} onChange={e => setStatus(e.target.value as Item['status'])}>
+                <option value="ja_temos">Já Temos</option>
                 <option value="desejado">Desejado</option>
                 <option value="aprovado">Aprovado</option>
                 <option value="comprado">Comprado</option>

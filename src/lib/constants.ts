@@ -8,6 +8,7 @@ export const USERS = [
 export type UserID = typeof USERS[number]['id']
 
 export const STATUS_CONFIG = {
+  ja_temos: { label: 'Já Temos', color: '#8B5CF6', bg: '#EDE9FE' },
   desejado: { label: 'Desejado', color: '#F59E0B', bg: '#FEF3C7' },
   aprovado: { label: 'Aprovado', color: '#10B981', bg: '#D1FAE5' },
   comprado: { label: 'Comprado', color: '#3B82F6', bg: '#DBEAFE' },

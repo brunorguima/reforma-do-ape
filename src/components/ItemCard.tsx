@@ -119,7 +119,7 @@ export default function ItemCard({ item, onEdit, onDelete, onStatusChange }: Ite
           </span>
         </span>
         <div style={{ display: 'flex', gap: '4px' }}>
-          {item.status !== 'aprovado' && (
+          {item.status !== 'ja_temos' && item.status !== 'aprovado' && (
             <button
               onClick={() => onStatusChange(item.id, 'aprovado')}
               style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: '#d1fae5', color: '#059669', fontWeight: 600 }}
@@ -127,7 +127,7 @@ export default function ItemCard({ item, onEdit, onDelete, onStatusChange }: Ite
               ✓ Aprovar
             </button>
           )}
-          {item.status !== 'comprado' && (
+          {item.status !== 'ja_temos' && item.status !== 'comprado' && (
             <button
               onClick={() => onStatusChange(item.id, 'comprado')}
               style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: '#dbeafe', color: '#2563eb', fontWeight: 600 }}

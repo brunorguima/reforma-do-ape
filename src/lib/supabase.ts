@@ -45,7 +45,7 @@ export type Item = {
   description: string | null
   quantity: number
   estimated_price: number | null
-  status: 'desejado' | 'aprovado' | 'comprado'
+  status: 'desejado' | 'aprovado' | 'comprado' | 'ja_temos'
   reference_links: string[]
   suggested_by: string
   created_by: string
