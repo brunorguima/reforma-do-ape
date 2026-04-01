@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Room } from '@/lib/supabase'
 import type { UserID } from '@/lib/constants'
 import { USERS, formatCurrency } from '@/lib/constants'
-import { Plus, User, Phone, Mail, ChevronDown, ChevronUp, Trash2, Edit3, Check, X, Wrench } from 'lucide-react'
+import { Plus, User, Phone, Mail, ChevronDown, ChevronUp, Trash2, Edit3, Check, X, Wrench, FileText, CreditCard, CheckCircle2, Clock, TrendingDown } from 'lucide-react'
 
 interface ServiceCategory {
   id: string
@@ -52,6 +52,22 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   recusado: { label: 'Recusado', color: '#dc2626', bg: '#fee2e2', emoji: '❌' },
 }
 
+interface Contract {
+  id: string; professional: string; role: string; original_total: number; negotiated_total: number;
+  start_date: string; first_payment_date: string; status: string; notes: string;
+}
+interface BudgetItem {
+  id: string; professional: string; category: string; service: string; location: string;
+  original_value: number | null; notes: string | null; sort_order: number;
+}
+interface Payment {
+  id: string; professional: string; installment_number: number; amount: number;
+  due_date: string; paid_date: string | null; status: string; notes: string;
+}
+
+const fmtBRL = (v: number | null) => v ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v) : '—'
+const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+
 const STATUS_FLOW = ['recebido', 'avaliando', 'aprovado', 'contratado', 'pago']
 
 interface Props {
@@ -69,6 +85,11 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
   const [filterCategory, setFilterCategory] = useState('')
   const [expandedQuote, setExpandedQuote] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [contracts, setContracts] = useState<Contract[]>([])
+  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
+  const [payments, setPayments] = useState<Payment[]>([])
+  const [expandedContract, setExpandedContract] = useState<string | null>(null)
+  const [markingPaid, setMarkingPaid] = useState<string | null>(null)
 
   // Form states
   const [newProfessional, setNewProfessional] = useState({ name: '', phone: '', email: '', specialty: '', notes: '', recommended_by: '' })
@@ -79,17 +100,19 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
 
   const fetchData = useCallback(async () => {
     try {
-      const [quotesRes, prosRes, catsRes] = await Promise.all([
-        fetch('/api/quotes'),
-        fetch('/api/professionals'),
-        fetch('/api/service-categories'),
+      const [quotesRes, prosRes, catsRes, conRes, budRes, payRes] = await Promise.all([
+        fetch('/api/quotes'), fetch('/api/professionals'), fetch('/api/service-categories'),
+        fetch('/api/contracts'), fetch('/api/budget-items'), fetch('/api/payments'),
       ])
-      const [quotesData, prosData, catsData] = await Promise.all([
-        quotesRes.json(), prosRes.json(), catsRes.json(),
+      const [quotesData, prosData, catsData, conData, budData, payData] = await Promise.all([
+        quotesRes.json(), prosRes.json(), catsRes.json(), conRes.json(), budRes.json(), payRes.json(),
       ])
       setQuotes(Array.isArray(quotesData) ? quotesData : [])
       setProfessionals(Array.isArray(prosData) ? prosData : [])
       setServiceCategories(Array.isArray(catsData) ? catsData : [])
+      setContracts(Array.isArray(conData) ? conData : [])
+      setBudgetItems(Array.isArray(budData) ? budData : [])
+      setPayments(Array.isArray(payData) ? payData : [])
     } catch (err) {
       console.error('Error:', err)
     } finally {
@@ -155,6 +178,19 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
     if (!confirm('Excluir este orçamento?')) return
     await fetch(`/api/quotes/${quoteId}`, { method: 'DELETE' })
     fetchData()
+  }
+
+  const handleMarkPaid = async (payment: Payment) => {
+    setMarkingPaid(payment.id)
+    try {
+      await fetch('/api/payments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: payment.id, status: 'pago', paid_date: new Date().toISOString().split('T')[0] }),
+      })
+      await fetchData()
+    } catch (err) { console.error(err) }
+    finally { setMarkingPaid(null) }
   }
 
   if (loading) return <div style={{ textAlign: 'center', padding: '40px' }}><p style={{ color: '#6b7280' }}>Carregando orçamentos...</p></div>
@@ -369,6 +405,163 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
                         Excluir
                       </button>
                     </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Contracts Section - Budget & Payments per Professional */}
+      {contracts.length > 0 && (
+        <div style={{ marginTop: '28px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#374151', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileText size={18} /> Contratos Fechados
+          </h3>
+          {contracts.map(contract => {
+            const cBudgetItems = budgetItems.filter(b => b.professional === contract.professional)
+            const cPayments = payments.filter(p => p.professional === contract.professional)
+            const totalPaidC = cPayments.filter(p => p.status === 'pago').reduce((s, p) => s + p.amount, 0)
+            const economia = contract.original_total - contract.negotiated_total
+            const percentPaid = Math.round((totalPaidC / contract.negotiated_total) * 100)
+            const isExpanded = expandedContract === contract.id
+            const nextPayment = cPayments.find(p => p.status === 'pendente')
+            const categories = [...new Set(cBudgetItems.map(b => b.category))]
+            const daysUntilNext = nextPayment ? Math.ceil((new Date(nextPayment.due_date + 'T12:00:00').getTime() - Date.now()) / 86400000) : null
+
+            return (
+              <div key={contract.id} style={{ borderRadius: '14px', border: '1px solid #D1FAE5', marginBottom: '14px', overflow: 'hidden', background: 'white' }}>
+                {/* Contract Header */}
+                <button
+                  onClick={() => setExpandedContract(isExpanded ? null : contract.id)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '16px', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #065F4615, #04785715)',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#065F46' }}>👷 {contract.professional}</span>
+                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', background: '#D1FAE5', color: '#065F46', fontWeight: 600 }}>
+                        {contract.status === 'ativo' ? '🟢 Ativo' : contract.status}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#6B7280' }}>
+                      <span>Fechado: {fmtBRL(contract.negotiated_total)}</span>
+                      <span style={{ color: '#059669' }}>
+                        <TrendingDown size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {fmtBRL(economia)} economia
+                      </span>
+                      <span>Pago: {percentPaid}%</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 800, color: '#065F46' }}>{fmtBRL(contract.negotiated_total)}</span>
+                    {isExpanded ? <ChevronUp size={18} color="#9CA3AF" /> : <ChevronDown size={18} color="#9CA3AF" />}
+                  </div>
+                </button>
+
+                {isExpanded && (
+                  <div style={{ padding: '16px' }}>
+                    {/* Payment Progress */}
+                    <div style={{ background: '#F0FDF4', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#065F46' }}>Progresso de Pagamento</span>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#065F46' }}>{fmtBRL(totalPaidC)} / {fmtBRL(contract.negotiated_total)}</span>
+                      </div>
+                      <div style={{ background: '#BBF7D0', borderRadius: '6px', height: '8px', overflow: 'hidden' }}>
+                        <div style={{ width: `${percentPaid}%`, height: '100%', background: '#10B981', borderRadius: '6px', transition: 'width 0.5s' }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#6B7280' }}>
+                        <span>Início: {contract.start_date ? fmtDate(contract.start_date) : '—'}</span>
+                        <span>Orçado: {fmtBRL(contract.original_total)}</span>
+                      </div>
+                    </div>
+
+                    {/* Next Payment Alert */}
+                    {nextPayment && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', marginBottom: '16px',
+                        background: daysUntilNext !== null && daysUntilNext <= 3 ? '#FEF2F2' : '#FFFBEB',
+                        border: `1px solid ${daysUntilNext !== null && daysUntilNext <= 3 ? '#FECACA' : '#FDE68A'}`,
+                      }}>
+                        <Clock size={18} color={daysUntilNext !== null && daysUntilNext <= 3 ? '#DC2626' : '#D97706'} />
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0 }}>
+                            Próxima: {fmtBRL(nextPayment.amount)} em {fmtDate(nextPayment.due_date)}
+                          </p>
+                          <p style={{ fontSize: '11px', color: '#6B7280', margin: '2px 0 0' }}>
+                            {daysUntilNext !== null && daysUntilNext > 0 ? `${daysUntilNext} dias` : daysUntilNext === 0 ? 'HOJE!' : `Vencida há ${Math.abs(daysUntilNext!)} dias`}
+                            {' · '}Parcela {nextPayment.installment_number}/{cPayments.length}
+                          </p>
+                        </div>
+                        <button onClick={() => handleMarkPaid(nextPayment)} disabled={markingPaid === nextPayment.id}
+                          style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#10B981', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', opacity: markingPaid === nextPayment.id ? 0.5 : 1 }}>
+                          ✓ Paguei
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Parcelas Timeline */}
+                    <div style={{ marginBottom: '16px' }}>
+                      <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <CreditCard size={14} /> Parcelas
+                      </h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {cPayments.map(p => {
+                          const isPaid = p.status === 'pago'
+                          return (
+                            <div key={p.id} style={{
+                              display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', borderRadius: '8px',
+                              background: isPaid ? '#F0FDF4' : '#F9FAFB', border: `1px solid ${isPaid ? '#BBF7D0' : '#F3F4F6'}`,
+                            }}>
+                              <div style={{
+                                width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: isPaid ? '#10B981' : '#E5E7EB', color: isPaid ? 'white' : '#9CA3AF', fontSize: '11px', fontWeight: 700, flexShrink: 0,
+                              }}>
+                                {isPaid ? <CheckCircle2 size={14} /> : p.installment_number}
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <span style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937' }}>{fmtBRL(p.amount)}</span>
+                                <span style={{ fontSize: '11px', color: '#6B7280', marginLeft: '8px' }}>{fmtDate(p.due_date)}</span>
+                              </div>
+                              {isPaid && <span style={{ fontSize: '10px', fontWeight: 600, color: '#10B981', background: '#DCFCE7', padding: '2px 6px', borderRadius: '4px' }}>Pago</span>}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Budget Breakdown */}
+                    <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <FileText size={14} /> Itens do Orçamento
+                    </h4>
+                    {categories.map(cat => {
+                      const items = cBudgetItems.filter(b => b.category === cat)
+                      const catTotal = items.reduce((s, b) => s + (b.original_value || 0), 0)
+                      return (
+                        <div key={cat} style={{ marginBottom: '8px', borderRadius: '8px', border: '1px solid #F3F4F6', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#F9FAFB' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>{cat}</span>
+                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#047857' }}>{fmtBRL(catTotal)}</span>
+                          </div>
+                          {items.map(item => (
+                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 12px', borderTop: '1px solid #F3F4F6', fontSize: '12px' }}>
+                              <div>
+                                <span style={{ color: '#1F2937' }}>{item.service}</span>
+                                {item.location && <span style={{ color: '#9CA3AF', marginLeft: '6px' }}>· {item.location}</span>}
+                              </div>
+                              <span style={{ fontWeight: 600, color: item.original_value ? '#1F2937' : '#9CA3AF', flexShrink: 0, marginLeft: '8px' }}>
+                                {item.original_value ? fmtBRL(item.original_value) : (item.notes || '—')}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
+                    {contract.notes && (
+                      <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'italic', marginTop: '8px' }}>📝 {contract.notes}</p>
+                    )}
                   </div>
                 )}
               </div>
