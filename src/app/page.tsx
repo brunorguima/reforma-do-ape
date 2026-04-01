@@ -345,7 +345,7 @@ export default function HomePage() {
           }}
         >
           <DollarSign size={18} />
-          $
+          Financeiro
         </button>
         <button
           onClick={() => setActiveTab('profissionais')}
