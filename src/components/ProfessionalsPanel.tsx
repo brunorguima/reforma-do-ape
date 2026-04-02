@@ -433,25 +433,27 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
         background: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)',
         borderRadius: '16px', padding: '20px', marginBottom: '24px', color: 'white'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-          <Wrench size={20} />
-          <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Orçamento de Profissionais</h2>
-          <span style={{ marginLeft: 'auto', fontSize: '13px', opacity: 0.8 }}>
-            {activeQuotes.length} orçamento{activeQuotes.length !== 1 ? 's' : ''} ativo{activeQuotes.length !== 1 ? 's' : ''}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Wrench size={20} />
+            <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0 }}>Orçamentos</h2>
+          </div>
+          <span style={{ fontSize: '12px', opacity: 0.8 }}>
+            {activeQuotes.length} ativo{activeQuotes.length !== 1 ? 's' : ''}
           </span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-          <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-            <p style={{ fontSize: '12px', opacity: 0.8, margin: '0 0 4px' }}>📋 Total Orçado</p>
-            <p style={{ fontSize: '18px', fontWeight: 800, margin: 0 }}>{formatCurrency(totalOrcado)}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '10px 6px', textAlign: 'center' }}>
+            <p style={{ fontSize: '11px', opacity: 0.8, margin: '0 0 4px' }}>📋 Orçado</p>
+            <p style={{ fontSize: '14px', fontWeight: 800, margin: 0 }}>{formatCurrency(totalOrcado)}</p>
           </div>
-          <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-            <p style={{ fontSize: '12px', opacity: 0.8, margin: '0 0 4px' }}>🤝 Contratado</p>
-            <p style={{ fontSize: '18px', fontWeight: 800, margin: 0 }}>{formatCurrency(totalContratado)}</p>
+          <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '10px 6px', textAlign: 'center' }}>
+            <p style={{ fontSize: '11px', opacity: 0.8, margin: '0 0 4px' }}>🤝 Contratado</p>
+            <p style={{ fontSize: '14px', fontWeight: 800, margin: 0 }}>{formatCurrency(totalContratado)}</p>
           </div>
-          <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-            <p style={{ fontSize: '12px', opacity: 0.8, margin: '0 0 4px' }}>💰 Pago</p>
-            <p style={{ fontSize: '18px', fontWeight: 800, margin: 0 }}>{formatCurrency(totalPago)}</p>
+          <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '10px 6px', textAlign: 'center' }}>
+            <p style={{ fontSize: '11px', opacity: 0.8, margin: '0 0 4px' }}>💰 Pago</p>
+            <p style={{ fontSize: '14px', fontWeight: 800, margin: 0 }}>{formatCurrency(totalPago)}</p>
           </div>
         </div>
       </div>
@@ -707,8 +709,8 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
                           )}
                         </p>
                       </div>
-                      <div style={{ textAlign: 'right', minWidth: '120px' }}>
-                        <p style={{ fontSize: '18px', fontWeight: 800, color: '#1f2937', margin: '0 0 4px' }}>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <p style={{ fontSize: '15px', fontWeight: 800, color: '#1f2937', margin: '0 0 4px' }}>
                           {formatCurrency(Number(quote.amount))}
                         </p>
                         <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -805,23 +807,23 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
                       padding: '16px', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #065F4615, #04785715)',
                     }}
                   >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '15px', fontWeight: 700, color: '#065F46' }}>👷 {contract.professional}</span>
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', background: '#D1FAE5', color: '#065F46', fontWeight: 600 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#065F46' }}>👷 {contract.professional}</span>
+                        <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '6px', background: '#D1FAE5', color: '#065F46', fontWeight: 600 }}>
                           🤝 Contratado
                         </span>
                       </div>
-                      <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#6B7280' }}>
+                      <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#6B7280', flexWrap: 'wrap' }}>
                         <span>Fechado: {fmtBRL(contract.negotiated_total)}</span>
                         <span style={{ color: '#059669' }}>
-                          <TrendingDown size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {fmtBRL(economia)} economia
+                          <TrendingDown size={11} style={{ display: 'inline', verticalAlign: 'middle' }} /> {fmtBRL(economia)}
                         </span>
                         <span>Pago: {percentPaid}%</span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '18px', fontWeight: 800, color: '#065F46' }}>{fmtBRL(contract.negotiated_total)}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      <span style={{ fontSize: '15px', fontWeight: 800, color: '#065F46' }}>{fmtBRL(contract.negotiated_total)}</span>
                       {isExpanded ? <ChevronUp size={18} color="#9CA3AF" /> : <ChevronDown size={18} color="#9CA3AF" />}
                     </div>
                   </button>
@@ -1025,14 +1027,14 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
                       padding: '16px', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #065F4615, #04785715)',
                     }}
                   >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '15px', fontWeight: 700, color: '#065F46' }}>👷 {quote.professional?.name || 'Profissional'}</span>
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', background: '#D1FAE5', color: '#065F46', fontWeight: 600 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#065F46' }}>👷 {quote.professional?.name || 'Profissional'}</span>
+                        <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '6px', background: '#D1FAE5', color: '#065F46', fontWeight: 600 }}>
                           {STATUS_CONFIG[quote.status]?.emoji} {STATUS_CONFIG[quote.status]?.label}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#6B7280' }}>
+                      <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#6B7280', flexWrap: 'wrap' }}>
                         <span>{quote.description}</span>
                         {quote.payment_method && (
                           <span>
@@ -1041,8 +1043,8 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
                         )}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '18px', fontWeight: 800, color: '#065F46' }}>{formatCurrency(amount)}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      <span style={{ fontSize: '15px', fontWeight: 800, color: '#065F46' }}>{formatCurrency(amount)}</span>
                       {isExpanded ? <ChevronUp size={18} color="#9CA3AF" /> : <ChevronDown size={18} color="#9CA3AF" />}
                     </div>
                   </button>

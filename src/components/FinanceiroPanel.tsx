@@ -318,47 +318,47 @@ export default function FinanceiroPanel({ currentUser }: Props) {
         background: 'linear-gradient(135deg, #1E3A5F, #2563EB)',
         borderRadius: '16px', padding: '20px', marginBottom: '16px', color: 'white',
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <DollarSign size={20} /> Visão Geral
-          </h2>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <DollarSign size={20} />
+            <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0 }}>Visão Geral</h2>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {economiaTotal > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '4px 10px' }}>
-                <TrendingDown size={14} />
-                <span style={{ fontSize: '13px', fontWeight: 600 }}>Economia: {fmt(economiaTotal)}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '4px 8px' }}>
+                <TrendingDown size={12} />
+                <span style={{ fontSize: '11px', fontWeight: 600 }}>Economia: {fmt(economiaTotal)}</span>
               </div>
             )}
-            {/* Audit log button - only for owners */}
             {isOwner && (
               <button onClick={() => { setShowAuditLog(!showAuditLog); if (!showAuditLog) fetchAuditLog() }}
-                style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '8px', padding: '4px 8px', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', gap: '4px' }}
+                style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '8px', padding: '4px 8px', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center' }}
                 title="Ver histórico de alterações">
                 <History size={14} />
               </button>
             )}
           </div>
         </div>
-        <p style={{ fontSize: '12px', opacity: 0.7, margin: '0 0 14px' }}>
+        <p style={{ fontSize: '12px', opacity: 0.7, margin: '0 0 12px' }}>
           {unifiedContracts.length} contrato{unifiedContracts.length !== 1 ? 's' : ''} fechado{unifiedContracts.length !== 1 ? 's' : ''}
         </p>
 
-        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', height: '10px', overflow: 'hidden', marginBottom: '14px' }}>
+        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', height: '10px', overflow: 'hidden', marginBottom: '12px' }}>
           <div style={{ width: `${percentPago}%`, height: '100%', background: 'linear-gradient(90deg, #60A5FA, #93C5FD)', borderRadius: '8px', transition: 'width 0.5s ease' }} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '18px', fontWeight: 800 }}>{fmt(totalPago)}</div>
-            <div style={{ fontSize: '11px', opacity: 0.7 }}>Pago ({percentPago}%)</div>
+            <div style={{ fontSize: '14px', fontWeight: 800 }}>{fmt(totalPago)}</div>
+            <div style={{ fontSize: '10px', opacity: 0.7 }}>Pago ({percentPago}%)</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '18px', fontWeight: 800 }}>{fmt(totalPendente)}</div>
-            <div style={{ fontSize: '11px', opacity: 0.7 }}>Restante</div>
+            <div style={{ fontSize: '14px', fontWeight: 800 }}>{fmt(totalPendente)}</div>
+            <div style={{ fontSize: '10px', opacity: 0.7 }}>Restante</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '18px', fontWeight: 800 }}>{fmt(totalNegociado)}</div>
-            <div style={{ fontSize: '11px', opacity: 0.7 }}>Total Fechado</div>
+            <div style={{ fontSize: '14px', fontWeight: 800 }}>{fmt(totalNegociado)}</div>
+            <div style={{ fontSize: '10px', opacity: 0.7 }}>Total Fechado</div>
           </div>
         </div>
       </div>
