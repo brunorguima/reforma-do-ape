@@ -442,7 +442,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
             {activeQuotes.length} ativo{activeQuotes.length !== 1 ? 's' : ''}
           </span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
           <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '10px 6px', textAlign: 'center' }}>
             <p style={{ fontSize: '11px', opacity: 0.8, margin: '0 0 4px' }}>📋 Orçado</p>
             <p style={{ fontSize: '14px', fontWeight: 800, margin: 0 }}>{formatCurrency(totalOrcado)}</p>
@@ -450,10 +450,6 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
           <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '10px 6px', textAlign: 'center' }}>
             <p style={{ fontSize: '11px', opacity: 0.8, margin: '0 0 4px' }}>🤝 Contratado</p>
             <p style={{ fontSize: '14px', fontWeight: 800, margin: 0 }}>{formatCurrency(totalContratado)}</p>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '10px 6px', textAlign: 'center' }}>
-            <p style={{ fontSize: '11px', opacity: 0.8, margin: '0 0 4px' }}>💰 Pago</p>
-            <p style={{ fontSize: '14px', fontWeight: 800, margin: 0 }}>{formatCurrency(totalPago)}</p>
           </div>
         </div>
       </div>
