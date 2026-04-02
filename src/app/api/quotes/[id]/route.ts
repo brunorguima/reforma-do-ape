@@ -20,13 +20,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { status, updated_by } = await req.json()
+  const { status, updated_by, payment_method, payment_details, negotiated_amount } = await req.json()
 
   const updateData: Record<string, unknown> = {
     status,
     updated_by,
     updated_at: new Date().toISOString()
   }
+
+  if (payment_method !== undefined) updateData.payment_method = payment_method
+  if (payment_details !== undefined) updateData.payment_details = payment_details
+  if (negotiated_amount !== undefined) updateData.negotiated_amount = negotiated_amount
 
   if (status === 'pago') {
     updateData.paid_date = new Date().toISOString().split('T')[0]

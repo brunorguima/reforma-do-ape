@@ -35,6 +35,9 @@ interface Quote {
   notes?: string
   scheduled_date?: string
   paid_date?: string
+  payment_method?: string
+  payment_details?: string
+  negotiated_amount?: number
   created_at: string
   created_by: string
   updated_by: string
@@ -42,6 +45,16 @@ interface Quote {
   service_category?: ServiceCategory
   room?: Room
 }
+
+const PAYMENT_METHODS = [
+  { value: 'pix', label: 'PIX', emoji: '⚡' },
+  { value: 'boleto', label: 'Boleto', emoji: '📄' },
+  { value: 'cartao_credito', label: 'Cartão Crédito', emoji: '💳' },
+  { value: 'cartao_debito', label: 'Cartão Débito', emoji: '💳' },
+  { value: 'dinheiro', label: 'Dinheiro', emoji: '💵' },
+  { value: 'transferencia', label: 'Transferência', emoji: '🏦' },
+  { value: 'parcelado', label: 'Parcelado', emoji: '📊' },
+]
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; emoji: string }> = {
   recebido: { label: 'Recebido', color: '#6b7280', bg: '#f3f4f6', emoji: '📩' },
@@ -92,6 +105,9 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
   const [markingPaid, setMarkingPaid] = useState<string | null>(null)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
+  // Payment method modal
+  const [paymentModal, setPaymentModal] = useState<{ quoteId: string; targetStatus: string; currentAmount: number } | null>(null)
+  const [paymentForm, setPaymentForm] = useState({ payment_method: '', payment_details: '', negotiated_amount: '' })
 
   // Form states
   const [newProfessional, setNewProfessional] = useState({ name: '', phone: '', email: '', specialty: '', notes: '', recommended_by: '' })
@@ -208,12 +224,45 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
   }
 
   const handleStatusChange = async (quoteId: string, newStatus: string) => {
+    // For contratado/pago, show payment method modal
+    if (newStatus === 'contratado' || newStatus === 'pago') {
+      const quote = quotes.find(q => q.id === quoteId)
+      setPaymentForm({
+        payment_method: quote?.payment_method || '',
+        payment_details: quote?.payment_details || '',
+        negotiated_amount: quote?.negotiated_amount?.toString() || quote?.amount?.toString() || '',
+      })
+      setPaymentModal({ quoteId, targetStatus: newStatus, currentAmount: Number(quote?.amount || 0) })
+      return
+    }
     await fetch(`/api/quotes/${quoteId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus, updated_by: currentUser }),
     })
     fetchData()
+  }
+
+  const handlePaymentConfirm = async () => {
+    if (!paymentModal) return
+    setSaving(true)
+    try {
+      await fetch(`/api/quotes/${paymentModal.quoteId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: paymentModal.targetStatus,
+          updated_by: currentUser,
+          payment_method: paymentForm.payment_method || null,
+          payment_details: paymentForm.payment_details || null,
+          negotiated_amount: paymentForm.negotiated_amount ? parseFloat(paymentForm.negotiated_amount) : null,
+        }),
+      })
+      setPaymentModal(null)
+      setPaymentForm({ payment_method: '', payment_details: '', negotiated_amount: '' })
+      await fetchData()
+    } catch (err) { console.error(err) }
+    finally { setSaving(false) }
   }
 
   const handleDeleteQuote = async (quoteId: string) => {
@@ -350,6 +399,79 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
         </div>
       )}
 
+      {/* Payment Method Modal */}
+      {paymentModal && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setPaymentModal(null) }}>
+          <div className="modal-content">
+            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>
+              {paymentModal.targetStatus === 'contratado' ? '🤝 Confirmar Contratação' : '💰 Confirmar Pagamento'}
+            </h3>
+            <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 16px' }}>
+              {paymentModal.targetStatus === 'contratado'
+                ? 'Como será feito o pagamento?'
+                : 'Como foi feito o pagamento?'}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {/* Payment Method Chips */}
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '8px', display: 'block' }}>Forma de Pagamento</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {PAYMENT_METHODS.map(m => (
+                    <button key={m.value} onClick={() => setPaymentForm({ ...paymentForm, payment_method: m.value })}
+                      style={{
+                        padding: '8px 14px', borderRadius: '20px', border: '2px solid',
+                        borderColor: paymentForm.payment_method === m.value ? '#2563EB' : '#E5E7EB',
+                        background: paymentForm.payment_method === m.value ? '#DBEAFE' : 'white',
+                        color: paymentForm.payment_method === m.value ? '#1D4ED8' : '#374151',
+                        fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s',
+                      }}>
+                      {m.emoji} {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Negotiated Amount */}
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px', display: 'block' }}>
+                  Valor Negociado (R$)
+                </label>
+                <input
+                  type="number" inputMode="decimal" placeholder="Valor final negociado"
+                  value={paymentForm.negotiated_amount}
+                  onChange={e => setPaymentForm({ ...paymentForm, negotiated_amount: e.target.value })}
+                />
+                {paymentModal.currentAmount > 0 && (
+                  <p style={{ fontSize: '11px', color: '#6B7280', margin: '4px 0 0' }}>
+                    Valor original do orçamento: {formatCurrency(paymentModal.currentAmount)}
+                  </p>
+                )}
+              </div>
+
+              {/* Payment Details */}
+              <textarea
+                placeholder="Detalhes do pagamento (ex: parcelas, chave PIX, banco...)"
+                value={paymentForm.payment_details}
+                onChange={e => setPaymentForm({ ...paymentForm, payment_details: e.target.value })}
+                rows={2}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setPaymentModal(null)}
+                style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>
+                Cancelar
+              </button>
+              <button className="btn-primary" onClick={handlePaymentConfirm} disabled={saving}
+                style={{ padding: '10px 20px', opacity: saving ? 0.6 : 1 }}>
+                {saving ? 'Salvando...' : paymentModal.targetStatus === 'contratado' ? '🤝 Contratar' : '💰 Confirmar Pgto'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ minWidth: '140px' }}>
@@ -453,6 +575,19 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
 
                 {isExpanded && (
                   <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f3f4f6', fontSize: '13px', color: '#6b7280' }}>
+                    {quote.payment_method && (
+                      <p style={{ margin: '0 0 8px' }}>
+                        {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.emoji || '💳'}{' '}
+                        Pagamento: <strong style={{ color: '#1F2937' }}>{PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.label || quote.payment_method}</strong>
+                        {quote.payment_details && <span> — {quote.payment_details}</span>}
+                      </p>
+                    )}
+                    {quote.negotiated_amount && quote.negotiated_amount !== Number(quote.amount) && (
+                      <p style={{ margin: '0 0 8px', color: '#059669' }}>
+                        💰 Valor negociado: <strong>{formatCurrency(quote.negotiated_amount)}</strong>
+                        <span style={{ fontSize: '11px', marginLeft: '6px', textDecoration: 'line-through', color: '#9CA3AF' }}>{formatCurrency(Number(quote.amount))}</span>
+                      </p>
+                    )}
                     {quote.notes && <p style={{ margin: '0 0 8px' }}>📝 {quote.notes}</p>}
                     {quote.scheduled_date && <p style={{ margin: '0 0 8px' }}>📅 Previsão: {new Date(quote.scheduled_date).toLocaleDateString('pt-BR')}</p>}
                     {quote.paid_date && <p style={{ margin: '0 0 8px' }}>💰 Pago em: {new Date(quote.paid_date).toLocaleDateString('pt-BR')}</p>}
