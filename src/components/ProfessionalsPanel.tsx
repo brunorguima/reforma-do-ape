@@ -151,11 +151,21 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  // Totals
+  // Totals — include both quotes AND contracts table
   const activeQuotes = quotes.filter(q => !['recusado'].includes(q.status))
-  const totalContratado = activeQuotes.filter(q => ['contratado', 'pago'].includes(q.status)).reduce((s, q) => s + Number(q.amount), 0)
-  const totalPago = activeQuotes.filter(q => q.status === 'pago').reduce((s, q) => s + Number(q.amount), 0)
-  const totalOrcado = activeQuotes.reduce((s, q) => s + Number(q.amount), 0)
+  const contractsTotal = contracts.reduce((s, c) => s + (c.negotiated_total || 0), 0)
+  const contractsOriginalTotal = contracts.reduce((s, c) => s + (c.original_total || 0), 0)
+  // For contratado quotes, use negotiated_amount if available
+  const quotesContratado = activeQuotes.filter(q => ['contratado', 'pago'].includes(q.status))
+    .reduce((s, q) => s + Number(q.negotiated_amount || q.amount), 0)
+  const totalContratado = quotesContratado + contractsTotal
+  const contractsPaid = contracts.reduce((s, c) => {
+    const cPays = payments.filter(p => p.professional === c.professional && p.status === 'pago')
+    return s + cPays.reduce((ps, p) => ps + p.amount, 0)
+  }, 0)
+  const totalPago = activeQuotes.filter(q => q.status === 'pago').reduce((s, q) => s + Number(q.negotiated_amount || q.amount), 0) + contractsPaid
+  const quotesOrcado = activeQuotes.reduce((s, q) => s + Number(q.amount), 0)
+  const totalOrcado = quotesOrcado + contractsOriginalTotal
 
   // Filter - only non-contratado/pago quotes for main list
   const filteredQuotes = quotes.filter(q => {
