@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     .insert({
       title: body.title,
       description: body.description || null,
-      type: body.type,
+      doc_type: body.type,
       url: body.url || null,
       created_by: body.created_by,
     })

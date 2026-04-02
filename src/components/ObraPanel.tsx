@@ -18,7 +18,7 @@ interface Document {
   id: string
   title: string
   description: string | null
-  type: 'planta' | 'projeto' | 'contrato' | 'nota_fiscal' | 'foto' | 'outro'
+  doc_type: 'planta' | 'projeto' | 'contrato' | 'nota_fiscal' | 'foto' | 'outro'
   url: string | null
   file_path: string | null
   file_name: string | null
@@ -225,7 +225,7 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
         body: JSON.stringify({
           action: 'delete', entity_type: 'document', entity_id: docId,
           entity_description: `Documento "${doc?.title}" deletado`,
-          old_values: doc ? { title: doc.title, type: doc.type, url: doc.url } : null,
+          old_values: doc ? { title: doc.title, doc_type: doc.doc_type, url: doc.url } : null,
           performed_by: currentUser,
         }),
       })
@@ -349,7 +349,7 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
             <div style={{ display: 'grid', gap: '8px' }}>
               {documents.map(doc => {
                 const isExpanded = expandedDocuments.has(doc.id)
-                const typeConfig = DOCUMENT_TYPE_CONFIG[doc.type]
+                const typeConfig = DOCUMENT_TYPE_CONFIG[doc.doc_type]
                 return (
                   <div
                     key={doc.id}

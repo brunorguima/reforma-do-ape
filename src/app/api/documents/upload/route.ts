@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       .insert({
         title: title.trim(),
         description: description || null,
-        type: type || 'outro',
+        doc_type: type || 'outro',
         url: publicUrl,
         file_path: filePath,
         file_name: file.name,
