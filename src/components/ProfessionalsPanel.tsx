@@ -701,29 +701,20 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
                         <p style={{ fontSize: '18px', fontWeight: 800, color: '#1f2937', margin: '0 0 4px' }}>
                           {formatCurrency(Number(quote.amount))}
                         </p>
-                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
-                          {nextStatus && quote.status !== 'recusado' && (
-                            <button
-                              onClick={() => handleStatusChange(quote.id, nextStatus)}
-                              title={`Avançar para ${STATUS_CONFIG[nextStatus]?.label}`}
-                              style={{
-                                padding: '4px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                                background: STATUS_CONFIG[nextStatus]?.bg, color: STATUS_CONFIG[nextStatus]?.color,
-                                fontSize: '11px', fontWeight: 600
-                              }}
-                            >
-                              {STATUS_CONFIG[nextStatus]?.emoji} {STATUS_CONFIG[nextStatus]?.label}
-                            </button>
-                          )}
-                          {quote.status !== 'recusado' && (
-                            <button
-                              onClick={() => handleStatusChange(quote.id, 'recusado')}
-                              title="Recusar"
-                              style={{ padding: '4px 8px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: '#fee2e2', color: '#dc2626', fontSize: '11px' }}
-                            >
-                              <X size={12} />
-                            </button>
-                          )}
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <select
+                            value={quote.status}
+                            onChange={e => handleStatusChange(quote.id, e.target.value)}
+                            style={{
+                              padding: '5px 8px', borderRadius: '8px', border: '1px solid #E5E7EB', cursor: 'pointer',
+                              background: statusCfg.bg, color: statusCfg.color,
+                              fontSize: '12px', fontWeight: 600, appearance: 'auto',
+                            }}
+                          >
+                            {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                              <option key={key} value={key}>{cfg.emoji} {cfg.label}</option>
+                            ))}
+                          </select>
                           <button onClick={() => setExpandedQuote(isExpanded ? null : quote.id)}
                             style={{ padding: '4px 8px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: '#f3f4f6' }}>
                             {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
