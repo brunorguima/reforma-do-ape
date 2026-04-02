@@ -273,8 +273,30 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
   }
 
   const handleDeleteQuote = async (quoteId: string) => {
+    const quote = quotes.find(q => q.id === quoteId)
+    // Mari can only delete her own quotes
+    if (currentUser === 'mari') {
+      const profName = quote?.professional?.name || ''
+      if (!profName.toLowerCase().includes('mariana') && !profName.toLowerCase().includes('mari') && quote?.created_by !== 'mari') {
+        alert('Sem permissão para deletar orçamentos de outros profissionais')
+        return
+      }
+    }
     if (!confirm('Excluir este orçamento?')) return
     await fetch(`/api/quotes/${quoteId}`, { method: 'DELETE' })
+    // Log deletion
+    try {
+      await fetch('/api/audit-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete', entity_type: 'quote', entity_id: quoteId,
+          entity_description: `Orçamento "${quote?.description}" de ${quote?.professional?.name || '?'} (${fmtBRL(Number(quote?.amount || 0))}) deletado`,
+          old_values: quote ? { description: quote.description, amount: quote.amount, status: quote.status, professional: quote.professional?.name } : null,
+          performed_by: currentUser,
+        }),
+      })
+    } catch (e) { console.error(e) }
     fetchData()
   }
 

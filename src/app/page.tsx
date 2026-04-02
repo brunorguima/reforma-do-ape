@@ -177,8 +177,25 @@ export default function HomePage() {
   }
 
   const handleDeleteItem = async (itemId: string) => {
+    const item = items.find(i => i.id === itemId)
+    // Mari can only delete her own items
+    if (currentUser === 'mari' && item?.created_by !== 'mari') {
+      alert('Sem permissão para deletar itens de outros usuários')
+      return
+    }
     if (!confirm('Tem certeza que deseja excluir este item?')) return
     try {
+      // Log deletion
+      await fetch('/api/audit-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete', entity_type: 'item', entity_id: itemId,
+          entity_description: `Item "${item?.name}" deletado`,
+          old_values: item ? { name: item.name, status: item.status, estimated_price: item.estimated_price } : null,
+          performed_by: currentUser,
+        }),
+      })
       await fetch(`/api/items/${itemId}?user=${currentUser}`, { method: 'DELETE' })
       fetchData()
     } catch (err) {
@@ -513,7 +530,7 @@ export default function HomePage() {
       ) : activeTab === 'obra' ? (
         <ObraPanel currentUser={currentUser} />
       ) : activeTab === 'financeiro' ? (
-        <FinanceiroPanel />
+        <FinanceiroPanel currentUser={currentUser} />
       ) : (
         <ProfessionalsPanel currentUser={currentUser} rooms={rooms} />
       )}

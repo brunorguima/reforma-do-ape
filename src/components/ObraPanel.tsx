@@ -155,9 +155,26 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
   }
 
   const handleDeleteDocument = async (docId: string) => {
+    const doc = documents.find(d => d.id === docId)
+    // Mari can only delete her own documents
+    if (currentUser === 'mari' && doc?.created_by !== 'mari') {
+      alert('Sem permissão para deletar documentos de outros usuários')
+      return
+    }
     if (!confirm('Tem certeza que deseja excluir este documento?')) return
     try {
       await fetch(`/api/documents/${docId}`, { method: 'DELETE' })
+      // Log deletion
+      await fetch('/api/audit-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete', entity_type: 'document', entity_id: docId,
+          entity_description: `Documento "${doc?.title}" deletado`,
+          old_values: doc ? { title: doc.title, type: doc.type, url: doc.url } : null,
+          performed_by: currentUser,
+        }),
+      })
       await fetchDocuments()
     } catch (err) { console.error(err) }
   }

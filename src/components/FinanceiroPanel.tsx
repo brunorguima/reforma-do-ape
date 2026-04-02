@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { DollarSign, TrendingDown, CheckCircle2, Clock, AlertTriangle, Calendar, CreditCard, PieChart, Users, Plus, Pencil, Trash2, Save, X } from 'lucide-react'
+import type { UserID } from '@/lib/constants'
+import { DollarSign, TrendingDown, CheckCircle2, Clock, AlertTriangle, Calendar, CreditCard, PieChart, Users, Plus, Pencil, Trash2, Save, X, ChevronDown, ChevronUp, History } from 'lucide-react'
 
 interface Contract {
   id: string; professional: string; role: string; original_total: number; negotiated_total: number;
@@ -23,6 +24,10 @@ interface Quote {
   service_category?: { id: string; name: string };
   room?: { id: string; name: string };
 }
+interface AuditEntry {
+  id: string; action: string; entity_type: string; entity_id: string;
+  entity_description: string; old_values: Record<string, unknown>; performed_by: string; performed_at: string;
+}
 
 const PAYMENT_METHOD_LABELS: Record<string, { label: string; emoji: string }> = {
   pix: { label: 'PIX', emoji: '⚡' },
@@ -38,12 +43,14 @@ const fmt = (v: number | null | undefined) => {
   if (!v && v !== 0) return '—'
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
 }
+const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+const fmtDateTime = (d: string) => new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 
-const fmtDate = (d: string) => {
-  return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+interface Props {
+  currentUser: UserID
 }
 
-export default function FinanceiroPanel() {
+export default function FinanceiroPanel({ currentUser }: Props) {
   const [contracts, setContracts] = useState<Contract[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
@@ -56,6 +63,27 @@ export default function FinanceiroPanel() {
   const [editNotes, setEditNotes] = useState('')
   const [showAddPayment, setShowAddPayment] = useState<string | null>(null)
   const [newPayment, setNewPayment] = useState({ amount: '', due_date: '', notes: '' })
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [showAuditLog, setShowAuditLog] = useState(false)
+  const [auditLog, setAuditLog] = useState<AuditEntry[]>([])
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
+
+  const isOwner = currentUser === 'bruno' || currentUser === 'graziela'
+
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  const logAction = async (action: string, entityType: string, entityId: string, description: string, oldValues?: Record<string, unknown>) => {
+    try {
+      await fetch('/api/audit-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, entity_type: entityType, entity_id: entityId, entity_description: description, old_values: oldValues || null, performed_by: currentUser }),
+      })
+    } catch (e) { console.error('audit log error', e) }
+  }
 
   const fetchData = useCallback(async () => {
     try {
@@ -73,38 +101,84 @@ export default function FinanceiroPanel() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  // === HANDLERS ===
-  const handleMarkPaid = async (paymentId: string) => {
-    await fetch('/api/payments', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: paymentId, status: 'pago', paid_date: new Date().toISOString().split('T')[0] }),
-    })
-    await fetchData()
-    // Check if all payments for this professional are paid — auto-mark quote as pago
-    await checkAutoCompletePago()
+  const fetchAuditLog = async () => {
+    const res = await fetch('/api/audit-log')
+    const data = await res.json()
+    setAuditLog(Array.isArray(data) ? data : [])
   }
 
-  const handleSaveEdit = async (paymentId: string) => {
-    const updates: Record<string, unknown> = {}
-    if (editAmount) updates.amount = parseFloat(editAmount)
-    if (editDate) updates.due_date = editDate
-    if (editNotes !== undefined) updates.notes = editNotes
+  // === HANDLERS ===
+  const handleMarkPaid = async (payment: Payment) => {
     await fetch('/api/payments', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: paymentId, ...updates }),
+      body: JSON.stringify({ id: payment.id, status: 'pago', paid_date: new Date().toISOString().split('T')[0] }),
     })
+    await logAction('status_change', 'payment', payment.id, `Parcela ${payment.installment_number} de ${payment.professional} marcada como paga (${fmt(payment.amount)})`, { status: 'pendente', amount: payment.amount })
+    showToast(`Parcela ${payment.installment_number} marcada como paga!`)
+    await fetchData()
+  }
+
+  const handleUnmarkPaid = async (payment: Payment) => {
+    await fetch('/api/payments', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: payment.id, status: 'pendente', paid_date: null }),
+    })
+    await logAction('status_change', 'payment', payment.id, `Parcela ${payment.installment_number} de ${payment.professional} revertida para pendente`, { status: 'pago' })
+    showToast('Parcela revertida para pendente')
+    await fetchData()
+  }
+
+  const handleSaveEdit = async (payment: Payment) => {
+    const updates: Record<string, unknown> = {}
+    const oldValues: Record<string, unknown> = {}
+    if (editAmount && parseFloat(editAmount) !== payment.amount) {
+      updates.amount = parseFloat(editAmount)
+      oldValues.amount = payment.amount
+    }
+    if (editDate && editDate !== payment.due_date) {
+      updates.due_date = editDate
+      oldValues.due_date = payment.due_date
+    }
+    if (editNotes !== payment.notes) {
+      updates.notes = editNotes
+      oldValues.notes = payment.notes
+    }
+    if (Object.keys(updates).length === 0) {
+      setEditingPayment(null)
+      return
+    }
+    await fetch('/api/payments', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: payment.id, ...updates }),
+    })
+    await logAction('edit', 'payment', payment.id, `Parcela ${payment.installment_number} de ${payment.professional} editada`, oldValues)
+    showToast('Parcela atualizada!')
     setEditingPayment(null)
     await fetchData()
   }
 
-  const handleDeletePayment = async (paymentId: string) => {
+  const handleDeletePayment = async (payment: Payment) => {
+    // Mari can only delete her own items
+    if (currentUser === 'mari') {
+      // Check if this payment is associated with Mariana
+      const isHers = payment.professional.toLowerCase().includes('mariana') || payment.professional.toLowerCase().includes('mari')
+      if (!isHers) {
+        showToast('Sem permissão para deletar parcelas de outros profissionais', 'error')
+        setConfirmDelete(null)
+        return
+      }
+    }
     await fetch('/api/payments', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: paymentId }),
+      body: JSON.stringify({ id: payment.id }),
     })
+    await logAction('delete', 'payment', payment.id, `Parcela ${payment.installment_number} de ${payment.professional} deletada (${fmt(payment.amount)}, vencimento ${payment.due_date})`, { amount: payment.amount, due_date: payment.due_date, notes: payment.notes, installment_number: payment.installment_number, professional: payment.professional })
+    showToast('Parcela removida')
+    setConfirmDelete(null)
     await fetchData()
   }
 
@@ -125,26 +199,11 @@ export default function FinanceiroPanel() {
         source: quoteId ? 'quote' : contractId ? 'contract' : 'manual',
       }),
     })
+    await logAction('create', 'payment', '', `Nova parcela ${maxInstall + 1} para ${professional}: ${fmt(parseFloat(newPayment.amount))}`)
+    showToast(`Parcela ${maxInstall + 1} adicionada!`)
     setShowAddPayment(null)
     setNewPayment({ amount: '', due_date: '', notes: '' })
     await fetchData()
-  }
-
-  const checkAutoCompletePago = async () => {
-    // For each contratado quote, check if all linked payments are pago
-    const contratadoQuotes = quotes.filter(q => q.status === 'contratado')
-    for (const q of contratadoQuotes) {
-      const profName = q.professional?.name
-      if (!profName) continue
-      const profPayments = payments.filter(p => p.professional === profName || p.quote_id === q.id)
-      if (profPayments.length > 0 && profPayments.every(p => p.status === 'pago')) {
-        await fetch(`/api/quotes/${q.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'pago', updated_by: 'sistema' }),
-        })
-      }
-    }
   }
 
   if (loading) {
@@ -156,10 +215,9 @@ export default function FinanceiroPanel() {
     )
   }
 
-  // === FINANCIAL QUOTES (contratado or pago) ===
+  // === CALCULATIONS ===
   const financialQuotes = quotes.filter(q => ['contratado', 'pago'].includes(q.status))
 
-  // === CONSOLIDATED: merge contracts + financial quotes into unified entries ===
   interface UnifiedContract {
     id: string; professional: string; role: string; source: 'contract' | 'quote';
     originalTotal: number; negotiatedTotal: number; paymentMethod?: string; paymentDetails?: string;
@@ -182,7 +240,6 @@ export default function FinanceiroPanel() {
     })),
   ]
 
-  // === TOTALS ===
   const totalOriginal = unifiedContracts.reduce((s, c) => s + c.originalTotal, 0)
   const totalNegociado = unifiedContracts.reduce((s, c) => s + c.negotiatedTotal, 0)
   const totalPago = payments.filter(p => p.status === 'pago').reduce((s, p) => s + p.amount, 0)
@@ -190,14 +247,10 @@ export default function FinanceiroPanel() {
   const economiaTotal = totalOriginal - totalNegociado
   const percentPago = totalNegociado > 0 ? Math.round((totalPago / totalNegociado) * 100) : 0
 
-  // Upcoming payments
   const upcomingPayments = payments.filter(p => p.status === 'pendente').sort((a, b) => a.due_date.localeCompare(b.due_date))
   const nextPayment = upcomingPayments[0]
-  const daysUntilNext = nextPayment
-    ? Math.ceil((new Date(nextPayment.due_date + 'T12:00:00').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-    : null
+  const daysUntilNext = nextPayment ? Math.ceil((new Date(nextPayment.due_date + 'T12:00:00').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null
 
-  // Per-professional breakdown
   const allProfessionals = [...new Set(unifiedContracts.map(c => c.professional))]
   const profBreakdown = allProfessionals.map(prof => {
     const profContracts = unifiedContracts.filter(c => c.professional === prof)
@@ -211,18 +264,13 @@ export default function FinanceiroPanel() {
     return { professional: prof, role, negociado, pago, pendente, payments: profPayments, contractId, quoteId, percent: negociado > 0 ? Math.round((pago / negociado) * 100) : 0 }
   }).sort((a, b) => b.negociado - a.negociado)
 
-  // === GASTOS POR CATEGORIA (using negotiated values with diluted discounts) ===
-  // Build category spending from unified contracts, distributing proportionally
+  // Gastos por Categoria
   const categorySpending: Record<string, { total: number; count: number }> = {}
-
-  // From budget items, use actual negotiated values
   for (const item of budgetItems) {
     if (!categorySpending[item.category]) categorySpending[item.category] = { total: 0, count: 0 }
     categorySpending[item.category].total += item.original_value || 0
     categorySpending[item.category].count += 1
   }
-
-  // If contracts have discounts, dilute across budget categories proportionally
   for (const contract of contracts) {
     const discount = contract.original_total - contract.negotiated_total
     if (discount > 0) {
@@ -231,23 +279,17 @@ export default function FinanceiroPanel() {
       if (contractBudgetTotal > 0) {
         for (const item of contractItems) {
           const proportion = (item.original_value || 0) / contractBudgetTotal
-          const itemDiscount = discount * proportion
-          if (categorySpending[item.category]) {
-            categorySpending[item.category].total -= itemDiscount
-          }
+          if (categorySpending[item.category]) categorySpending[item.category].total -= discount * proportion
         }
       }
     }
   }
-
-  // Add financial quotes to categories
   for (const q of financialQuotes) {
     const catName = q.service_category?.name || q.professional?.specialty || 'Outros'
     if (!categorySpending[catName]) categorySpending[catName] = { total: 0, count: 0 }
     categorySpending[catName].total += q.negotiated_amount || Number(q.amount)
     categorySpending[catName].count += 1
   }
-
   const categoryTotals = Object.entries(categorySpending)
     .map(([name, data]) => ({ name, total: Math.max(0, data.total), count: data.count }))
     .filter(c => c.total > 0)
@@ -258,8 +300,20 @@ export default function FinanceiroPanel() {
   const PROF_COLORS = ['#3B82F6', '#8B5CF6', '#F59E0B', '#EC4899', '#10B981', '#EF4444']
 
   return (
-    <div>
-      {/* === HEADER: Total Consolidado === */}
+    <div style={{ position: 'relative' }}>
+      {/* TOAST */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
+          padding: '10px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600,
+          background: toast.type === 'success' ? '#059669' : '#DC2626', color: 'white',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)', animation: 'fadeIn 0.3s ease',
+        }}>
+          {toast.type === 'success' ? '✓' : '✕'} {toast.msg}
+        </div>
+      )}
+
+      {/* === HEADER === */}
       <div style={{
         background: 'linear-gradient(135deg, #1E3A5F, #2563EB)',
         borderRadius: '16px', padding: '20px', marginBottom: '16px', color: 'white',
@@ -268,23 +322,29 @@ export default function FinanceiroPanel() {
           <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <DollarSign size={20} /> Visão Geral
           </h2>
-          {economiaTotal > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '4px 10px' }}>
-              <TrendingDown size={14} />
-              <span style={{ fontSize: '13px', fontWeight: 600 }}>Economia: {fmt(economiaTotal)}</span>
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {economiaTotal > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '4px 10px' }}>
+                <TrendingDown size={14} />
+                <span style={{ fontSize: '13px', fontWeight: 600 }}>Economia: {fmt(economiaTotal)}</span>
+              </div>
+            )}
+            {/* Audit log button - only for owners */}
+            {isOwner && (
+              <button onClick={() => { setShowAuditLog(!showAuditLog); if (!showAuditLog) fetchAuditLog() }}
+                style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '8px', padding: '4px 8px', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', gap: '4px' }}
+                title="Ver histórico de alterações">
+                <History size={14} />
+              </button>
+            )}
+          </div>
         </div>
         <p style={{ fontSize: '12px', opacity: 0.7, margin: '0 0 14px' }}>
           {unifiedContracts.length} contrato{unifiedContracts.length !== 1 ? 's' : ''} fechado{unifiedContracts.length !== 1 ? 's' : ''}
         </p>
 
-        {/* Progress bar */}
         <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', height: '10px', overflow: 'hidden', marginBottom: '14px' }}>
-          <div style={{
-            width: `${percentPago}%`, height: '100%',
-            background: 'linear-gradient(90deg, #60A5FA, #93C5FD)', borderRadius: '8px', transition: 'width 0.5s ease',
-          }} />
+          <div style={{ width: `${percentPago}%`, height: '100%', background: 'linear-gradient(90deg, #60A5FA, #93C5FD)', borderRadius: '8px', transition: 'width 0.5s ease' }} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
@@ -303,6 +363,34 @@ export default function FinanceiroPanel() {
         </div>
       </div>
 
+      {/* === AUDIT LOG PANEL === */}
+      {showAuditLog && (
+        <div style={{ marginBottom: '16px', borderRadius: '12px', background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', maxHeight: '300px', overflow: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#374151', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <History size={14} /> Histórico de Alterações
+            </h3>
+            <button onClick={() => setShowAuditLog(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280' }}><X size={16} /></button>
+          </div>
+          {auditLog.length === 0 ? (
+            <p style={{ fontSize: '12px', color: '#9CA3AF', textAlign: 'center' }}>Nenhuma alteração registrada ainda</p>
+          ) : (
+            auditLog.slice(0, 20).map(log => (
+              <div key={log.id} style={{ padding: '8px 0', borderBottom: '1px solid #E5E7EB', fontSize: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 600, color: log.action === 'delete' ? '#DC2626' : log.action === 'edit' ? '#D97706' : '#059669' }}>
+                    {log.action === 'delete' ? '🗑️ Deletou' : log.action === 'edit' ? '✏️ Editou' : log.action === 'create' ? '➕ Criou' : '🔄 Alterou'}
+                  </span>
+                  <span style={{ color: '#9CA3AF' }}>{fmtDateTime(log.performed_at)}</span>
+                </div>
+                <p style={{ margin: '2px 0 0', color: '#6B7280' }}>{log.entity_description}</p>
+                <p style={{ margin: '2px 0 0', color: '#9CA3AF', fontStyle: 'italic' }}>por {log.performed_by}</p>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {/* === NEXT PAYMENT ALERT === */}
       {nextPayment && (
         <div style={{
@@ -317,41 +405,46 @@ export default function FinanceiroPanel() {
             </p>
             <p style={{ fontSize: '12px', color: '#6B7280', margin: '2px 0 0' }}>
               {fmtDate(nextPayment.due_date)} · {daysUntilNext !== null && daysUntilNext > 0
-                ? `Faltam ${daysUntilNext} dias`
-                : daysUntilNext === 0 ? 'Vence HOJE!' : `Vencida há ${Math.abs(daysUntilNext!)} dias`}
+                ? `Faltam ${daysUntilNext} dias` : daysUntilNext === 0 ? 'Vence HOJE!' : `Vencida há ${Math.abs(daysUntilNext!)} dias`}
             </p>
           </div>
         </div>
       )}
 
-      {/* === PER-PROFESSIONAL BREAKDOWN (expandable with payment management) === */}
+      {/* === CONTRATOS & PAGAMENTOS === */}
       <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Users size={16} /> Contratos & Pagamentos
         </h3>
+        <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '0 0 12px', paddingLeft: '24px' }}>
+          Toque em um profissional para ver e gerenciar parcelas
+        </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {profBreakdown.map((prof, idx) => {
             const isExpanded = expandedProf === prof.professional
             const profPaymentsSorted = prof.payments.sort((a, b) => a.installment_number - b.installment_number)
+            const color = PROF_COLORS[idx % PROF_COLORS.length]
 
             return (
               <div key={prof.professional} style={{
-                borderRadius: '12px', background: 'white', border: '1px solid #E5E7EB', overflow: 'hidden',
+                borderRadius: '12px', background: 'white', border: `1px solid ${isExpanded ? color + '40' : '#E5E7EB'}`,
+                overflow: 'hidden', transition: 'border-color 0.2s ease',
+                boxShadow: isExpanded ? `0 2px 8px ${color}15` : 'none',
               }}>
-                {/* Header - clickable to expand */}
+                {/* Header */}
                 <div
                   onClick={() => setExpandedProf(isExpanded ? null : prof.professional)}
                   style={{
-                    padding: '14px 16px', cursor: 'pointer',
-                    background: isExpanded ? '#F8FAFC' : 'white',
+                    padding: '14px 16px', cursor: 'pointer', userSelect: 'none',
+                    background: isExpanded ? `${color}08` : 'white',
+                    transition: 'background 0.2s ease',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{
                         width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: `${PROF_COLORS[idx % PROF_COLORS.length]}15`, color: PROF_COLORS[idx % PROF_COLORS.length],
-                        fontWeight: 800, fontSize: '14px',
+                        background: `${color}15`, color, fontWeight: 800, fontSize: '14px',
                       }}>
                         {prof.professional.charAt(0).toUpperCase()}
                       </div>
@@ -360,16 +453,23 @@ export default function FinanceiroPanel() {
                         <p style={{ fontSize: '11px', color: '#6B7280', margin: 0 }}>{prof.role}</p>
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: '15px', fontWeight: 800, color: '#1F2937', margin: 0 }}>{fmt(prof.negociado)}</p>
-                      <p style={{ fontSize: '11px', color: '#10B981', fontWeight: 600, margin: 0 }}>{prof.percent}% pago</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ fontSize: '15px', fontWeight: 800, color: '#1F2937', margin: 0 }}>{fmt(prof.negociado)}</p>
+                        <p style={{ fontSize: '11px', color: '#10B981', fontWeight: 600, margin: 0 }}>{prof.percent}% pago</p>
+                      </div>
+                      {/* Clear expand/collapse indicator */}
+                      <div style={{
+                        width: '28px', height: '28px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: isExpanded ? color : '#F3F4F6', color: isExpanded ? 'white' : '#9CA3AF',
+                        transition: 'all 0.2s ease',
+                      }}>
+                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </div>
                     </div>
                   </div>
                   <div style={{ background: '#F3F4F6', borderRadius: '6px', height: '6px', overflow: 'hidden' }}>
-                    <div style={{
-                      width: `${prof.percent}%`, height: '100%',
-                      background: PROF_COLORS[idx % PROF_COLORS.length], borderRadius: '6px', transition: 'width 0.5s ease',
-                    }} />
+                    <div style={{ width: `${prof.percent}%`, height: '100%', background: color, borderRadius: '6px', transition: 'width 0.5s ease' }} />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
                     <span style={{ fontSize: '11px', color: '#6B7280' }}>
@@ -380,32 +480,39 @@ export default function FinanceiroPanel() {
                       <Clock size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }} />
                       Pendente: {fmt(prof.pendente)}
                     </span>
-                    <span style={{ fontSize: '11px', color: '#9CA3AF' }}>
-                      {isExpanded ? '▲' : '▼'} {profPaymentsSorted.length} parcela{profPaymentsSorted.length !== 1 ? 's' : ''}
+                    <span style={{ fontSize: '11px', color: color, fontWeight: 600 }}>
+                      {profPaymentsSorted.length} parcela{profPaymentsSorted.length !== 1 ? 's' : ''}
                     </span>
                   </div>
                 </div>
 
-                {/* Expanded payment list */}
+                {/* Expanded payments */}
                 {isExpanded && (
-                  <div style={{ borderTop: '1px solid #E5E7EB', padding: '12px 16px' }}>
+                  <div style={{ borderTop: `2px solid ${color}20`, padding: '12px 16px', background: '#FAFBFC' }}>
+                    {profPaymentsSorted.length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '16px', background: '#FFF7ED', borderRadius: '8px', border: '1px solid #FED7AA', marginBottom: '8px' }}>
+                        <p style={{ fontSize: '13px', color: '#92400E', margin: 0, fontWeight: 600 }}>Nenhuma parcela cadastrada</p>
+                        <p style={{ fontSize: '12px', color: '#B45309', margin: '4px 0 0' }}>Adicione parcelas para controlar os pagamentos</p>
+                      </div>
+                    )}
+
                     {profPaymentsSorted.map(p => {
                       const isEditing = editingPayment === p.id
                       const isPago = p.status === 'pago'
                       const days = Math.ceil((new Date(p.due_date + 'T12:00:00').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                      const isConfirmingDelete = confirmDelete === p.id
 
                       return (
                         <div key={p.id} style={{
                           display: 'flex', alignItems: 'center', gap: '8px',
                           padding: '10px 12px', borderRadius: '8px', marginBottom: '6px',
-                          background: isPago ? '#F0FDF4' : days <= 3 && !isPago ? '#FEF2F2' : '#F9FAFB',
-                          border: `1px solid ${isPago ? '#BBF7D0' : days <= 3 && !isPago ? '#FECACA' : '#F3F4F6'}`,
+                          background: isPago ? '#F0FDF4' : days <= 3 && !isPago ? '#FEF2F2' : 'white',
+                          border: `1px solid ${isPago ? '#BBF7D0' : days <= 3 && !isPago ? '#FECACA' : '#E5E7EB'}`,
                         }}>
-                          {/* Installment number */}
                           <div style={{
-                            width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: isPago ? '#10B981' : '#E5E7EB',
-                            color: isPago ? 'white' : '#6B7280', fontSize: '11px', fontWeight: 700, flexShrink: 0,
+                            width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: isPago ? '#10B981' : '#E5E7EB', color: isPago ? 'white' : '#6B7280',
+                            fontSize: '11px', fontWeight: 700, flexShrink: 0,
                           }}>
                             {isPago ? '✓' : p.installment_number}
                           </div>
@@ -421,13 +528,27 @@ export default function FinanceiroPanel() {
                               <input type="text" value={editNotes} onChange={e => setEditNotes(e.target.value)}
                                 placeholder="Observação" style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
                               <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                                <button onClick={() => handleSaveEdit(p.id)}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '6px', background: '#10B981', color: 'white', border: 'none', fontSize: '12px', cursor: 'pointer' }}>
+                                <button onClick={() => handleSaveEdit(p)}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '6px', background: '#10B981', color: 'white', border: 'none', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>
                                   <Save size={12} /> Salvar
                                 </button>
                                 <button onClick={() => setEditingPayment(null)}
                                   style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '6px', background: '#6B7280', color: 'white', border: 'none', fontSize: '12px', cursor: 'pointer' }}>
                                   <X size={12} /> Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          ) : isConfirmingDelete ? (
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '13px', color: '#DC2626', fontWeight: 600 }}>Confirmar exclusão?</span>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <button onClick={() => handleDeletePayment(p)}
+                                  style={{ padding: '4px 10px', borderRadius: '6px', background: '#DC2626', color: 'white', border: 'none', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>
+                                  Sim, deletar
+                                </button>
+                                <button onClick={() => setConfirmDelete(null)}
+                                  style={{ padding: '4px 10px', borderRadius: '6px', background: '#F3F4F6', color: '#6B7280', border: 'none', fontSize: '12px', cursor: 'pointer' }}>
+                                  Cancelar
                                 </button>
                               </div>
                             </div>
@@ -445,17 +566,23 @@ export default function FinanceiroPanel() {
                                 {p.notes && <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.notes}</p>}
                               </div>
                               <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                                {!isPago && (
-                                  <button onClick={() => handleMarkPaid(p.id)}
+                                {isPago ? (
+                                  <button onClick={() => handleUnmarkPaid(p)} title="Desfazer pagamento"
+                                    style={{ padding: '4px 8px', borderRadius: '6px', background: '#FEF3C7', color: '#92400E', border: 'none', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+                                    Desfazer
+                                  </button>
+                                ) : (
+                                  <button onClick={() => handleMarkPaid(p)} title="Marcar como pago"
                                     style={{ padding: '4px 8px', borderRadius: '6px', background: '#D1FAE5', color: '#065F46', border: 'none', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
-                                    Pagar
+                                    ✓ Pagar
                                   </button>
                                 )}
                                 <button onClick={() => { setEditingPayment(p.id); setEditAmount(String(p.amount)); setEditDate(p.due_date); setEditNotes(p.notes || '') }}
+                                  title="Editar parcela"
                                   style={{ padding: '4px 6px', borderRadius: '6px', background: '#DBEAFE', color: '#1D4ED8', border: 'none', cursor: 'pointer' }}>
                                   <Pencil size={12} />
                                 </button>
-                                <button onClick={() => handleDeletePayment(p.id)}
+                                <button onClick={() => setConfirmDelete(p.id)} title="Excluir parcela"
                                   style={{ padding: '4px 6px', borderRadius: '6px', background: '#FEE2E2', color: '#DC2626', border: 'none', cursor: 'pointer' }}>
                                   <Trash2 size={12} />
                                 </button>
@@ -466,52 +593,43 @@ export default function FinanceiroPanel() {
                       )
                     })}
 
-                    {/* No payments yet */}
-                    {profPaymentsSorted.length === 0 && (
-                      <p style={{ fontSize: '12px', color: '#9CA3AF', textAlign: 'center', padding: '8px' }}>
-                        Nenhuma parcela cadastrada ainda
-                      </p>
-                    )}
-
-                    {/* Add payment form */}
+                    {/* Add payment */}
                     {showAddPayment === prof.professional ? (
-                      <div style={{ padding: '10px 12px', borderRadius: '8px', background: '#EFF6FF', border: '1px solid #BFDBFE', marginTop: '6px' }}>
+                      <div style={{ padding: '12px', borderRadius: '8px', background: '#EFF6FF', border: '1px solid #BFDBFE', marginTop: '6px' }}>
                         <p style={{ fontSize: '12px', fontWeight: 600, color: '#1D4ED8', margin: '0 0 8px' }}>Nova Parcela</p>
                         <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
                           <input type="number" placeholder="Valor (R$)" value={newPayment.amount}
                             onChange={e => setNewPayment({ ...newPayment, amount: e.target.value })}
-                            style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
+                            style={{ flex: 1, padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
                           <input type="date" value={newPayment.due_date}
                             onChange={e => setNewPayment({ ...newPayment, due_date: e.target.value })}
-                            style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
+                            style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
                         </div>
                         <input type="text" placeholder="Observação (opcional)" value={newPayment.notes}
                           onChange={e => setNewPayment({ ...newPayment, notes: e.target.value })}
-                          style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', marginBottom: '6px', boxSizing: 'border-box' }} />
+                          style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', marginBottom: '8px', boxSizing: 'border-box' }} />
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                          <button
-                            onClick={() => handleAddPayment(prof.professional, prof.contractId, prof.quoteId)}
+                          <button onClick={() => handleAddPayment(prof.professional, prof.contractId, prof.quoteId)}
                             disabled={!newPayment.amount || !newPayment.due_date}
                             style={{
-                              display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px',
-                              background: newPayment.amount && newPayment.due_date ? '#2563EB' : '#9CA3AF',
-                              color: 'white', border: 'none', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 14px', borderRadius: '6px',
+                              background: newPayment.amount && newPayment.due_date ? '#2563EB' : '#D1D5DB',
+                              color: 'white', border: 'none', fontSize: '12px', fontWeight: 600, cursor: newPayment.amount && newPayment.due_date ? 'pointer' : 'default',
                             }}>
                             <Plus size={12} /> Adicionar
                           </button>
                           <button onClick={() => { setShowAddPayment(null); setNewPayment({ amount: '', due_date: '', notes: '' }) }}
-                            style={{ padding: '6px 12px', borderRadius: '6px', background: '#F3F4F6', color: '#6B7280', border: 'none', fontSize: '12px', cursor: 'pointer' }}>
+                            style={{ padding: '6px 14px', borderRadius: '6px', background: '#F3F4F6', color: '#6B7280', border: 'none', fontSize: '12px', cursor: 'pointer' }}>
                             Cancelar
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setShowAddPayment(prof.professional)}
+                      <button onClick={() => setShowAddPayment(prof.professional)}
                         style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%',
-                          padding: '8px', borderRadius: '8px', border: '1px dashed #D1D5DB', background: 'transparent',
-                          color: '#6B7280', fontSize: '12px', cursor: 'pointer', marginTop: '4px',
+                          padding: '10px', borderRadius: '8px', border: `1px dashed ${color}60`, background: `${color}05`,
+                          color, fontSize: '12px', fontWeight: 600, cursor: 'pointer', marginTop: '4px',
                         }}>
                         <Plus size={14} /> Adicionar Parcela
                       </button>
@@ -523,8 +641,10 @@ export default function FinanceiroPanel() {
           })}
 
           {profBreakdown.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '20px', color: '#9CA3AF', fontSize: '13px' }}>
-              Nenhum contrato fechado ainda
+            <div style={{ textAlign: 'center', padding: '30px 20px', color: '#9CA3AF', fontSize: '13px', background: '#F9FAFB', borderRadius: '12px', border: '1px dashed #E5E7EB' }}>
+              <p style={{ fontSize: '24px', margin: '0 0 8px' }}>📋</p>
+              Nenhum contrato fechado ainda.<br />
+              Feche orçamentos na aba Profissionais para vê-los aqui.
             </div>
           )}
         </div>
@@ -571,10 +691,10 @@ export default function FinanceiroPanel() {
       {/* === GASTOS POR CATEGORIA === */}
       {categoryTotals.length > 0 && (
         <div>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <PieChart size={16} /> Gastos por Categoria
           </h3>
-          <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '-8px 0 12px', paddingLeft: '24px' }}>
+          <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '0 0 12px', paddingLeft: '24px' }}>
             Valores finais negociados (descontos diluídos)
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
