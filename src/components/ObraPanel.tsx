@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { ClipboardList, Lock, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Plus, X, LayoutGrid, List } from 'lucide-react'
+import { ClipboardList, Lock, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Plus, X, LayoutGrid, List, ExternalLink, Trash2 } from 'lucide-react'
 
 interface Task {
   id: string
@@ -12,6 +12,16 @@ interface Task {
   priority: string
   assigned_to: string
   sort_order: number
+}
+
+interface Document {
+  id: string
+  title: string
+  description: string | null
+  type: 'planta' | 'projeto' | 'contrato' | 'nota_fiscal' | 'foto' | 'outro'
+  url: string | null
+  created_at: string
+  created_by: string
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string; bg: string; border: string }> = {
@@ -36,6 +46,15 @@ const ASSIGNEE_CONFIG: Record<string, { emoji: string; color: string }> = {
   'Téc. Gás': { emoji: '🔧', color: '#EF4444' },
 }
 
+const DOCUMENT_TYPE_CONFIG: Record<string, { label: string; emoji: string; color: string; bg: string }> = {
+  planta: { label: 'Planta', emoji: '📐', color: '#0891B2', bg: '#CFFAFE' },
+  projeto: { label: 'Projeto', emoji: '🏗️', color: '#DC2626', bg: '#FEE2E2' },
+  contrato: { label: 'Contrato', emoji: '📄', color: '#7C3AED', bg: '#F3E8FF' },
+  nota_fiscal: { label: 'Nota Fiscal', emoji: '🧾', color: '#059669', bg: '#DBEAFE' },
+  foto: { label: 'Foto', emoji: '📸', color: '#EA580C', bg: '#FFEDD5' },
+  outro: { label: 'Outro', emoji: '📎', color: '#6B7280', bg: '#F3F4F6' },
+}
+
 const PHASE_ORDER = [
   'Fase 1 — Projeto e Planejamento',
   'Fase 2 — Fornecedores e Orçamentos',
@@ -46,15 +65,23 @@ const PHASE_ORDER = [
 // Order: active stuff first, then blocked, then done
 const STATUS_ORDER = ['em_andamento', 'a_fazer', 'bloqueada', 'concluido']
 
-export default function ObraPanel() {
+interface ObraPanelProps {
+  currentUser: string
+}
+
+export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([])
+  const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'status' | 'fase' | 'responsavel'>('status')
   const [layoutMode, setLayoutMode] = useState<'list' | 'kanban'>('list')
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['em_andamento', 'a_fazer']))
   const [updatingTask, setUpdatingTask] = useState<string | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showDocModal, setShowDocModal] = useState(false)
+  const [expandedDocuments, setExpandedDocuments] = useState<Set<string>>(new Set())
   const [newTask, setNewTask] = useState({ title: '', description: '', phase: PHASE_ORDER[0], priority: 'media', assigned_to: 'Bruno' })
+  const [newDocument, setNewDocument] = useState({ title: '', description: '', type: 'outro' as const, url: '' })
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -68,7 +95,20 @@ export default function ObraPanel() {
     }
   }, [])
 
-  useEffect(() => { fetchTasks() }, [fetchTasks])
+  const fetchDocuments = useCallback(async () => {
+    try {
+      const res = await fetch('/api/documents')
+      const data = await res.json()
+      setDocuments(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Error fetching documents:', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchTasks()
+    fetchDocuments()
+  }, [fetchTasks, fetchDocuments])
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     setUpdatingTask(taskId)
@@ -98,6 +138,37 @@ export default function ObraPanel() {
       setShowAddModal(false)
       setNewTask({ title: '', description: '', phase: PHASE_ORDER[0], priority: 'media', assigned_to: 'Bruno' })
     } catch (err) { console.error(err) }
+  }
+
+  const handleAddDocument = async () => {
+    if (!newDocument.title.trim()) return
+    try {
+      await fetch('/api/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newDocument, created_by: currentUser }),
+      })
+      await fetchDocuments()
+      setShowDocModal(false)
+      setNewDocument({ title: '', description: '', type: 'outro', url: '' })
+    } catch (err) { console.error(err) }
+  }
+
+  const handleDeleteDocument = async (docId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este documento?')) return
+    try {
+      await fetch(`/api/documents/${docId}`, { method: 'DELETE' })
+      await fetchDocuments()
+    } catch (err) { console.error(err) }
+  }
+
+  const toggleDocumentExpanded = (docId: string) => {
+    setExpandedDocuments(prev => {
+      const next = new Set(prev)
+      if (next.has(docId)) next.delete(docId)
+      else next.add(docId)
+      return next
+    })
   }
 
   const toggleGroup = (group: string) => {
@@ -155,6 +226,192 @@ export default function ObraPanel() {
 
   return (
     <div>
+      {/* DOCUMENTS SECTION */}
+      <div style={{
+        borderRadius: '16px',
+        border: '1px solid #E5E7EB',
+        background: 'white',
+        marginBottom: '24px',
+        overflow: 'hidden',
+      }}>
+        {/* Documents Header */}
+        <div style={{
+          padding: '16px 20px',
+          background: 'linear-gradient(135deg, #10B981, #059669)',
+          color: 'white',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>📁 Documentos / Projeto</h2>
+          <button
+            onClick={() => setShowDocModal(true)}
+            style={{
+              padding: '8px 14px',
+              background: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: '8px',
+              color: 'white',
+              fontWeight: 600,
+              fontSize: '13px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.3)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.2)'
+            }}
+          >
+            + Adicionar
+          </button>
+        </div>
+
+        {/* Documents List */}
+        <div style={{ padding: '12px' }}>
+          {documents.length === 0 ? (
+            <div style={{ padding: '24px', textAlign: 'center', color: '#6B7280' }}>
+              <p style={{ fontSize: '14px', margin: 0 }}>Nenhum documento adicionado</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: '8px' }}>
+              {documents.map(doc => {
+                const isExpanded = expandedDocuments.has(doc.id)
+                const typeConfig = DOCUMENT_TYPE_CONFIG[doc.type]
+                return (
+                  <div
+                    key={doc.id}
+                    style={{
+                      borderRadius: '10px',
+                      border: '1px solid #E5E7EB',
+                      background: 'white',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <button
+                      onClick={() => toggleDocumentExpanded(doc.id)}
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        border: 'none',
+                        background: 'white',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: '12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, textAlign: 'left' }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          background: typeConfig.bg,
+                          color: typeConfig.color,
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          minWidth: '80px',
+                        }}>
+                          {typeConfig.emoji} {typeConfig.label}
+                        </span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937', margin: '0 0 2px' }}>
+                            {doc.title}
+                          </p>
+                          {doc.description && (
+                            <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
+                              {doc.description.length > 50 ? doc.description.substring(0, 50) + '...' : doc.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {isExpanded ? (
+                        <ChevronUp size={18} color="#9CA3AF" />
+                      ) : (
+                        <ChevronDown size={18} color="#9CA3AF" />
+                      )}
+                    </button>
+
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div style={{
+                        padding: '12px 14px',
+                        borderTop: '1px solid #E5E7EB',
+                        background: '#F9FAFB',
+                      }}>
+                        {doc.description && (
+                          <p style={{ fontSize: '13px', color: '#374151', margin: '0 0 10px', lineHeight: 1.5 }}>
+                            {doc.description}
+                          </p>
+                        )}
+                        <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '10px' }}>
+                          <div>Por: <strong>{doc.created_by}</strong></div>
+                          <div>Em: {new Date(doc.created_at).toLocaleDateString('pt-BR')}</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          {doc.url && (
+                            <a
+                              href={doc.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '8px 12px',
+                                borderRadius: '6px',
+                                background: '#F0FDF4',
+                                color: '#059669',
+                                textDecoration: 'none',
+                                fontWeight: 600,
+                                fontSize: '12px',
+                              }}
+                            >
+                              <ExternalLink size={14} />
+                              Abrir link
+                            </a>
+                          )}
+                          <button
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '8px 12px',
+                              borderRadius: '6px',
+                              background: '#FEF2F2',
+                              color: '#DC2626',
+                              border: 'none',
+                              fontWeight: 600,
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#FEE2E2'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = '#FEF2F2'
+                            }}
+                          >
+                            <Trash2 size={14} />
+                            Excluir
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Progress Header */}
       <div style={{
         background: 'linear-gradient(135deg, #1E40AF, #7C3AED)',
@@ -398,6 +655,74 @@ export default function ObraPanel() {
                 color: 'white', fontWeight: 700, fontSize: '15px', cursor: newTask.title.trim() ? 'pointer' : 'default',
               }}>
                 Criar Tarefa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Document Modal */}
+      {showDocModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 50,
+        }} onClick={() => setShowDocModal(false)}>
+          <div style={{
+            background: 'white', borderRadius: '20px 20px 0 0', padding: '24px 20px', width: '100%', maxWidth: '500px', maxHeight: '80vh', overflowY: 'auto',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Novo Documento</h3>
+              <button onClick={() => setShowDocModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="#6B7280" /></button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Título *</label>
+                <input
+                  value={newDocument.title}
+                  onChange={e => setNewDocument(p => ({ ...p, title: e.target.value }))}
+                  placeholder="Ex: Planta do apartamento"
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Tipo *</label>
+                <select
+                  value={newDocument.type}
+                  onChange={e => setNewDocument(p => ({ ...p, type: e.target.value as any }))}
+                  style={{ width: '100%' }}
+                >
+                  {Object.entries(DOCUMENT_TYPE_CONFIG).map(([key, conf]) => (
+                    <option key={key} value={key}>{conf.emoji} {conf.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Descrição</label>
+                <textarea
+                  value={newDocument.description || ''}
+                  onChange={e => setNewDocument(p => ({ ...p, description: e.target.value }))}
+                  placeholder="Detalhes sobre o documento..."
+                  style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontFamily: 'inherit' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Link (opcional)</label>
+                <input
+                  value={newDocument.url}
+                  onChange={e => setNewDocument(p => ({ ...p, url: e.target.value }))}
+                  placeholder="https://exemplo.com/documento"
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <button
+                onClick={handleAddDocument}
+                disabled={!newDocument.title.trim()}
+                style={{
+                  padding: '14px', borderRadius: '12px', border: 'none',
+                  background: newDocument.title.trim() ? 'linear-gradient(135deg, #10B981, #059669)' : '#E5E7EB',
+                  color: 'white', fontWeight: 700, fontSize: '15px', cursor: newDocument.title.trim() ? 'pointer' : 'default',
+                }}
+              >
+                Adicionar Documento
               </button>
             </div>
           </div>

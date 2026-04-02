@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Room } from '@/lib/supabase'
 import type { UserID } from '@/lib/constants'
 import { USERS, formatCurrency } from '@/lib/constants'
-import { Plus, User, Phone, Mail, ChevronDown, ChevronUp, Trash2, Edit3, Check, X, Wrench, FileText, CreditCard, CheckCircle2, Clock, TrendingDown } from 'lucide-react'
+import { Plus, User, Phone, Mail, ChevronDown, ChevronUp, Trash2, Edit3, Check, X, Wrench, FileText, CreditCard, CheckCircle2, Clock, TrendingDown, Users, BookOpen } from 'lucide-react'
 
 interface ServiceCategory {
   id: string
@@ -81,7 +81,7 @@ interface Payment {
 const fmtBRL = (v: number | null) => v ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v) : '—'
 const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 
-const STATUS_FLOW = ['recebido', 'avaliando', 'aprovado', 'contratado', 'pago']
+const STATUS_FLOW = ['recebido', 'avaliando', 'aprovado', 'contratado']
 
 interface Props {
   currentUser: UserID
@@ -105,6 +105,9 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
   const [markingPaid, setMarkingPaid] = useState<string | null>(null)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showProfessionalsList, setShowProfessionalsList] = useState(true)
+  const [expandedProfessional, setExpandedProfessional] = useState<string | null>(null)
+  const [editingNotes, setEditingNotes] = useState<{ [key: string]: string }>({})
   // Payment method modal
   const [paymentModal, setPaymentModal] = useState<{ quoteId: string; targetStatus: string; currentAmount: number } | null>(null)
   const [paymentForm, setPaymentForm] = useState({ payment_method: '', payment_details: '', negotiated_amount: '' })
@@ -146,12 +149,16 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
   const totalPago = activeQuotes.filter(q => q.status === 'pago').reduce((s, q) => s + Number(q.amount), 0)
   const totalOrcado = activeQuotes.reduce((s, q) => s + Number(q.amount), 0)
 
-  // Filter
+  // Filter - only non-contratado/pago quotes for main list
   const filteredQuotes = quotes.filter(q => {
+    if (['contratado', 'pago'].includes(q.status)) return false
     if (filterStatus && q.status !== filterStatus) return false
     if (filterCategory && q.service_category_id !== filterCategory) return false
     return true
   })
+
+  // Quotes that are contratado or pago (for Contratos Fechados section)
+  const contratadoQuotes = quotes.filter(q => ['contratado', 'pago'].includes(q.status))
 
   const handleAddProfessional = async () => {
     setFormError('')
@@ -224,8 +231,8 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
   }
 
   const handleStatusChange = async (quoteId: string, newStatus: string) => {
-    // For contratado/pago, show payment method modal
-    if (newStatus === 'contratado' || newStatus === 'pago') {
+    // For contratado, show payment method modal
+    if (newStatus === 'contratado') {
       const quote = quotes.find(q => q.id === quoteId)
       setPaymentForm({
         payment_method: quote?.payment_method || '',
@@ -284,6 +291,26 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
     finally { setMarkingPaid(null) }
   }
 
+  const handleSaveNotes = async (professionalId: string, newNotes: string) => {
+    try {
+      await fetch(`/api/professionals/${professionalId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: newNotes }),
+      })
+      setEditingNotes({ ...editingNotes, [professionalId]: '' })
+      await fetchData()
+    } catch (err) { console.error(err) }
+  }
+
+  const getProfessionalStatus = (professionalId: string) => {
+    const profQuotes = quotes.filter(q => q.professional_id === professionalId)
+    const hasContratado = profQuotes.some(q => ['contratado', 'pago'].includes(q.status))
+    if (hasContratado) return { status: 'Contratado', emoji: '✅' }
+    if (profQuotes.length > 0) return { status: 'Orçando', emoji: '📋' }
+    return { status: 'Cadastrado', emoji: '👤' }
+  }
+
   if (loading) return <div style={{ textAlign: 'center', padding: '40px' }}><p style={{ color: '#6b7280' }}>Carregando orçamentos...</p></div>
 
   return (
@@ -326,6 +353,30 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
           style={{ fontSize: '14px', padding: '10px 16px', border: '2px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer' }}>
           <User size={16} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
           Novo Profissional
+        </button>
+      </div>
+
+      {/* Tab Toggle: Orçamentos / Profissionais */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+        <button
+          onClick={() => setShowProfessionalsList(false)}
+          style={{
+            padding: '8px 16px', borderRadius: '20px', border: 'none', fontSize: '13px', fontWeight: 600,
+            background: !showProfessionalsList ? '#2563EB' : '#f3f4f6', color: !showProfessionalsList ? 'white' : '#6b7280',
+            cursor: 'pointer', transition: 'all 0.2s'
+          }}>
+          <BookOpen size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+          Orçamentos
+        </button>
+        <button
+          onClick={() => setShowProfessionalsList(true)}
+          style={{
+            padding: '8px 16px', borderRadius: '20px', border: 'none', fontSize: '13px', fontWeight: 600,
+            background: showProfessionalsList ? '#2563EB' : '#f3f4f6', color: showProfessionalsList ? 'white' : '#6b7280',
+            cursor: 'pointer', transition: 'all 0.2s'
+          }}>
+          <Users size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+          Profissionais
         </button>
       </div>
 
@@ -404,12 +455,10 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setPaymentModal(null) }}>
           <div className="modal-content">
             <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>
-              {paymentModal.targetStatus === 'contratado' ? '🤝 Confirmar Contratação' : '💰 Confirmar Pagamento'}
+              🤝 Confirmar Contratação
             </h3>
             <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 16px' }}>
-              {paymentModal.targetStatus === 'contratado'
-                ? 'Como será feito o pagamento?'
-                : 'Como foi feito o pagamento?'}
+              Como será feito o pagamento?
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -450,12 +499,17 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
               </div>
 
               {/* Payment Details */}
-              <textarea
-                placeholder="Detalhes do pagamento (ex: parcelas, chave PIX, banco...)"
-                value={paymentForm.payment_details}
-                onChange={e => setPaymentForm({ ...paymentForm, payment_details: e.target.value })}
-                rows={2}
-              />
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px', display: 'block' }}>
+                  Detalhes do Pagamento
+                </label>
+                <textarea
+                  placeholder="Descreva o plano de pagamento (ex: 3x PIX de R$800 a cada 7 dias, 1ª parcela dia 15/04)"
+                  value={paymentForm.payment_details}
+                  onChange={e => setPaymentForm({ ...paymentForm, payment_details: e.target.value })}
+                  rows={2}
+                />
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
@@ -465,307 +519,545 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
               </button>
               <button className="btn-primary" onClick={handlePaymentConfirm} disabled={saving}
                 style={{ padding: '10px 20px', opacity: saving ? 0.6 : 1 }}>
-                {saving ? 'Salvando...' : paymentModal.targetStatus === 'contratado' ? '🤝 Contratar' : '💰 Confirmar Pgto'}
+                {saving ? 'Salvando...' : '🤝 Contratar'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ minWidth: '140px' }}>
-          <option value="">Todos os status</option>
-          {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-            <option key={key} value={key}>{cfg.emoji} {cfg.label}</option>
-          ))}
-        </select>
-        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ minWidth: '160px' }}>
-          <option value="">Todos os serviços</option>
-          {serviceCategories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-        </select>
-      </div>
+      {!showProfessionalsList && (
+        <>
+          {/* Filters */}
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ minWidth: '140px' }}>
+              <option value="">Todos os status</option>
+              {['recebido', 'avaliando', 'aprovado', 'recusado'].map(key => (
+                <option key={key} value={key}>{STATUS_CONFIG[key].emoji} {STATUS_CONFIG[key].label}</option>
+              ))}
+            </select>
+            <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ minWidth: '160px' }}>
+              <option value="">Todos os serviços</option>
+              {serviceCategories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+            </select>
+          </div>
 
-      {/* Quotes List */}
-      {filteredQuotes.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>👷</div>
-          <h3 style={{ fontSize: '18px', color: '#374151', marginBottom: '8px' }}>Nenhum orçamento ainda</h3>
-          <p style={{ color: '#6b7280' }}>Adicione profissionais e orçamentos para controlar os custos da reforma!</p>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {filteredQuotes.map(quote => {
-            const statusCfg = STATUS_CONFIG[quote.status] || STATUS_CONFIG.recebido
-            const isExpanded = expandedQuote === quote.id
-            const currentIdx = STATUS_FLOW.indexOf(quote.status)
-            const nextStatus = currentIdx >= 0 && currentIdx < STATUS_FLOW.length - 1 ? STATUS_FLOW[currentIdx + 1] : null
-            const userColor = USERS.find(u => u.id === quote.created_by)?.color || '#6b7280'
+          {/* Quotes List */}
+          {filteredQuotes.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>👷</div>
+              <h3 style={{ fontSize: '18px', color: '#374151', marginBottom: '8px' }}>Nenhum orçamento ainda</h3>
+              <p style={{ color: '#6b7280' }}>Adicione profissionais e orçamentos para controlar os custos da reforma!</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {filteredQuotes.map(quote => {
+                const statusCfg = STATUS_CONFIG[quote.status] || STATUS_CONFIG.recebido
+                const isExpanded = expandedQuote === quote.id
+                const currentIdx = STATUS_FLOW.indexOf(quote.status)
+                const nextStatus = currentIdx >= 0 && currentIdx < STATUS_FLOW.length - 1 ? STATUS_FLOW[currentIdx + 1] : null
+                const userColor = USERS.find(u => u.id === quote.created_by)?.color || '#6b7280'
 
-            return (
-              <div key={quote.id} className="card" style={{ padding: '16px', transition: 'all 0.2s' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                      <span style={{
-                        padding: '2px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 600,
-                        background: statusCfg.bg, color: statusCfg.color
-                      }}>
-                        {statusCfg.emoji} {statusCfg.label}
-                      </span>
-                      {quote.service_category && (
-                        <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                          {quote.service_category.icon} {quote.service_category.name}
-                        </span>
-                      )}
-                      {quote.room && (
-                        <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                          📍 {quote.room.name}
-                        </span>
-                      )}
+                return (
+                  <div key={quote.id} className="card" style={{ padding: '16px', transition: 'all 0.2s' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                          <span style={{
+                            padding: '2px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 600,
+                            background: statusCfg.bg, color: statusCfg.color
+                          }}>
+                            {statusCfg.emoji} {statusCfg.label}
+                          </span>
+                          {quote.service_category && (
+                            <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                              {quote.service_category.icon} {quote.service_category.name}
+                            </span>
+                          )}
+                          {quote.room && (
+                            <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                              📍 {quote.room.name}
+                            </span>
+                          )}
+                        </div>
+                        <h4 style={{ fontSize: '15px', fontWeight: 600, margin: '0 0 4px', color: '#1f2937' }}>
+                          {quote.description}
+                        </h4>
+                        <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
+                          <User size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                          {quote.professional?.name || 'Profissional'}
+                          {quote.professional?.phone && (
+                            <span style={{ marginLeft: '8px' }}>
+                              <Phone size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '2px' }} />
+                              {quote.professional.phone}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <div style={{ textAlign: 'right', minWidth: '120px' }}>
+                        <p style={{ fontSize: '18px', fontWeight: 800, color: '#1f2937', margin: '0 0 4px' }}>
+                          {formatCurrency(Number(quote.amount))}
+                        </p>
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                          {nextStatus && quote.status !== 'recusado' && (
+                            <button
+                              onClick={() => handleStatusChange(quote.id, nextStatus)}
+                              title={`Avançar para ${STATUS_CONFIG[nextStatus]?.label}`}
+                              style={{
+                                padding: '4px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                                background: STATUS_CONFIG[nextStatus]?.bg, color: STATUS_CONFIG[nextStatus]?.color,
+                                fontSize: '11px', fontWeight: 600
+                              }}
+                            >
+                              {STATUS_CONFIG[nextStatus]?.emoji} {STATUS_CONFIG[nextStatus]?.label}
+                            </button>
+                          )}
+                          {quote.status !== 'recusado' && (
+                            <button
+                              onClick={() => handleStatusChange(quote.id, 'recusado')}
+                              title="Recusar"
+                              style={{ padding: '4px 8px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: '#fee2e2', color: '#dc2626', fontSize: '11px' }}
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
+                          <button onClick={() => setExpandedQuote(isExpanded ? null : quote.id)}
+                            style={{ padding: '4px 8px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: '#f3f4f6' }}>
+                            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <h4 style={{ fontSize: '15px', fontWeight: 600, margin: '0 0 4px', color: '#1f2937' }}>
-                      {quote.description}
-                    </h4>
-                    <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
-                      <User size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
-                      {quote.professional?.name || 'Profissional'}
-                      {quote.professional?.phone && (
-                        <span style={{ marginLeft: '8px' }}>
-                          <Phone size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '2px' }} />
-                          {quote.professional.phone}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <div style={{ textAlign: 'right', minWidth: '120px' }}>
-                    <p style={{ fontSize: '18px', fontWeight: 800, color: '#1f2937', margin: '0 0 4px' }}>
-                      {formatCurrency(Number(quote.amount))}
-                    </p>
-                    <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
-                      {nextStatus && quote.status !== 'recusado' && (
-                        <button
-                          onClick={() => handleStatusChange(quote.id, nextStatus)}
-                          title={`Avançar para ${STATUS_CONFIG[nextStatus]?.label}`}
-                          style={{
-                            padding: '4px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                            background: STATUS_CONFIG[nextStatus]?.bg, color: STATUS_CONFIG[nextStatus]?.color,
-                            fontSize: '11px', fontWeight: 600
-                          }}
-                        >
-                          {STATUS_CONFIG[nextStatus]?.emoji} {STATUS_CONFIG[nextStatus]?.label}
-                        </button>
-                      )}
-                      {quote.status !== 'recusado' && quote.status !== 'pago' && (
-                        <button
-                          onClick={() => handleStatusChange(quote.id, 'recusado')}
-                          title="Recusar"
-                          style={{ padding: '4px 8px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: '#fee2e2', color: '#dc2626', fontSize: '11px' }}
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
-                      <button onClick={() => setExpandedQuote(isExpanded ? null : quote.id)}
-                        style={{ padding: '4px 8px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: '#f3f4f6' }}>
-                        {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
 
-                {isExpanded && (
-                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f3f4f6', fontSize: '13px', color: '#6b7280' }}>
-                    {quote.payment_method && (
-                      <p style={{ margin: '0 0 8px' }}>
-                        {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.emoji || '💳'}{' '}
-                        Pagamento: <strong style={{ color: '#1F2937' }}>{PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.label || quote.payment_method}</strong>
-                        {quote.payment_details && <span> — {quote.payment_details}</span>}
-                      </p>
+                    {isExpanded && (
+                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f3f4f6', fontSize: '13px', color: '#6b7280' }}>
+                        {quote.payment_method && (
+                          <p style={{ margin: '0 0 8px' }}>
+                            {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.emoji || '💳'}{' '}
+                            Pagamento: <strong style={{ color: '#1F2937' }}>{PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.label || quote.payment_method}</strong>
+                            {quote.payment_details && <span> — {quote.payment_details}</span>}
+                          </p>
+                        )}
+                        {quote.negotiated_amount && quote.negotiated_amount !== Number(quote.amount) && (
+                          <p style={{ margin: '0 0 8px', color: '#059669' }}>
+                            💰 Valor negociado: <strong>{formatCurrency(quote.negotiated_amount)}</strong>
+                            <span style={{ fontSize: '11px', marginLeft: '6px', textDecoration: 'line-through', color: '#9CA3AF' }}>{formatCurrency(Number(quote.amount))}</span>
+                          </p>
+                        )}
+                        {quote.notes && <p style={{ margin: '0 0 8px' }}>📝 {quote.notes}</p>}
+                        {quote.scheduled_date && <p style={{ margin: '0 0 8px' }}>📅 Previsão: {new Date(quote.scheduled_date).toLocaleDateString('pt-BR')}</p>}
+                        {quote.paid_date && <p style={{ margin: '0 0 8px' }}>💰 Pago em: {new Date(quote.paid_date).toLocaleDateString('pt-BR')}</p>}
+                        {quote.professional?.email && <p style={{ margin: '0 0 8px' }}><Mail size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {quote.professional.email}</p>}
+                        {quote.professional?.recommended_by && <p style={{ margin: '0 0 8px' }}>👤 Indicado por: {quote.professional.recommended_by}</p>}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                          <span style={{ fontSize: '11px' }}>
+                            Adicionado por <span style={{ color: userColor, fontWeight: 600 }}>{USERS.find(u => u.id === quote.created_by)?.name || quote.created_by}</span>
+                            {' em '}{new Date(quote.created_at).toLocaleDateString('pt-BR')}
+                          </span>
+                          <button onClick={() => handleDeleteQuote(quote.id)}
+                            style={{ padding: '4px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: '#fee2e2', color: '#dc2626', fontSize: '12px' }}>
+                            <Trash2 size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                            Excluir
+                          </button>
+                        </div>
+                      </div>
                     )}
-                    {quote.negotiated_amount && quote.negotiated_amount !== Number(quote.amount) && (
-                      <p style={{ margin: '0 0 8px', color: '#059669' }}>
-                        💰 Valor negociado: <strong>{formatCurrency(quote.negotiated_amount)}</strong>
-                        <span style={{ fontSize: '11px', marginLeft: '6px', textDecoration: 'line-through', color: '#9CA3AF' }}>{formatCurrency(Number(quote.amount))}</span>
-                      </p>
-                    )}
-                    {quote.notes && <p style={{ margin: '0 0 8px' }}>📝 {quote.notes}</p>}
-                    {quote.scheduled_date && <p style={{ margin: '0 0 8px' }}>📅 Previsão: {new Date(quote.scheduled_date).toLocaleDateString('pt-BR')}</p>}
-                    {quote.paid_date && <p style={{ margin: '0 0 8px' }}>💰 Pago em: {new Date(quote.paid_date).toLocaleDateString('pt-BR')}</p>}
-                    {quote.professional?.email && <p style={{ margin: '0 0 8px' }}><Mail size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {quote.professional.email}</p>}
-                    {quote.professional?.recommended_by && <p style={{ margin: '0 0 8px' }}>👤 Indicado por: {quote.professional.recommended_by}</p>}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                      <span style={{ fontSize: '11px' }}>
-                        Adicionado por <span style={{ color: userColor, fontWeight: 600 }}>{USERS.find(u => u.id === quote.created_by)?.name || quote.created_by}</span>
-                        {' em '}{new Date(quote.created_at).toLocaleDateString('pt-BR')}
-                      </span>
-                      <button onClick={() => handleDeleteQuote(quote.id)}
-                        style={{ padding: '4px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: '#fee2e2', color: '#dc2626', fontSize: '12px' }}>
-                        <Trash2 size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
-                        Excluir
-                      </button>
-                    </div>
                   </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+                )
+              })}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Contracts Section - Budget & Payments per Professional */}
-      {contracts.length > 0 && (
+      {/* Contratos Fechados Section - Merged from contracts table AND contratado/pago quotes */}
+      {(contracts.length > 0 || contratadoQuotes.length > 0) && (
         <div style={{ marginTop: '28px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#374151', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <FileText size={18} /> Contratos Fechados
           </h3>
-          {contracts.map(contract => {
-            const cBudgetItems = budgetItems.filter(b => b.professional === contract.professional)
-            const cPayments = payments.filter(p => p.professional === contract.professional)
-            const totalPaidC = cPayments.filter(p => p.status === 'pago').reduce((s, p) => s + p.amount, 0)
-            const economia = contract.original_total - contract.negotiated_total
-            const percentPaid = Math.round((totalPaidC / contract.negotiated_total) * 100)
-            const isExpanded = expandedContract === contract.id
-            const nextPayment = cPayments.find(p => p.status === 'pendente')
-            const categories = [...new Set(cBudgetItems.map(b => b.category))]
-            const daysUntilNext = nextPayment ? Math.ceil((new Date(nextPayment.due_date + 'T12:00:00').getTime() - Date.now()) / 86400000) : null
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Contracts from contracts table */}
+            {contracts.map(contract => {
+              const cBudgetItems = budgetItems.filter(b => b.professional === contract.professional)
+              const cPayments = payments.filter(p => p.professional === contract.professional)
+              const totalPaidC = cPayments.filter(p => p.status === 'pago').reduce((s, p) => s + p.amount, 0)
+              const economia = contract.original_total - contract.negotiated_total
+              const percentPaid = Math.round((totalPaidC / contract.negotiated_total) * 100)
+              const isExpanded = expandedContract === contract.id
+              const nextPayment = cPayments.find(p => p.status === 'pendente')
+              const categories = [...new Set(cBudgetItems.map(b => b.category))]
+              const daysUntilNext = nextPayment ? Math.ceil((new Date(nextPayment.due_date + 'T12:00:00').getTime() - Date.now()) / 86400000) : null
 
-            return (
-              <div key={contract.id} style={{ borderRadius: '14px', border: '1px solid #D1FAE5', marginBottom: '14px', overflow: 'hidden', background: 'white' }}>
-                {/* Contract Header */}
-                <button
-                  onClick={() => setExpandedContract(isExpanded ? null : contract.id)}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '16px', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #065F4615, #04785715)',
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#065F46' }}>👷 {contract.professional}</span>
-                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', background: '#D1FAE5', color: '#065F46', fontWeight: 600 }}>
-                        {contract.status === 'ativo' ? '🟢 Ativo' : contract.status}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#6B7280' }}>
-                      <span>Fechado: {fmtBRL(contract.negotiated_total)}</span>
-                      <span style={{ color: '#059669' }}>
-                        <TrendingDown size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {fmtBRL(economia)} economia
-                      </span>
-                      <span>Pago: {percentPaid}%</span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '18px', fontWeight: 800, color: '#065F46' }}>{fmtBRL(contract.negotiated_total)}</span>
-                    {isExpanded ? <ChevronUp size={18} color="#9CA3AF" /> : <ChevronDown size={18} color="#9CA3AF" />}
-                  </div>
-                </button>
-
-                {isExpanded && (
-                  <div style={{ padding: '16px' }}>
-                    {/* Payment Progress */}
-                    <div style={{ background: '#F0FDF4', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#065F46' }}>Progresso de Pagamento</span>
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#065F46' }}>{fmtBRL(totalPaidC)} / {fmtBRL(contract.negotiated_total)}</span>
+              return (
+                <div key={contract.id} style={{ borderRadius: '14px', border: '1px solid #D1FAE5', overflow: 'hidden', background: 'white' }}>
+                  {/* Contract Header */}
+                  <button
+                    onClick={() => setExpandedContract(isExpanded ? null : contract.id)}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '16px', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #065F4615, #04785715)',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '15px', fontWeight: 700, color: '#065F46' }}>👷 {contract.professional}</span>
+                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', background: '#D1FAE5', color: '#065F46', fontWeight: 600 }}>
+                          {contract.status === 'ativo' ? '🟢 Ativo' : contract.status}
+                        </span>
                       </div>
-                      <div style={{ background: '#BBF7D0', borderRadius: '6px', height: '8px', overflow: 'hidden' }}>
-                        <div style={{ width: `${percentPaid}%`, height: '100%', background: '#10B981', borderRadius: '6px', transition: 'width 0.5s' }} />
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#6B7280' }}>
-                        <span>Início: {contract.start_date ? fmtDate(contract.start_date) : '—'}</span>
-                        <span>Orçado: {fmtBRL(contract.original_total)}</span>
+                      <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#6B7280' }}>
+                        <span>Fechado: {fmtBRL(contract.negotiated_total)}</span>
+                        <span style={{ color: '#059669' }}>
+                          <TrendingDown size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {fmtBRL(economia)} economia
+                        </span>
+                        <span>Pago: {percentPaid}%</span>
                       </div>
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '18px', fontWeight: 800, color: '#065F46' }}>{fmtBRL(contract.negotiated_total)}</span>
+                      {isExpanded ? <ChevronUp size={18} color="#9CA3AF" /> : <ChevronDown size={18} color="#9CA3AF" />}
+                    </div>
+                  </button>
 
-                    {/* Next Payment Alert */}
-                    {nextPayment && (
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', marginBottom: '16px',
-                        background: daysUntilNext !== null && daysUntilNext <= 3 ? '#FEF2F2' : '#FFFBEB',
-                        border: `1px solid ${daysUntilNext !== null && daysUntilNext <= 3 ? '#FECACA' : '#FDE68A'}`,
-                      }}>
-                        <Clock size={18} color={daysUntilNext !== null && daysUntilNext <= 3 ? '#DC2626' : '#D97706'} />
-                        <div style={{ flex: 1 }}>
-                          <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0 }}>
-                            Próxima: {fmtBRL(nextPayment.amount)} em {fmtDate(nextPayment.due_date)}
-                          </p>
-                          <p style={{ fontSize: '11px', color: '#6B7280', margin: '2px 0 0' }}>
-                            {daysUntilNext !== null && daysUntilNext > 0 ? `${daysUntilNext} dias` : daysUntilNext === 0 ? 'HOJE!' : `Vencida há ${Math.abs(daysUntilNext!)} dias`}
-                            {' · '}Parcela {nextPayment.installment_number}/{cPayments.length}
-                          </p>
+                  {isExpanded && (
+                    <div style={{ padding: '16px' }}>
+                      {/* Payment Progress */}
+                      <div style={{ background: '#F0FDF4', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#065F46' }}>Progresso de Pagamento</span>
+                          <span style={{ fontSize: '13px', fontWeight: 700, color: '#065F46' }}>{fmtBRL(totalPaidC)} / {fmtBRL(contract.negotiated_total)}</span>
                         </div>
-                        <button onClick={() => handleMarkPaid(nextPayment)} disabled={markingPaid === nextPayment.id}
-                          style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#10B981', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', opacity: markingPaid === nextPayment.id ? 0.5 : 1 }}>
-                          ✓ Paguei
-                        </button>
+                        <div style={{ background: '#BBF7D0', borderRadius: '6px', height: '8px', overflow: 'hidden' }}>
+                          <div style={{ width: `${percentPaid}%`, height: '100%', background: '#10B981', borderRadius: '6px', transition: 'width 0.5s' }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#6B7280' }}>
+                          <span>Início: {contract.start_date ? fmtDate(contract.start_date) : '—'}</span>
+                          <span>Orçado: {fmtBRL(contract.original_total)}</span>
+                        </div>
                       </div>
-                    )}
 
-                    {/* Parcelas Timeline */}
-                    <div style={{ marginBottom: '16px' }}>
-                      <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <CreditCard size={14} /> Parcelas
-                      </h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {cPayments.map(p => {
-                          const isPaid = p.status === 'pago'
-                          return (
-                            <div key={p.id} style={{
-                              display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', borderRadius: '8px',
-                              background: isPaid ? '#F0FDF4' : '#F9FAFB', border: `1px solid ${isPaid ? '#BBF7D0' : '#F3F4F6'}`,
-                            }}>
-                              <div style={{
-                                width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: isPaid ? '#10B981' : '#E5E7EB', color: isPaid ? 'white' : '#9CA3AF', fontSize: '11px', fontWeight: 700, flexShrink: 0,
-                              }}>
-                                {isPaid ? <CheckCircle2 size={14} /> : p.installment_number}
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <span style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937' }}>{fmtBRL(p.amount)}</span>
-                                <span style={{ fontSize: '11px', color: '#6B7280', marginLeft: '8px' }}>{fmtDate(p.due_date)}</span>
-                              </div>
-                              {isPaid && <span style={{ fontSize: '10px', fontWeight: 600, color: '#10B981', background: '#DCFCE7', padding: '2px 6px', borderRadius: '4px' }}>Pago</span>}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Budget Breakdown */}
-                    <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <FileText size={14} /> Itens do Orçamento
-                    </h4>
-                    {categories.map(cat => {
-                      const items = cBudgetItems.filter(b => b.category === cat)
-                      const catTotal = items.reduce((s, b) => s + (b.original_value || 0), 0)
-                      return (
-                        <div key={cat} style={{ marginBottom: '8px', borderRadius: '8px', border: '1px solid #F3F4F6', overflow: 'hidden' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#F9FAFB' }}>
-                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>{cat}</span>
-                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#047857' }}>{fmtBRL(catTotal)}</span>
+                      {/* Next Payment Alert */}
+                      {nextPayment && (
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', marginBottom: '16px',
+                          background: daysUntilNext !== null && daysUntilNext <= 3 ? '#FEF2F2' : '#FFFBEB',
+                          border: `1px solid ${daysUntilNext !== null && daysUntilNext <= 3 ? '#FECACA' : '#FDE68A'}`,
+                        }}>
+                          <Clock size={18} color={daysUntilNext !== null && daysUntilNext <= 3 ? '#DC2626' : '#D97706'} />
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0 }}>
+                              Próxima: {fmtBRL(nextPayment.amount)} em {fmtDate(nextPayment.due_date)}
+                            </p>
+                            <p style={{ fontSize: '11px', color: '#6B7280', margin: '2px 0 0' }}>
+                              {daysUntilNext !== null && daysUntilNext > 0 ? `${daysUntilNext} dias` : daysUntilNext === 0 ? 'HOJE!' : `Vencida há ${Math.abs(daysUntilNext!)} dias`}
+                              {' · '}Parcela {nextPayment.installment_number}/{cPayments.length}
+                            </p>
                           </div>
-                          {items.map(item => (
-                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 12px', borderTop: '1px solid #F3F4F6', fontSize: '12px' }}>
-                              <div>
-                                <span style={{ color: '#1F2937' }}>{item.service}</span>
-                                {item.location && <span style={{ color: '#9CA3AF', marginLeft: '6px' }}>· {item.location}</span>}
-                              </div>
-                              <span style={{ fontWeight: 600, color: item.original_value ? '#1F2937' : '#9CA3AF', flexShrink: 0, marginLeft: '8px' }}>
-                                {item.original_value ? fmtBRL(item.original_value) : (item.notes || '—')}
-                              </span>
-                            </div>
-                          ))}
+                          <button onClick={() => handleMarkPaid(nextPayment)} disabled={markingPaid === nextPayment.id}
+                            style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#10B981', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', opacity: markingPaid === nextPayment.id ? 0.5 : 1 }}>
+                            ✓ Paguei
+                          </button>
                         </div>
-                      )
-                    })}
-                    {contract.notes && (
-                      <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'italic', marginTop: '8px' }}>📝 {contract.notes}</p>
+                      )}
+
+                      {/* Parcelas Timeline */}
+                      <div style={{ marginBottom: '16px' }}>
+                        <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <CreditCard size={14} /> Parcelas
+                        </h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {cPayments.map(p => {
+                            const isPaid = p.status === 'pago'
+                            return (
+                              <div key={p.id} style={{
+                                display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', borderRadius: '8px',
+                                background: isPaid ? '#F0FDF4' : '#F9FAFB', border: `1px solid ${isPaid ? '#BBF7D0' : '#F3F4F6'}`,
+                              }}>
+                                <div style={{
+                                  width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  background: isPaid ? '#10B981' : '#E5E7EB', color: isPaid ? 'white' : '#9CA3AF', fontSize: '11px', fontWeight: 700, flexShrink: 0,
+                                }}>
+                                  {isPaid ? <CheckCircle2 size={14} /> : p.installment_number}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937' }}>{fmtBRL(p.amount)}</span>
+                                  <span style={{ fontSize: '11px', color: '#6B7280', marginLeft: '8px' }}>{fmtDate(p.due_date)}</span>
+                                </div>
+                                {isPaid && <span style={{ fontSize: '10px', fontWeight: 600, color: '#10B981', background: '#DCFCE7', padding: '2px 6px', borderRadius: '4px' }}>Pago</span>}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Budget Breakdown */}
+                      <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <FileText size={14} /> Itens do Orçamento
+                      </h4>
+                      {categories.map(cat => {
+                        const items = cBudgetItems.filter(b => b.category === cat)
+                        const catTotal = items.reduce((s, b) => s + (b.original_value || 0), 0)
+                        return (
+                          <div key={cat} style={{ marginBottom: '8px', borderRadius: '8px', border: '1px solid #F3F4F6', overflow: 'hidden' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#F9FAFB' }}>
+                              <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>{cat}</span>
+                              <span style={{ fontSize: '12px', fontWeight: 700, color: '#047857' }}>{fmtBRL(catTotal)}</span>
+                            </div>
+                            {items.map(item => (
+                              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 12px', borderTop: '1px solid #F3F4F6', fontSize: '12px' }}>
+                                <div>
+                                  <span style={{ color: '#1F2937' }}>{item.service}</span>
+                                  {item.location && <span style={{ color: '#9CA3AF', marginLeft: '6px' }}>· {item.location}</span>}
+                                </div>
+                                <span style={{ fontWeight: 600, color: item.original_value ? '#1F2937' : '#9CA3AF', flexShrink: 0, marginLeft: '8px' }}>
+                                  {item.original_value ? fmtBRL(item.original_value) : (item.notes || '—')}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      })}
+                      {contract.notes && (
+                        <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'italic', marginTop: '8px' }}>📝 {contract.notes}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* Quotes with contratado/pago status */}
+            {contratadoQuotes.map(quote => {
+              const isExpanded = expandedContract === `quote-${quote.id}`
+              const amount = quote.negotiated_amount || Number(quote.amount)
+
+              return (
+                <div key={`quote-${quote.id}`} style={{ borderRadius: '14px', border: '1px solid #D1FAE5', overflow: 'hidden', background: 'white' }}>
+                  {/* Quote Header */}
+                  <button
+                    onClick={() => setExpandedContract(isExpanded ? null : `quote-${quote.id}`)}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '16px', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #065F4615, #04785715)',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '15px', fontWeight: 700, color: '#065F46' }}>👷 {quote.professional?.name || 'Profissional'}</span>
+                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', background: '#D1FAE5', color: '#065F46', fontWeight: 600 }}>
+                          {STATUS_CONFIG[quote.status]?.emoji} {STATUS_CONFIG[quote.status]?.label}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#6B7280' }}>
+                        <span>{quote.description}</span>
+                        {quote.payment_method && (
+                          <span>
+                            {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.emoji || '💳'} {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.label || quote.payment_method}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '18px', fontWeight: 800, color: '#065F46' }}>{formatCurrency(amount)}</span>
+                      {isExpanded ? <ChevronUp size={18} color="#9CA3AF" /> : <ChevronDown size={18} color="#9CA3AF" />}
+                    </div>
+                  </button>
+
+                  {isExpanded && (
+                    <div style={{ padding: '16px', borderTop: '1px solid #E5E7EB' }}>
+                      {/* Professional Info */}
+                      <div style={{ marginBottom: '16px' }}>
+                        <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>👤 Informações do Profissional</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: '#6B7280' }}>
+                          {quote.professional?.phone && (
+                            <p style={{ margin: 0 }}>
+                              <Phone size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} />
+                              {quote.professional.phone}
+                            </p>
+                          )}
+                          {quote.professional?.email && (
+                            <p style={{ margin: 0 }}>
+                              <Mail size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} />
+                              {quote.professional.email}
+                            </p>
+                          )}
+                          {quote.professional?.specialty && (
+                            <p style={{ margin: 0 }}>📋 Especialidade: {quote.professional.specialty}</p>
+                          )}
+                          {quote.professional?.recommended_by && (
+                            <p style={{ margin: 0 }}>👤 Indicado por: {quote.professional.recommended_by}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Payment Details */}
+                      {quote.payment_method && (
+                        <div style={{ marginBottom: '16px' }}>
+                          <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>💳 Forma de Pagamento</h4>
+                          <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#1F2937', fontWeight: 600 }}>
+                            {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.emoji || '💳'} {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.label || quote.payment_method}
+                          </p>
+                          {quote.payment_details && (
+                            <p style={{ margin: 0, fontSize: '12px', color: '#6B7280', whiteSpace: 'pre-wrap' }}>{quote.payment_details}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Amount Info */}
+                      <div style={{ marginBottom: '16px', padding: '12px', background: '#F0FDF4', borderRadius: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                          <span style={{ color: '#6B7280' }}>Valor Original:</span>
+                          <span style={{ color: '#1F2937', fontWeight: 600 }}>{formatCurrency(Number(quote.amount))}</span>
+                        </div>
+                        {quote.negotiated_amount && quote.negotiated_amount !== Number(quote.amount) && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#059669', fontWeight: 600 }}>
+                            <span>Valor Negociado:</span>
+                            <span>{formatCurrency(quote.negotiated_amount)}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Notes */}
+                      {quote.notes && (
+                        <div style={{ marginBottom: '16px' }}>
+                          <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '4px' }}>📝 Observações</h4>
+                          <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>{quote.notes}</p>
+                        </div>
+                      )}
+
+                      {/* Metadata */}
+                      <div style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                        Adicionado em {new Date(quote.created_at).toLocaleDateString('pt-BR')}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Profissionais Cadastrados Section */}
+      {showProfessionalsList && (
+        <div style={{ marginTop: '28px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#374151', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Users size={18} /> Profissionais Cadastrados
+          </h3>
+          {professionals.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>👤</div>
+              <h3 style={{ fontSize: '18px', color: '#374151', marginBottom: '8px' }}>Nenhum profissional cadastrado</h3>
+              <p style={{ color: '#6b7280' }}>Comece adicionando profissionais para seus orçamentos.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
+              {professionals.map(pro => {
+                const isExpanded = expandedProfessional === pro.id
+                const status = getProfessionalStatus(pro.id)
+                const proQuotes = quotes.filter(q => q.professional_id === pro.id)
+
+                return (
+                  <div key={pro.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                    {/* Header */}
+                    <div
+                      onClick={() => setExpandedProfessional(isExpanded ? null : pro.id)}
+                      style={{
+                        padding: '14px', cursor: 'pointer', background: '#F9FAFB', borderBottom: isExpanded ? '1px solid #E5E7EB' : 'none',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px'
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1F2937' }}>{pro.name}</h4>
+                          <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', background: '#E5E7EB', color: '#374151', fontWeight: 600 }}>
+                            {status.emoji} {status.status}
+                          </span>
+                        </div>
+                        {pro.specialty && (
+                          <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>{pro.specialty}</p>
+                        )}
+                        <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#9CA3AF' }}>
+                          {proQuotes.length} orçamento{proQuotes.length !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      {isExpanded ? <ChevronUp size={16} color="#9CA3AF" /> : <ChevronDown size={16} color="#9CA3AF" />}
+                    </div>
+
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div style={{ padding: '14px', borderTop: '1px solid #E5E7EB' }}>
+                        {/* Contact Info */}
+                        <div style={{ marginBottom: '12px' }}>
+                          <h5 style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 700, color: '#374151' }}>📞 Contato</h5>
+                          {pro.phone && (
+                            <p style={{ margin: '0 0 4px', fontSize: '12px', color: '#6B7280' }}>
+                              <Phone size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                              {pro.phone}
+                            </p>
+                          )}
+                          {pro.email && (
+                            <p style={{ margin: '0 0 4px', fontSize: '12px', color: '#6B7280' }}>
+                              <Mail size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                              {pro.email}
+                            </p>
+                          )}
+                          {!pro.phone && !pro.email && (
+                            <p style={{ margin: 0, fontSize: '12px', color: '#9CA3AF', fontStyle: 'italic' }}>Sem informações de contato</p>
+                          )}
+                        </div>
+
+                        {/* Recommended By */}
+                        {pro.recommended_by && (
+                          <div style={{ marginBottom: '12px' }}>
+                            <h5 style={{ margin: '0 0 4px', fontSize: '12px', fontWeight: 700, color: '#374151' }}>👤 Indicado por</h5>
+                            <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>{pro.recommended_by}</p>
+                          </div>
+                        )}
+
+                        {/* Notes - Editable */}
+                        <div>
+                          <h5 style={{ margin: '0 0 4px', fontSize: '12px', fontWeight: 700, color: '#374151' }}>📝 Observações</h5>
+                          {editingNotes[pro.id] !== undefined ? (
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <textarea
+                                value={editingNotes[pro.id]}
+                                onChange={e => setEditingNotes({ ...editingNotes, [pro.id]: e.target.value })}
+                                rows={2}
+                                style={{ flex: 1, fontSize: '12px', padding: '6px', borderRadius: '6px', border: '1px solid #E5E7EB' }}
+                              />
+                              <div style={{ display: 'flex', gap: '4px', flexDirection: 'column' }}>
+                                <button
+                                  onClick={() => handleSaveNotes(pro.id, editingNotes[pro.id])}
+                                  style={{ padding: '4px 8px', borderRadius: '4px', border: 'none', background: '#059669', color: 'white', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+                                  <Check size={12} />
+                                </button>
+                                <button
+                                  onClick={() => { const n = { ...editingNotes }; delete n[pro.id]; setEditingNotes(n) }}
+                                  style={{ padding: '4px 8px', borderRadius: '4px', border: 'none', background: '#E5E7EB', color: '#6B7280', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p
+                              onClick={() => setEditingNotes({ ...editingNotes, [pro.id]: pro.notes || '' })}
+                              style={{
+                                margin: 0, fontSize: '12px', color: pro.notes ? '#6B7280' : '#9CA3AF', fontStyle: pro.notes ? 'normal' : 'italic',
+                                cursor: 'pointer', padding: '6px', borderRadius: '4px', background: '#F9FAFB'
+                              }}>
+                              {pro.notes || 'Clique para adicionar observações'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-            )
-          })}
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

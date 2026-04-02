@@ -511,7 +511,7 @@ export default function HomePage() {
           />
         </>
       ) : activeTab === 'obra' ? (
-        <ObraPanel />
+        <ObraPanel currentUser={currentUser} />
       ) : activeTab === 'financeiro' ? (
         <FinanceiroPanel />
       ) : (
