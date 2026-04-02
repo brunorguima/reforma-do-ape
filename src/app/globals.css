@@ -298,6 +298,12 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Spin animation for loading */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Hide scrollbar but keep scrollable */
 .hide-scrollbar {
   -ms-overflow-style: none;

@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
-import { ClipboardList, Lock, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Plus, X, LayoutGrid, List, ExternalLink, Trash2 } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { ClipboardList, Lock, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Plus, X, LayoutGrid, List, ExternalLink, Trash2, Upload, FileText, Image as ImageIcon, Eye } from 'lucide-react'
 
 interface Task {
   id: string
@@ -20,6 +20,10 @@ interface Document {
   description: string | null
   type: 'planta' | 'projeto' | 'contrato' | 'nota_fiscal' | 'foto' | 'outro'
   url: string | null
+  file_path: string | null
+  file_name: string | null
+  file_size: number | null
+  file_type: string | null
   created_at: string
   created_by: string
 }
@@ -81,7 +85,12 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
   const [showDocModal, setShowDocModal] = useState(false)
   const [expandedDocuments, setExpandedDocuments] = useState<Set<string>>(new Set())
   const [newTask, setNewTask] = useState({ title: '', description: '', phase: PHASE_ORDER[0], priority: 'media', assigned_to: 'Bruno' })
-  const [newDocument, setNewDocument] = useState({ title: '', description: '', type: 'outro' as const, url: '' })
+  const [newDocument, setNewDocument] = useState<{ title: string; description: string; type: string; url: string }>({ title: '', description: '', type: 'outro', url: '' })
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [previewDoc, setPreviewDoc] = useState<Document | null>(null)
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -140,18 +149,63 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
     } catch (err) { console.error(err) }
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadFile(file)
+    // Auto-fill title if empty
+    if (!newDocument.title.trim()) {
+      const name = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ')
+      setNewDocument(p => ({ ...p, title: name }))
+    }
+    // Auto-detect type
+    if (file.type.startsWith('image/')) {
+      setNewDocument(p => ({ ...p, type: 'foto' as const }))
+    } else if (file.type === 'application/pdf') {
+      setNewDocument(p => ({ ...p, type: 'contrato' as const }))
+    }
+    // Preview for images
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = (ev) => setUploadPreview(ev.target?.result as string)
+      reader.readAsDataURL(file)
+    } else {
+      setUploadPreview(null)
+    }
+  }
+
   const handleAddDocument = async () => {
     if (!newDocument.title.trim()) return
+    setUploading(true)
     try {
-      await fetch('/api/documents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newDocument, created_by: currentUser }),
-      })
+      if (uploadFile) {
+        // Upload via file upload API
+        const formData = new FormData()
+        formData.append('file', uploadFile)
+        formData.append('title', newDocument.title.trim())
+        formData.append('description', newDocument.description || '')
+        formData.append('type', newDocument.type)
+        formData.append('created_by', currentUser)
+        const res = await fetch('/api/documents/upload', { method: 'POST', body: formData })
+        if (!res.ok) {
+          const err = await res.json()
+          alert('Erro no upload: ' + (err.error || 'Falha'))
+          return
+        }
+      } else {
+        // Link-only document
+        await fetch('/api/documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...newDocument, created_by: currentUser }),
+        })
+      }
       await fetchDocuments()
       setShowDocModal(false)
       setNewDocument({ title: '', description: '', type: 'outro', url: '' })
-    } catch (err) { console.error(err) }
+      setUploadFile(null)
+      setUploadPreview(null)
+    } catch (err) { console.error(err) } finally { setUploading(false) }
   }
 
   const handleDeleteDocument = async (docId: string) => {
@@ -335,6 +389,14 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
                         }}>
                           {typeConfig.emoji} {typeConfig.label}
                         </span>
+                        {doc.file_type?.startsWith('image/') && doc.url && (
+                          <img src={doc.url} alt="" style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />
+                        )}
+                        {doc.file_type === 'application/pdf' && (
+                          <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <FileText size={18} color="#D97706" />
+                          </div>
+                        )}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937', margin: '0 0 2px' }}>
                             {doc.title}
@@ -342,6 +404,11 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
                           {doc.description && (
                             <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
                               {doc.description.length > 50 ? doc.description.substring(0, 50) + '...' : doc.description}
+                            </p>
+                          )}
+                          {doc.file_name && !doc.description && (
+                            <p style={{ fontSize: '11px', color: '#9CA3AF', margin: 0 }}>
+                              {doc.file_name} {doc.file_size ? `• ${(doc.file_size / 1024 / 1024).toFixed(1)} MB` : ''}
                             </p>
                           )}
                         </div>
@@ -360,6 +427,42 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
                         borderTop: '1px solid #E5E7EB',
                         background: '#F9FAFB',
                       }}>
+                        {/* File Preview */}
+                        {doc.file_type?.startsWith('image/') && doc.url && (
+                          <div style={{ marginBottom: '12px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer' }}
+                            onClick={() => setPreviewDoc(doc)}
+                          >
+                            <img
+                              src={doc.url}
+                              alt={doc.title}
+                              style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '8px' }}
+                            />
+                          </div>
+                        )}
+                        {doc.file_type === 'application/pdf' && doc.url && (
+                          <div style={{
+                            marginBottom: '12px', padding: '12px', borderRadius: '8px',
+                            background: '#FEF3C7', display: 'flex', alignItems: 'center', gap: '10px',
+                          }}>
+                            <FileText size={24} color="#D97706" />
+                            <div style={{ flex: 1 }}>
+                              <p style={{ fontSize: '13px', fontWeight: 600, color: '#92400E', margin: 0 }}>
+                                {doc.file_name || 'Documento PDF'}
+                              </p>
+                              {doc.file_size && (
+                                <p style={{ fontSize: '11px', color: '#B45309', margin: '2px 0 0' }}>
+                                  {(doc.file_size / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                              )}
+                            </div>
+                            <a href={doc.url} target="_blank" rel="noopener noreferrer"
+                              style={{ padding: '6px 10px', borderRadius: '6px', background: '#D97706', color: 'white', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}
+                            >
+                              <Eye size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                              Ver
+                            </a>
+                          </div>
+                        )}
                         {doc.description && (
                           <p style={{ fontSize: '13px', color: '#374151', margin: '0 0 10px', lineHeight: 1.5 }}>
                             {doc.description}
@@ -368,8 +471,10 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
                         <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '10px' }}>
                           <div>Por: <strong>{doc.created_by}</strong></div>
                           <div>Em: {new Date(doc.created_at).toLocaleDateString('pt-BR')}</div>
+                          {doc.file_name && <div>Arquivo: {doc.file_name}</div>}
+                          {doc.file_size && <div>Tamanho: {(doc.file_size / 1024 / 1024).toFixed(2)} MB</div>}
                         </div>
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           {doc.url && (
                             <a
                               href={doc.url}
@@ -389,8 +494,21 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
                               }}
                             >
                               <ExternalLink size={14} />
-                              Abrir link
+                              {doc.file_name ? 'Abrir arquivo' : 'Abrir link'}
                             </a>
+                          )}
+                          {doc.file_type?.startsWith('image/') && doc.url && (
+                            <button
+                              onClick={() => setPreviewDoc(doc)}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px',
+                                borderRadius: '6px', background: '#EFF6FF', color: '#2563EB',
+                                border: 'none', fontWeight: 600, fontSize: '12px', cursor: 'pointer',
+                              }}
+                            >
+                              <Eye size={14} />
+                              Visualizar
+                            </button>
                           )}
                           <button
                             onClick={() => handleDeleteDocument(doc.id)}
@@ -682,15 +800,90 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
       {showDocModal && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 50,
-        }} onClick={() => setShowDocModal(false)}>
+          backdropFilter: 'blur(4px)',
+        }} onClick={() => { if (!uploading) { setShowDocModal(false); setUploadFile(null); setUploadPreview(null) } }}>
           <div style={{
-            background: 'white', borderRadius: '20px 20px 0 0', padding: '24px 20px', width: '100%', maxWidth: '500px', maxHeight: '80vh', overflowY: 'auto',
+            background: 'white', borderRadius: '20px 20px 0 0', padding: '24px 20px', width: '100%', maxWidth: '500px', maxHeight: '85vh', overflowY: 'auto',
           }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Novo Documento</h3>
-              <button onClick={() => setShowDocModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="#6B7280" /></button>
+              <button onClick={() => { if (!uploading) { setShowDocModal(false); setUploadFile(null); setUploadPreview(null) } }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="#6B7280" /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* File Upload Area */}
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>📎 Arquivo</label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.dwg,.dxf"
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+                {!uploadFile ? (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      width: '100%', padding: '24px 16px', borderRadius: '12px',
+                      border: '2px dashed #D1D5DB', background: '#F9FAFB',
+                      cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', gap: '8px', transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#10B981'; e.currentTarget.style.background = '#F0FDF4' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.background = '#F9FAFB' }}
+                  >
+                    <Upload size={28} color="#9CA3AF" />
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#6B7280' }}>Toque para selecionar arquivo</span>
+                    <span style={{ fontSize: '11px', color: '#9CA3AF' }}>Imagens, PDF, Word, Excel, DWG</span>
+                  </button>
+                ) : (
+                  <div style={{
+                    padding: '12px', borderRadius: '10px', border: '1px solid #D1FAE5',
+                    background: '#F0FDF4', display: 'flex', alignItems: 'center', gap: '10px',
+                  }}>
+                    {uploadPreview ? (
+                      <img src={uploadPreview} alt="preview" style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px' }} />
+                    ) : (
+                      <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <FileText size={24} color="#059669" />
+                      </div>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {uploadFile.name}
+                      </p>
+                      <p style={{ fontSize: '11px', color: '#6B7280', margin: '2px 0 0' }}>
+                        {(uploadFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => { setUploadFile(null); setUploadPreview(null); if (fileInputRef.current) fileInputRef.current.value = '' }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                    >
+                      <X size={18} color="#DC2626" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
+                <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 600 }}>ou adicione um link</span>
+                <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>🔗 Link (opcional)</label>
+                <input
+                  value={newDocument.url}
+                  onChange={e => setNewDocument(p => ({ ...p, url: e.target.value }))}
+                  placeholder="https://exemplo.com/documento"
+                  style={{ width: '100%' }}
+                  disabled={!!uploadFile}
+                />
+              </div>
+
               <div>
                 <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Título *</label>
                 <input
@@ -718,30 +911,66 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
                   value={newDocument.description || ''}
                   onChange={e => setNewDocument(p => ({ ...p, description: e.target.value }))}
                   placeholder="Detalhes sobre o documento..."
-                  style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontFamily: 'inherit' }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Link (opcional)</label>
-                <input
-                  value={newDocument.url}
-                  onChange={e => setNewDocument(p => ({ ...p, url: e.target.value }))}
-                  placeholder="https://exemplo.com/documento"
-                  style={{ width: '100%' }}
+                  style={{ width: '100%', minHeight: '70px', padding: '10px', borderRadius: '8px', border: '2px solid #e5e7eb', fontFamily: 'inherit', fontSize: '16px' }}
                 />
               </div>
               <button
                 onClick={handleAddDocument}
-                disabled={!newDocument.title.trim()}
+                disabled={!newDocument.title.trim() || uploading}
                 style={{
                   padding: '14px', borderRadius: '12px', border: 'none',
-                  background: newDocument.title.trim() ? 'linear-gradient(135deg, #10B981, #059669)' : '#E5E7EB',
-                  color: 'white', fontWeight: 700, fontSize: '15px', cursor: newDocument.title.trim() ? 'pointer' : 'default',
+                  background: newDocument.title.trim() && !uploading ? 'linear-gradient(135deg, #10B981, #059669)' : '#E5E7EB',
+                  color: 'white', fontWeight: 700, fontSize: '15px',
+                  cursor: newDocument.title.trim() && !uploading ? 'pointer' : 'default',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 }}
               >
-                Adicionar Documento
+                {uploading ? (
+                  <>
+                    <span style={{ display: 'inline-block', width: '16px', height: '16px', border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    {uploadFile ? <Upload size={18} /> : <Plus size={18} />}
+                    {uploadFile ? 'Enviar Arquivo' : 'Adicionar Documento'}
+                  </>
+                )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-screen Image Preview Modal */}
+      {previewDoc && previewDoc.url && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', zIndex: 60,
+            backdropFilter: 'blur(8px)', cursor: 'pointer',
+          }}
+          onClick={() => setPreviewDoc(null)}
+        >
+          <button
+            onClick={() => setPreviewDoc(null)}
+            style={{
+              position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.2)',
+              border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <X size={24} color="white" />
+          </button>
+          <div style={{ textAlign: 'center', maxWidth: '90vw', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
+            <img
+              src={previewDoc.url}
+              alt={previewDoc.title}
+              style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: '8px' }}
+            />
+            <p style={{ color: 'white', fontSize: '14px', marginTop: '12px', fontWeight: 600 }}>
+              {previewDoc.title}
+            </p>
           </div>
         </div>
       )}
