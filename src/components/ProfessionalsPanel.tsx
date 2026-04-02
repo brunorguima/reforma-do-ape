@@ -112,6 +112,14 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
   const [paymentModal, setPaymentModal] = useState<{ quoteId: string; targetStatus: string; currentAmount: number } | null>(null)
   const [paymentForm, setPaymentForm] = useState({ payment_method: '', payment_details: '', negotiated_amount: '' })
 
+  // Editing states
+  const [editingContract, setEditingContract] = useState<string | null>(null)
+  const [editContractForm, setEditContractForm] = useState<Partial<Contract>>({})
+  const [editingQuote, setEditingQuote] = useState<string | null>(null)
+  const [editQuoteForm, setEditQuoteForm] = useState<Partial<Quote>>({})
+  const [editingProfessional, setEditingProfessional] = useState<string | null>(null)
+  const [editProfessionalForm, setEditProfessionalForm] = useState<Partial<Professional>>({})
+
   // Form states
   const [newProfessional, setNewProfessional] = useState({ name: '', phone: '', email: '', specialty: '', notes: '', recommended_by: '' })
   const [newQuote, setNewQuote] = useState({
@@ -325,10 +333,83 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
     } catch (err) { console.error(err) }
   }
 
+  const handleEditContract = (contract: Contract) => {
+    setEditingContract(contract.id)
+    setEditContractForm({ ...contract })
+  }
+
+  const handleSaveContract = async () => {
+    if (!editingContract) return
+    try {
+      await fetch('/api/contracts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingContract, ...editContractForm }),
+      })
+      setEditingContract(null)
+      setEditContractForm({})
+      await fetchData()
+    } catch (err) { console.error(err) }
+  }
+
+  const handleEditQuote = (quote: Quote) => {
+    setEditingQuote(quote.id)
+    setEditQuoteForm({
+      description: quote.description,
+      amount: quote.amount,
+      negotiated_amount: quote.negotiated_amount,
+      notes: quote.notes,
+      payment_method: quote.payment_method,
+      payment_details: quote.payment_details,
+      status: quote.status,
+    })
+  }
+
+  const handleSaveQuote = async () => {
+    if (!editingQuote) return
+    try {
+      await fetch(`/api/quotes/${editingQuote}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...editQuoteForm,
+          amount: Number(editQuoteForm.amount) || 0,
+          negotiated_amount: editQuoteForm.negotiated_amount ? Number(editQuoteForm.negotiated_amount) : null,
+          updated_by: currentUser,
+        }),
+      })
+      setEditingQuote(null)
+      setEditQuoteForm({})
+      await fetchData()
+    } catch (err) { console.error(err) }
+  }
+
+  const handleEditProfessional = (pro: Professional) => {
+    setEditingProfessional(pro.id)
+    setEditProfessionalForm({ name: pro.name, phone: pro.phone, email: pro.email, specialty: pro.specialty, recommended_by: pro.recommended_by })
+  }
+
+  const handleSaveProfessional = async () => {
+    if (!editingProfessional) return
+    try {
+      await fetch(`/api/professionals/${editingProfessional}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editProfessionalForm),
+      })
+      setEditingProfessional(null)
+      setEditProfessionalForm({})
+      await fetchData()
+    } catch (err) { console.error(err) }
+  }
+
   const getProfessionalStatus = (professionalId: string) => {
+    const pro = professionals.find(p => p.id === professionalId)
     const profQuotes = quotes.filter(q => q.professional_id === professionalId)
     const hasContratado = profQuotes.some(q => ['contratado', 'pago'].includes(q.status))
-    if (hasContratado) return { status: 'Contratado', emoji: '✅' }
+    // Also check if the professional has a contract in the contracts table
+    const hasContract = pro ? contracts.some(c => c.professional === pro.name) : false
+    if (hasContratado || hasContract) return { status: 'Contratado', emoji: '✅' }
     if (profQuotes.length > 0) return { status: 'Orçando', emoji: '📋' }
     return { status: 'Cadastrado', emoji: '👤' }
   }
@@ -725,7 +806,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                         <span style={{ fontSize: '15px', fontWeight: 700, color: '#065F46' }}>👷 {contract.professional}</span>
                         <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', background: '#D1FAE5', color: '#065F46', fontWeight: 600 }}>
-                          {contract.status === 'ativo' ? '🟢 Ativo' : contract.status}
+                          🤝 Contratado
                         </span>
                       </div>
                       <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#6B7280' }}>
@@ -744,23 +825,93 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
 
                   {isExpanded && (
                     <div style={{ padding: '16px' }}>
-                      {/* Payment Progress */}
-                      <div style={{ background: '#F0FDF4', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#065F46' }}>Progresso de Pagamento</span>
-                          <span style={{ fontSize: '13px', fontWeight: 700, color: '#065F46' }}>{fmtBRL(totalPaidC)} / {fmtBRL(contract.negotiated_total)}</span>
-                        </div>
-                        <div style={{ background: '#BBF7D0', borderRadius: '6px', height: '8px', overflow: 'hidden' }}>
-                          <div style={{ width: `${percentPaid}%`, height: '100%', background: '#10B981', borderRadius: '6px', transition: 'width 0.5s' }} />
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#6B7280' }}>
-                          <span>Início: {contract.start_date ? fmtDate(contract.start_date) : '—'}</span>
-                          <span>Orçado: {fmtBRL(contract.original_total)}</span>
-                        </div>
+                      {/* Edit Button */}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                        {editingContract === contract.id ? (
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button onClick={handleSaveContract}
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#10B981', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                              <Check size={12} /> Salvar
+                            </button>
+                            <button onClick={() => { setEditingContract(null); setEditContractForm({}) }}
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#E5E7EB', color: '#6B7280', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                              <X size={12} /> Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={() => handleEditContract(contract)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', background: 'white', color: '#374151', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                            <Edit3 size={12} /> Editar Contrato
+                          </button>
+                        )}
                       </div>
 
+                      {/* Contract Details - Editable */}
+                      {editingContract === contract.id ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', padding: '14px', background: '#F0FDF4', borderRadius: '10px' }}>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <div style={{ flex: 1 }}>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Profissional</label>
+                              <input value={editContractForm.professional || ''} onChange={e => setEditContractForm({ ...editContractForm, professional: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Função</label>
+                              <input value={editContractForm.role || ''} onChange={e => setEditContractForm({ ...editContractForm, role: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <div style={{ flex: 1 }}>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Valor Original</label>
+                              <input type="number" value={editContractForm.original_total || ''} onChange={e => setEditContractForm({ ...editContractForm, original_total: Number(e.target.value) })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Valor Negociado</label>
+                              <input type="number" value={editContractForm.negotiated_total || ''} onChange={e => setEditContractForm({ ...editContractForm, negotiated_total: Number(e.target.value) })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <div style={{ flex: 1 }}>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Início</label>
+                              <input type="date" value={editContractForm.start_date || ''} onChange={e => setEditContractForm({ ...editContractForm, start_date: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>1º Pagamento</label>
+                              <input type="date" value={editContractForm.first_payment_date || ''} onChange={e => setEditContractForm({ ...editContractForm, first_payment_date: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Observações</label>
+                            <textarea value={editContractForm.notes || ''} onChange={e => setEditContractForm({ ...editContractForm, notes: e.target.value })}
+                              rows={2} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Payment Progress */}
+                          <div style={{ background: '#F0FDF4', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 600, color: '#065F46' }}>Progresso de Pagamento</span>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: '#065F46' }}>{fmtBRL(totalPaidC)} / {fmtBRL(contract.negotiated_total)}</span>
+                            </div>
+                            <div style={{ background: '#BBF7D0', borderRadius: '6px', height: '8px', overflow: 'hidden' }}>
+                              <div style={{ width: `${percentPaid}%`, height: '100%', background: '#10B981', borderRadius: '6px', transition: 'width 0.5s' }} />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#6B7280' }}>
+                              <span>Início: {contract.start_date ? fmtDate(contract.start_date) : '—'}</span>
+                              <span>Orçado: {fmtBRL(contract.original_total)}</span>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
                       {/* Next Payment Alert */}
-                      {nextPayment && (
+                      {nextPayment && !editingContract && (
                         <div style={{
                           display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', marginBottom: '16px',
                           background: daysUntilNext !== null && daysUntilNext <= 3 ? '#FEF2F2' : '#FFFBEB',
@@ -784,63 +935,70 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
                       )}
 
                       {/* Parcelas Timeline */}
-                      <div style={{ marginBottom: '16px' }}>
-                        <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <CreditCard size={14} /> Parcelas
-                        </h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {cPayments.map(p => {
-                            const isPaid = p.status === 'pago'
-                            return (
-                              <div key={p.id} style={{
-                                display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', borderRadius: '8px',
-                                background: isPaid ? '#F0FDF4' : '#F9FAFB', border: `1px solid ${isPaid ? '#BBF7D0' : '#F3F4F6'}`,
-                              }}>
-                                <div style={{
-                                  width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  background: isPaid ? '#10B981' : '#E5E7EB', color: isPaid ? 'white' : '#9CA3AF', fontSize: '11px', fontWeight: 700, flexShrink: 0,
+                      {!editingContract && (
+                        <div style={{ marginBottom: '16px' }}>
+                          <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <CreditCard size={14} /> Parcelas
+                          </h4>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {cPayments.map(p => {
+                              const isPaid = p.status === 'pago'
+                              return (
+                                <div key={p.id} style={{
+                                  display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', borderRadius: '8px',
+                                  background: isPaid ? '#F0FDF4' : '#F9FAFB', border: `1px solid ${isPaid ? '#BBF7D0' : '#F3F4F6'}`,
                                 }}>
-                                  {isPaid ? <CheckCircle2 size={14} /> : p.installment_number}
+                                  <div style={{
+                                    width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    background: isPaid ? '#10B981' : '#E5E7EB', color: isPaid ? 'white' : '#9CA3AF', fontSize: '11px', fontWeight: 700, flexShrink: 0,
+                                  }}>
+                                    {isPaid ? <CheckCircle2 size={14} /> : p.installment_number}
+                                  </div>
+                                  <div style={{ flex: 1 }}>
+                                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937' }}>{fmtBRL(p.amount)}</span>
+                                    <span style={{ fontSize: '11px', color: '#6B7280', marginLeft: '8px' }}>{fmtDate(p.due_date)}</span>
+                                  </div>
+                                  {isPaid && <span style={{ fontSize: '10px', fontWeight: 600, color: '#10B981', background: '#DCFCE7', padding: '2px 6px', borderRadius: '4px' }}>Pago</span>}
                                 </div>
-                                <div style={{ flex: 1 }}>
-                                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937' }}>{fmtBRL(p.amount)}</span>
-                                  <span style={{ fontSize: '11px', color: '#6B7280', marginLeft: '8px' }}>{fmtDate(p.due_date)}</span>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Budget Breakdown */}
+                      {!editingContract && (
+                        <>
+                          <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <FileText size={14} /> Itens do Orçamento
+                          </h4>
+                          {categories.map(cat => {
+                            const items = cBudgetItems.filter(b => b.category === cat)
+                            const catTotal = items.reduce((s, b) => s + (b.original_value || 0), 0)
+                            return (
+                              <div key={cat} style={{ marginBottom: '8px', borderRadius: '8px', border: '1px solid #F3F4F6', overflow: 'hidden' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#F9FAFB' }}>
+                                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>{cat}</span>
+                                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#047857' }}>{fmtBRL(catTotal)}</span>
                                 </div>
-                                {isPaid && <span style={{ fontSize: '10px', fontWeight: 600, color: '#10B981', background: '#DCFCE7', padding: '2px 6px', borderRadius: '4px' }}>Pago</span>}
+                                {items.map(item => (
+                                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 12px', borderTop: '1px solid #F3F4F6', fontSize: '12px' }}>
+                                    <div>
+                                      <span style={{ color: '#1F2937' }}>{item.service}</span>
+                                      {item.location && <span style={{ color: '#9CA3AF', marginLeft: '6px' }}>· {item.location}</span>}
+                                    </div>
+                                    <span style={{ fontWeight: 600, color: item.original_value ? '#1F2937' : '#9CA3AF', flexShrink: 0, marginLeft: '8px' }}>
+                                      {item.original_value ? fmtBRL(item.original_value) : (item.notes || '—')}
+                                    </span>
+                                  </div>
+                                ))}
                               </div>
                             )
                           })}
-                        </div>
-                      </div>
+                        </>
+                      )}
 
-                      {/* Budget Breakdown */}
-                      <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <FileText size={14} /> Itens do Orçamento
-                      </h4>
-                      {categories.map(cat => {
-                        const items = cBudgetItems.filter(b => b.category === cat)
-                        const catTotal = items.reduce((s, b) => s + (b.original_value || 0), 0)
-                        return (
-                          <div key={cat} style={{ marginBottom: '8px', borderRadius: '8px', border: '1px solid #F3F4F6', overflow: 'hidden' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#F9FAFB' }}>
-                              <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>{cat}</span>
-                              <span style={{ fontSize: '12px', fontWeight: 700, color: '#047857' }}>{fmtBRL(catTotal)}</span>
-                            </div>
-                            {items.map(item => (
-                              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 12px', borderTop: '1px solid #F3F4F6', fontSize: '12px' }}>
-                                <div>
-                                  <span style={{ color: '#1F2937' }}>{item.service}</span>
-                                  {item.location && <span style={{ color: '#9CA3AF', marginLeft: '6px' }}>· {item.location}</span>}
-                                </div>
-                                <span style={{ fontWeight: 600, color: item.original_value ? '#1F2937' : '#9CA3AF', flexShrink: 0, marginLeft: '8px' }}>
-                                  {item.original_value ? fmtBRL(item.original_value) : (item.notes || '—')}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )
-                      })}
-                      {contract.notes && (
+                      {!editingContract && contract.notes && (
                         <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'italic', marginTop: '8px' }}>📝 {contract.notes}</p>
                       )}
                     </div>
@@ -888,70 +1046,148 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
 
                   {isExpanded && (
                     <div style={{ padding: '16px', borderTop: '1px solid #E5E7EB' }}>
-                      {/* Professional Info */}
-                      <div style={{ marginBottom: '16px' }}>
-                        <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>👤 Informações do Profissional</h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: '#6B7280' }}>
-                          {quote.professional?.phone && (
-                            <p style={{ margin: 0 }}>
-                              <Phone size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} />
-                              {quote.professional.phone}
-                            </p>
-                          )}
-                          {quote.professional?.email && (
-                            <p style={{ margin: 0 }}>
-                              <Mail size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} />
-                              {quote.professional.email}
-                            </p>
-                          )}
-                          {quote.professional?.specialty && (
-                            <p style={{ margin: 0 }}>📋 Especialidade: {quote.professional.specialty}</p>
-                          )}
-                          {quote.professional?.recommended_by && (
-                            <p style={{ margin: 0 }}>👤 Indicado por: {quote.professional.recommended_by}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Payment Details */}
-                      {quote.payment_method && (
-                        <div style={{ marginBottom: '16px' }}>
-                          <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>💳 Forma de Pagamento</h4>
-                          <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#1F2937', fontWeight: 600 }}>
-                            {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.emoji || '💳'} {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.label || quote.payment_method}
-                          </p>
-                          {quote.payment_details && (
-                            <p style={{ margin: 0, fontSize: '12px', color: '#6B7280', whiteSpace: 'pre-wrap' }}>{quote.payment_details}</p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Amount Info */}
-                      <div style={{ marginBottom: '16px', padding: '12px', background: '#F0FDF4', borderRadius: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
-                          <span style={{ color: '#6B7280' }}>Valor Original:</span>
-                          <span style={{ color: '#1F2937', fontWeight: 600 }}>{formatCurrency(Number(quote.amount))}</span>
-                        </div>
-                        {quote.negotiated_amount && quote.negotiated_amount !== Number(quote.amount) && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#059669', fontWeight: 600 }}>
-                            <span>Valor Negociado:</span>
-                            <span>{formatCurrency(quote.negotiated_amount)}</span>
+                      {/* Edit Button */}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                        {editingQuote === quote.id ? (
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button onClick={handleSaveQuote}
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#10B981', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                              <Check size={12} /> Salvar
+                            </button>
+                            <button onClick={() => { setEditingQuote(null); setEditQuoteForm({}) }}
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#E5E7EB', color: '#6B7280', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                              <X size={12} /> Cancelar
+                            </button>
                           </div>
+                        ) : (
+                          <button onClick={() => handleEditQuote(quote)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', background: 'white', color: '#374151', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                            <Edit3 size={12} /> Editar Orçamento
+                          </button>
                         )}
                       </div>
 
-                      {/* Notes */}
-                      {quote.notes && (
-                        <div style={{ marginBottom: '16px' }}>
-                          <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '4px' }}>📝 Observações</h4>
-                          <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>{quote.notes}</p>
+                      {/* Editable Quote Form */}
+                      {editingQuote === quote.id ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', padding: '14px', background: '#F0FDF4', borderRadius: '10px' }}>
+                          <div>
+                            <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Descrição</label>
+                            <input value={editQuoteForm.description || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, description: e.target.value })}
+                              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <div style={{ flex: 1 }}>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Valor Original</label>
+                              <input type="number" value={editQuoteForm.amount || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, amount: Number(e.target.value) })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Valor Negociado</label>
+                              <input type="number" value={editQuoteForm.negotiated_amount || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, negotiated_amount: Number(e.target.value) })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <div style={{ flex: 1 }}>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Forma de Pagamento</label>
+                              <select value={editQuoteForm.payment_method || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, payment_method: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }}>
+                                <option value="">Selecione...</option>
+                                {PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.emoji} {m.label}</option>)}
+                              </select>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Status</label>
+                              <select value={editQuoteForm.status || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, status: e.target.value as any })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }}>
+                                <option value="recebido">Recebido</option>
+                                <option value="avaliando">Avaliando</option>
+                                <option value="aprovado">Aprovado</option>
+                                <option value="contratado">Contratado</option>
+                                <option value="pago">Pago</option>
+                                <option value="recusado">Recusado</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Detalhes de Pagamento</label>
+                            <textarea value={editQuoteForm.payment_details || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, payment_details: e.target.value })}
+                              rows={2} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Observações</label>
+                            <textarea value={editQuoteForm.notes || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, notes: e.target.value })}
+                              rows={2} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                          </div>
                         </div>
-                      )}
+                      ) : (
+                        <>
+                          {/* Professional Info */}
+                          <div style={{ marginBottom: '16px' }}>
+                            <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>👤 Informações do Profissional</h4>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: '#6B7280' }}>
+                              {quote.professional?.phone && (
+                                <p style={{ margin: 0 }}>
+                                  <Phone size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} />
+                                  {quote.professional.phone}
+                                </p>
+                              )}
+                              {quote.professional?.email && (
+                                <p style={{ margin: 0 }}>
+                                  <Mail size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} />
+                                  {quote.professional.email}
+                                </p>
+                              )}
+                              {quote.professional?.specialty && (
+                                <p style={{ margin: 0 }}>📋 Especialidade: {quote.professional.specialty}</p>
+                              )}
+                              {quote.professional?.recommended_by && (
+                                <p style={{ margin: 0 }}>👤 Indicado por: {quote.professional.recommended_by}</p>
+                              )}
+                            </div>
+                          </div>
 
-                      {/* Metadata */}
-                      <div style={{ fontSize: '11px', color: '#9CA3AF' }}>
-                        Adicionado em {new Date(quote.created_at).toLocaleDateString('pt-BR')}
-                      </div>
+                          {/* Payment Details */}
+                          {quote.payment_method && (
+                            <div style={{ marginBottom: '16px' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>💳 Forma de Pagamento</h4>
+                              <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#1F2937', fontWeight: 600 }}>
+                                {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.emoji || '💳'} {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.label || quote.payment_method}
+                              </p>
+                              {quote.payment_details && (
+                                <p style={{ margin: 0, fontSize: '12px', color: '#6B7280', whiteSpace: 'pre-wrap' }}>{quote.payment_details}</p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Amount Info */}
+                          <div style={{ marginBottom: '16px', padding: '12px', background: '#F0FDF4', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                              <span style={{ color: '#6B7280' }}>Valor Original:</span>
+                              <span style={{ color: '#1F2937', fontWeight: 600 }}>{formatCurrency(Number(quote.amount))}</span>
+                            </div>
+                            {quote.negotiated_amount && quote.negotiated_amount !== Number(quote.amount) && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#059669', fontWeight: 600 }}>
+                                <span>Valor Negociado:</span>
+                                <span>{formatCurrency(quote.negotiated_amount)}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Notes */}
+                          {quote.notes && (
+                            <div style={{ marginBottom: '16px' }}>
+                              <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '4px' }}>📝 Observações</h4>
+                              <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>{quote.notes}</p>
+                            </div>
+                          )}
+
+                          {/* Metadata */}
+                          <div style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                            Adicionado em {new Date(quote.created_at).toLocaleDateString('pt-BR')}
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1010,69 +1246,125 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
                     {/* Expanded Details */}
                     {isExpanded && (
                       <div style={{ padding: '14px', borderTop: '1px solid #E5E7EB' }}>
-                        {/* Contact Info */}
-                        <div style={{ marginBottom: '12px' }}>
-                          <h5 style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 700, color: '#374151' }}>📞 Contato</h5>
-                          {pro.phone && (
-                            <p style={{ margin: '0 0 4px', fontSize: '12px', color: '#6B7280' }}>
-                              <Phone size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
-                              {pro.phone}
-                            </p>
-                          )}
-                          {pro.email && (
-                            <p style={{ margin: '0 0 4px', fontSize: '12px', color: '#6B7280' }}>
-                              <Mail size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
-                              {pro.email}
-                            </p>
-                          )}
-                          {!pro.phone && !pro.email && (
-                            <p style={{ margin: 0, fontSize: '12px', color: '#9CA3AF', fontStyle: 'italic' }}>Sem informações de contato</p>
+                        {/* Edit Button */}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                          {editingProfessional === pro.id ? (
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button onClick={handleSaveProfessional}
+                                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#10B981', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                <Check size={12} /> Salvar
+                              </button>
+                              <button onClick={() => { setEditingProfessional(null); setEditProfessionalForm({}) }}
+                                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#E5E7EB', color: '#6B7280', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                <X size={12} /> Cancelar
+                              </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => handleEditProfessional(pro)}
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', background: 'white', color: '#374151', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                              <Edit3 size={12} /> Editar
+                            </button>
                           )}
                         </div>
 
-                        {/* Recommended By */}
-                        {pro.recommended_by && (
-                          <div style={{ marginBottom: '12px' }}>
-                            <h5 style={{ margin: '0 0 4px', fontSize: '12px', fontWeight: 700, color: '#374151' }}>👤 Indicado por</h5>
-                            <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>{pro.recommended_by}</p>
+                        {/* Editable Professional Form */}
+                        {editingProfessional === pro.id ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', padding: '12px', background: '#F0FDF4', borderRadius: '10px' }}>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Nome</label>
+                              <input value={editProfessionalForm.name || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, name: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Telefone</label>
+                              <input value={editProfessionalForm.phone || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, phone: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Email</label>
+                              <input type="email" value={editProfessionalForm.email || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, email: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Especialidade</label>
+                              <input value={editProfessionalForm.specialty || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, specialty: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Indicado por</label>
+                              <input value={editProfessionalForm.recommended_by || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, recommended_by: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                            </div>
                           </div>
+                        ) : (
+                          <>
+                            {/* Contact Info */}
+                            <div style={{ marginBottom: '12px' }}>
+                              <h5 style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 700, color: '#374151' }}>📞 Contato</h5>
+                              {pro.phone && (
+                                <p style={{ margin: '0 0 4px', fontSize: '12px', color: '#6B7280' }}>
+                                  <Phone size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                                  {pro.phone}
+                                </p>
+                              )}
+                              {pro.email && (
+                                <p style={{ margin: '0 0 4px', fontSize: '12px', color: '#6B7280' }}>
+                                  <Mail size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                                  {pro.email}
+                                </p>
+                              )}
+                              {!pro.phone && !pro.email && (
+                                <p style={{ margin: 0, fontSize: '12px', color: '#9CA3AF', fontStyle: 'italic' }}>Sem informações de contato</p>
+                              )}
+                            </div>
+
+                            {/* Recommended By */}
+                            {pro.recommended_by && (
+                              <div style={{ marginBottom: '12px' }}>
+                                <h5 style={{ margin: '0 0 4px', fontSize: '12px', fontWeight: 700, color: '#374151' }}>👤 Indicado por</h5>
+                                <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>{pro.recommended_by}</p>
+                              </div>
+                            )}
+                          </>
                         )}
 
                         {/* Notes - Editable */}
-                        <div>
-                          <h5 style={{ margin: '0 0 4px', fontSize: '12px', fontWeight: 700, color: '#374151' }}>📝 Observações</h5>
-                          {editingNotes[pro.id] !== undefined ? (
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              <textarea
-                                value={editingNotes[pro.id]}
-                                onChange={e => setEditingNotes({ ...editingNotes, [pro.id]: e.target.value })}
-                                rows={2}
-                                style={{ flex: 1, fontSize: '12px', padding: '6px', borderRadius: '6px', border: '1px solid #E5E7EB' }}
-                              />
-                              <div style={{ display: 'flex', gap: '4px', flexDirection: 'column' }}>
-                                <button
-                                  onClick={() => handleSaveNotes(pro.id, editingNotes[pro.id])}
-                                  style={{ padding: '4px 8px', borderRadius: '4px', border: 'none', background: '#059669', color: 'white', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
-                                  <Check size={12} />
-                                </button>
-                                <button
-                                  onClick={() => { const n = { ...editingNotes }; delete n[pro.id]; setEditingNotes(n) }}
-                                  style={{ padding: '4px 8px', borderRadius: '4px', border: 'none', background: '#E5E7EB', color: '#6B7280', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
-                                  <X size={12} />
-                                </button>
+                        {!editingProfessional && (
+                          <div>
+                            <h5 style={{ margin: '0 0 4px', fontSize: '12px', fontWeight: 700, color: '#374151' }}>📝 Observações</h5>
+                            {editingNotes[pro.id] !== undefined ? (
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <textarea
+                                  value={editingNotes[pro.id]}
+                                  onChange={e => setEditingNotes({ ...editingNotes, [pro.id]: e.target.value })}
+                                  rows={2}
+                                  style={{ flex: 1, fontSize: '12px', padding: '6px', borderRadius: '6px', border: '1px solid #E5E7EB' }}
+                                />
+                                <div style={{ display: 'flex', gap: '4px', flexDirection: 'column' }}>
+                                  <button
+                                    onClick={() => handleSaveNotes(pro.id, editingNotes[pro.id])}
+                                    style={{ padding: '4px 8px', borderRadius: '4px', border: 'none', background: '#059669', color: 'white', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+                                    <Check size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => { const n = { ...editingNotes }; delete n[pro.id]; setEditingNotes(n) }}
+                                    style={{ padding: '4px 8px', borderRadius: '4px', border: 'none', background: '#E5E7EB', color: '#6B7280', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+                                    <X size={12} />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <p
-                              onClick={() => setEditingNotes({ ...editingNotes, [pro.id]: pro.notes || '' })}
-                              style={{
-                                margin: 0, fontSize: '12px', color: pro.notes ? '#6B7280' : '#9CA3AF', fontStyle: pro.notes ? 'normal' : 'italic',
-                                cursor: 'pointer', padding: '6px', borderRadius: '4px', background: '#F9FAFB'
-                              }}>
-                              {pro.notes || 'Clique para adicionar observações'}
-                            </p>
-                          )}
-                        </div>
+                            ) : (
+                              <p
+                                onClick={() => setEditingNotes({ ...editingNotes, [pro.id]: pro.notes || '' })}
+                                style={{
+                                  margin: 0, fontSize: '12px', color: pro.notes ? '#6B7280' : '#9CA3AF', fontStyle: pro.notes ? 'normal' : 'italic',
+                                  cursor: 'pointer', padding: '6px', borderRadius: '4px', background: '#F9FAFB'
+                                }}>
+                                {pro.notes || 'Clique para adicionar observações'}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

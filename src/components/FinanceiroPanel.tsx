@@ -597,13 +597,13 @@ export default function FinanceiroPanel({ currentUser }: Props) {
                     {showAddPayment === prof.professional ? (
                       <div style={{ padding: '12px', borderRadius: '8px', background: '#EFF6FF', border: '1px solid #BFDBFE', marginTop: '6px' }}>
                         <p style={{ fontSize: '12px', fontWeight: 600, color: '#1D4ED8', margin: '0 0 8px' }}>Nova Parcela</p>
-                        <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '6px' }}>
                           <input type="number" placeholder="Valor (R$)" value={newPayment.amount}
                             onChange={e => setNewPayment({ ...newPayment, amount: e.target.value })}
-                            style={{ flex: 1, padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
+                            style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
                           <input type="date" value={newPayment.due_date}
                             onChange={e => setNewPayment({ ...newPayment, due_date: e.target.value })}
-                            style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
+                            style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
                         </div>
                         <input type="text" placeholder="Observação (opcional)" value={newPayment.notes}
                           onChange={e => setNewPayment({ ...newPayment, notes: e.target.value })}
