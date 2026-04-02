@@ -264,7 +264,7 @@ export default function HomePage() {
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 20px' }}>
+    <div className="app-container">
       {showWelcome && (
         <WelcomeScreen
           userRole={userRole}
