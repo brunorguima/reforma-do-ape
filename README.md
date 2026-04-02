@@ -1,68 +1,192 @@
-# Reforma do Apê 🏠
+# Reforma Ap 62 🏠
 
-App de controle de mobília, eletrodomésticos e itens para reforma de apartamento.
+App completo de gestao de reforma de apartamento — orcamentos, obras, financeiro e mobilia.
+
+**Live:** [reforma-app.vercel.app](https://reforma-app.vercel.app)
+
+## Visao Geral
+
+Aplicacao web mobile-first para Bruno e Graziela controlarem toda a reforma do apartamento 62, incluindo orcamentos com profissionais, acompanhamento de obra, controle financeiro de parcelas/pagamentos, e planejamento de mobilia e eletrodomesticos. A designer de interiores (Mari) tem acesso restrito ao que e relevante para ela.
 
 ## Funcionalidades
 
-- **Controle por cômodo**: Organize itens por sala, quarto, cozinha, etc.
-- **Gestão de itens**: Adicione, edite e exclua mobília, eletrodomésticos, janelas e mais
-- **Fotos e referências**: Adicione URLs de imagens e links de referência para cada item
-- **Controle de custos**: Veja o total estimado, aprovado e já comprado
-- **Status de itens**: Desejado → Aprovado → Comprado
-- **Busca de promoções**: Cadastre e compare preços de diferentes lojas
-- **Multi-usuário**: Bruno, Esposa e Designer — sem necessidade de login
-- **Histórico**: Saiba quem sugeriu e modificou cada item
+### Orcamentos (Profissionais)
+- Cadastro de profissionais com contato, especialidade e indicacao
+- Orcamentos por profissional com status progressivo (Recebido -> Avaliando -> Aprovado -> Contratado)
+- Contratos fechados com valor original vs. negociado e economia calculada
+- Status "Pago" automatico (reconhecido quando todas as parcelas sao quitadas)
+- Edicao completa de contratos, orcamentos e profissionais (sem travas)
+- Forma de pagamento e detalhes por contrato
 
-## Setup
+### Obra
+- Acompanhamento de documentos e projetos da obra
+- Upload e organizacao de arquivos
+- Tarefas e checklist da obra
 
-### 1. Criar projeto Supabase (grátis)
+### Financeiro
+- Visao unificada de todos os contratos e pagamentos
+- Parcelas com timeline visual e status (pendente/pago)
+- Adicionar, editar e excluir parcelas
+- Proximos pagamentos com alerta de urgencia
+- Gastos por categoria com diluicao proporcional de descontos
+- Botao "Desfazer" para reverter status de pagamento
+- Audit log completo de todas as exclusoes
 
-1. Acesse [supabase.com](https://supabase.com) e crie uma conta
-2. Crie um novo projeto
-3. Vá em **SQL Editor** e cole o conteúdo do arquivo `supabase-schema.sql`
-4. Execute o SQL para criar as tabelas
-5. Vá em **Settings > API** e copie:
-   - Project URL
-   - anon/public key
+### Mobilia
+- Itens organizados por comodo (sala, quarto, cozinha, etc.)
+- Status: Ja Temos -> Desejado -> Aprovado -> Comprado
+- Fotos, links de referencia e busca de promocoes
+- Resumo de custos por status e comodo
 
-### 2. Configurar variáveis de ambiente
-
-Edite o arquivo `.env.local` na raiz do projeto:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon
-```
-
-### 3. Instalar e rodar
-
-```bash
-npm install
-npm run dev
-```
-
-Acesse http://localhost:3000
-
-### 4. Deploy (Vercel)
-
-1. Faça push do código para o GitHub
-2. Acesse [vercel.com](https://vercel.com) e importe o repositório
-3. Adicione as variáveis de ambiente (NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY)
-4. Deploy automático!
-
-## Usuários
-
-| Nome | Papel |
-|------|-------|
-| Bruno | Proprietário |
-| Esposa | Proprietária |
-| Designer | Designer |
-
-> Para alterar os nomes, edite `src/lib/constants.ts`
+### Seguranca e Permissoes
+- Acesso por chave na URL (sem login tradicional)
+- Bruno e Graziela: acesso total a tudo (editar, adicionar, excluir)
+- Mari (designer): pode excluir apenas itens que ela criou
+- Audit log registra quem deletou, quando e o que
 
 ## Tech Stack
 
-- **Next.js 16** + TypeScript
-- **Supabase** (PostgreSQL + Storage)
-- **Tailwind CSS**
-- **Lucide React** (ícones)
+| Camada | Tecnologia |
+|--------|-----------|
+| Frontend | Next.js 16 (App Router) + TypeScript |
+| UI | Inline styles + Lucide React icons |
+| Backend | Next.js API Routes (serverless) |
+| Banco de dados | Supabase (PostgreSQL) com RLS |
+| Deploy | Vercel (auto-deploy) |
+| Controle | GitHub |
+
+## Estrutura do Projeto
+
+```
+src/
+├── app/
+│   ├── page.tsx                    # Pagina principal com abas
+│   ├── layout.tsx                  # Layout global
+│   └── api/
+│       ├── audit-log/route.ts      # Log de auditoria
+│       ├── auth/route.ts           # Autenticacao por chave
+│       ├── budget-items/route.ts   # Itens de orcamento detalhado
+│       ├── categories/route.ts     # Categorias de mobilia
+│       ├── contracts/route.ts      # Contratos (GET, PATCH)
+│       ├── documents/              # Documentos da obra (CRUD)
+│       ├── items/                  # Itens de mobilia (CRUD)
+│       ├── payments/route.ts       # Parcelas (CRUD completo)
+│       ├── professionals/          # Profissionais (CRUD)
+│       ├── promotions/route.ts     # Busca de promocoes
+│       ├── quotes/                 # Orcamentos (CRUD)
+│       ├── rooms/route.ts          # Comodos
+│       ├── service-categories/     # Categorias de servico
+│       └── tasks/                  # Tarefas da obra (CRUD)
+├── components/
+│   ├── FinanceiroPanel.tsx         # Aba Financeiro
+│   ├── ProfessionalsPanel.tsx      # Aba Orcamentos
+│   ├── ObraPanel.tsx               # Aba Obra
+│   ├── ItemCard.tsx                # Card de item de mobilia
+│   ├── AddItemModal.tsx            # Modal de adicionar/editar item
+│   ├── CostSummary.tsx             # Resumo de custos
+│   ├── RoomSelector.tsx            # Seletor de comodos
+│   ├── UserSelector.tsx            # Seletor de usuario
+│   ├── WelcomeScreen.tsx           # Tela de boas-vindas
+│   └── PromotionSearch.tsx         # Busca de promocoes
+└── lib/
+    ├── supabase.ts                 # Cliente Supabase
+    ├── constants.ts                # Usuarios, status, formatacao
+    └── crawler.ts                  # Web crawler de precos
+```
+
+## Banco de Dados (Supabase)
+
+### Tabelas Principais
+
+| Tabela | Descricao |
+|--------|-----------|
+| `rooms` | Comodos do apartamento |
+| `categories` | Categorias de mobilia |
+| `items` | Itens de mobilia/eletrodomesticos |
+| `professionals` | Cadastro de profissionais |
+| `service_categories` | Categorias de servico (pintura, eletrica, etc.) |
+| `quotes` | Orcamentos recebidos |
+| `contracts` | Contratos fechados |
+| `budget_items` | Itens detalhados do orcamento |
+| `payments` | Parcelas de pagamento |
+| `tasks` | Tarefas da obra |
+| `documents` | Documentos e projetos |
+| `audit_log` | Log de auditoria (exclusoes) |
+| `promotions` | Promocoes encontradas |
+
+## URLs de Acesso
+
+| Usuario | URL |
+|---------|-----|
+| Bruno / Graziela | `?key=reforma62bg` |
+| Mari (designer) | `?key=mari-bp62` |
+
+## Setup Local
+
+```bash
+# 1. Clone
+git clone https://github.com/brunorguima/reforma-do-ape.git
+cd reforma-do-ape
+
+# 2. Instale dependencias
+npm install
+
+# 3. Configure variaveis de ambiente
+# Crie .env.local na raiz com:
+# NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon
+
+# 4. Rode localmente
+npm run dev
+```
+
+## Deploy
+
+O app e deployado na Vercel. Cada push no branch `main` faz deploy automatico.
+
+```bash
+# Deploy manual
+npx vercel --prod
+```
+
+## Validacao e Seguranca
+
+Todas as 21 API routes possuem:
+- Validacao de campos obrigatorios
+- Protecao contra valores negativos em campos monetarios
+- Verificacao de NaN/Infinity em calculos
+- Protecao contra divisao por zero
+- Validacao de IDs em operacoes de update/delete
+- Audit log em todas as exclusoes
+
+## Roadmap para Produto de Mercado
+
+Este app foi construido como ferramenta pessoal, mas tem potencial para SaaS de gestao de reformas.
+
+### Arquitetura para Escalar
+- Autenticacao real (Supabase Auth ou NextAuth)
+- Multi-tenancy (cada reforma e um "workspace")
+- Roles dinamicos (proprietario, designer, pedreiro, etc.)
+- Onboarding wizard para nova reforma
+- Internacionalizacao (pt-BR, en, es)
+
+### Features para Mercado
+- Dashboard com timeline da obra
+- Notificacoes push de vencimento de parcelas
+- Integracao com WhatsApp para comunicacao com profissionais
+- Comparativo automatico de precos (crawler expandido)
+- Galeria de fotos antes/depois por comodo
+- Templates de orcamento padrao por tipo de servico
+- Relatorios PDF exportaveis
+- App mobile nativo (React Native)
+
+### Infraestrutura
+- Testes automatizados (Jest + Playwright)
+- CI/CD pipeline no GitHub Actions
+- Monitoring (Sentry)
+- Analytics (PostHog ou Mixpanel)
+- Backup automatico do banco
+
+## Licenca
+
+Projeto privado de Bruno Guimaraes e Graziela.
