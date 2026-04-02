@@ -311,63 +311,32 @@ export default function HomePage() {
       </header>
 
       {/* Tab Navigation */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: '#f3f4f6', borderRadius: '12px', padding: '4px' }}>
-        <button
-          onClick={() => setActiveTab('orcamentos')}
-          style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-            padding: '12px 8px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-            fontWeight: 600, fontSize: '13px', transition: 'all 0.2s',
-            background: activeTab === 'orcamentos' ? 'white' : 'transparent',
-            color: activeTab === 'orcamentos' ? '#7c3aed' : '#6b7280',
-            boxShadow: activeTab === 'orcamentos' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-          }}
-        >
-          <Wrench size={16} />
-          Orçamentos
-        </button>
-        <button
-          onClick={() => setActiveTab('obra')}
-          style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-            padding: '12px 8px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-            fontWeight: 600, fontSize: '13px', transition: 'all 0.2s',
-            background: activeTab === 'obra' ? 'white' : 'transparent',
-            color: activeTab === 'obra' ? '#D97706' : '#6b7280',
-            boxShadow: activeTab === 'obra' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-          }}
-        >
-          <HardHat size={16} />
-          Obra
-        </button>
-        <button
-          onClick={() => setActiveTab('financeiro')}
-          style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-            padding: '12px 8px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-            fontWeight: 600, fontSize: '13px', transition: 'all 0.2s',
-            background: activeTab === 'financeiro' ? 'white' : 'transparent',
-            color: activeTab === 'financeiro' ? '#047857' : '#6b7280',
-            boxShadow: activeTab === 'financeiro' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-          }}
-        >
-          <DollarSign size={16} />
-          Financeiro
-        </button>
-        <button
-          onClick={() => setActiveTab('mobilia')}
-          style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-            padding: '12px 8px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-            fontWeight: 600, fontSize: '13px', transition: 'all 0.2s',
-            background: activeTab === 'mobilia' ? 'white' : 'transparent',
-            color: activeTab === 'mobilia' ? '#2563eb' : '#6b7280',
-            boxShadow: activeTab === 'mobilia' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-          }}
-        >
-          <Sofa size={16} />
-          Mobília
-        </button>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '24px', background: '#f3f4f6', borderRadius: '12px', padding: '4px' }}>
+        {([
+          { key: 'orcamentos' as TabType, label: 'Orçamentos', icon: <Wrench size={18} />, color: '#7c3aed' },
+          { key: 'obra' as TabType, label: 'Obra', icon: <HardHat size={18} />, color: '#D97706' },
+          { key: 'financeiro' as TabType, label: 'Financeiro', icon: <DollarSign size={18} />, color: '#047857' },
+          { key: 'mobilia' as TabType, label: 'Mobília', icon: <Sofa size={18} />, color: '#2563eb' },
+        ]).map(tab => {
+          const isActive = activeTab === tab.key
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
+                padding: '10px 4px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                fontWeight: 600, fontSize: '11px', transition: 'all 0.2s',
+                background: isActive ? 'white' : 'transparent',
+                color: isActive ? tab.color : '#6b7280',
+                boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              }}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Tab Content */}
