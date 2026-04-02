@@ -14,10 +14,10 @@ import FinanceiroPanel from '@/components/FinanceiroPanel'
 import WelcomeScreen from '@/components/WelcomeScreen'
 import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign } from 'lucide-react'
 
-type TabType = 'mobilia' | 'obra' | 'financeiro' | 'profissionais'
+type TabType = 'orcamentos' | 'obra' | 'financeiro' | 'mobilia'
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<TabType>('mobilia')
+  const [activeTab, setActiveTab] = useState<TabType>('orcamentos')
   const [currentUser, setCurrentUser] = useState<UserID>('bruno')
   const [rooms, setRooms] = useState<Room[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -313,101 +313,71 @@ export default function HomePage() {
       {/* Tab Navigation */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: '#f3f4f6', borderRadius: '12px', padding: '4px' }}>
         <button
-          onClick={() => setActiveTab('mobilia')}
+          onClick={() => setActiveTab('orcamentos')}
           style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '12px 16px',
-            borderRadius: '10px',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 600,
-            fontSize: '14px',
-            transition: 'all 0.2s',
-            background: activeTab === 'mobilia' ? 'white' : 'transparent',
-            color: activeTab === 'mobilia' ? '#2563eb' : '#6b7280',
-            boxShadow: activeTab === 'mobilia' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+            padding: '12px 8px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+            fontWeight: 600, fontSize: '13px', transition: 'all 0.2s',
+            background: activeTab === 'orcamentos' ? 'white' : 'transparent',
+            color: activeTab === 'orcamentos' ? '#7c3aed' : '#6b7280',
+            boxShadow: activeTab === 'orcamentos' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
           }}
         >
-          <Sofa size={18} />
-          Mobília
+          <Wrench size={16} />
+          Orçamentos
         </button>
         <button
           onClick={() => setActiveTab('obra')}
           style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '12px 16px',
-            borderRadius: '10px',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 600,
-            fontSize: '14px',
-            transition: 'all 0.2s',
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+            padding: '12px 8px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+            fontWeight: 600, fontSize: '13px', transition: 'all 0.2s',
             background: activeTab === 'obra' ? 'white' : 'transparent',
             color: activeTab === 'obra' ? '#D97706' : '#6b7280',
             boxShadow: activeTab === 'obra' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
           }}
         >
-          <HardHat size={18} />
+          <HardHat size={16} />
           Obra
         </button>
         <button
           onClick={() => setActiveTab('financeiro')}
           style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '12px 16px',
-            borderRadius: '10px',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 600,
-            fontSize: '14px',
-            transition: 'all 0.2s',
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+            padding: '12px 8px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+            fontWeight: 600, fontSize: '13px', transition: 'all 0.2s',
             background: activeTab === 'financeiro' ? 'white' : 'transparent',
             color: activeTab === 'financeiro' ? '#047857' : '#6b7280',
             boxShadow: activeTab === 'financeiro' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
           }}
         >
-          <DollarSign size={18} />
+          <DollarSign size={16} />
           Financeiro
         </button>
         <button
-          onClick={() => setActiveTab('profissionais')}
+          onClick={() => setActiveTab('mobilia')}
           style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '12px 16px',
-            borderRadius: '10px',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 600,
-            fontSize: '14px',
-            transition: 'all 0.2s',
-            background: activeTab === 'profissionais' ? 'white' : 'transparent',
-            color: activeTab === 'profissionais' ? '#7c3aed' : '#6b7280',
-            boxShadow: activeTab === 'profissionais' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+            padding: '12px 8px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+            fontWeight: 600, fontSize: '13px', transition: 'all 0.2s',
+            background: activeTab === 'mobilia' ? 'white' : 'transparent',
+            color: activeTab === 'mobilia' ? '#2563eb' : '#6b7280',
+            boxShadow: activeTab === 'mobilia' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
           }}
         >
-          <Wrench size={18} />
-          Profissionais
+          <Sofa size={16} />
+          Mobília
         </button>
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'mobilia' ? (
+      {activeTab === 'orcamentos' ? (
+        <ProfessionalsPanel currentUser={currentUser} rooms={rooms} />
+      ) : activeTab === 'obra' ? (
+        <ObraPanel currentUser={currentUser} />
+      ) : activeTab === 'financeiro' ? (
+        <FinanceiroPanel currentUser={currentUser} />
+      ) : (
         <>
           {/* Cost Summary */}
           <div style={{ marginBottom: '24px' }}>
@@ -527,12 +497,6 @@ export default function HomePage() {
             editingItem={editingItem}
           />
         </>
-      ) : activeTab === 'obra' ? (
-        <ObraPanel currentUser={currentUser} />
-      ) : activeTab === 'financeiro' ? (
-        <FinanceiroPanel currentUser={currentUser} />
-      ) : (
-        <ProfessionalsPanel currentUser={currentUser} rooms={rooms} />
       )}
     </div>
   )

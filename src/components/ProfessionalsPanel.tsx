@@ -721,7 +721,9 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
                               fontSize: '12px', fontWeight: 600, appearance: 'auto',
                             }}
                           >
-                            {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                            {Object.entries(STATUS_CONFIG)
+                              .filter(([key]) => key !== 'pago')
+                              .map(([key, cfg]) => (
                               <option key={key} value={key}>{cfg.emoji} {cfg.label}</option>
                             ))}
                           </select>
@@ -1105,7 +1107,6 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
                                 <option value="avaliando">Avaliando</option>
                                 <option value="aprovado">Aprovado</option>
                                 <option value="contratado">Contratado</option>
-                                <option value="pago">Pago</option>
                                 <option value="recusado">Recusado</option>
                               </select>
                             </div>
