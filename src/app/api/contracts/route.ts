@@ -17,6 +17,25 @@ export async function PATCH(req: NextRequest) {
 
   if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
+  // Validate numeric fields if being updated
+  if (updates.original_total !== undefined) {
+    if (updates.original_total === null || isNaN(Number(updates.original_total))) {
+      return NextResponse.json({ error: 'Valid original total is required' }, { status: 400 })
+    }
+    if (Number(updates.original_total) < 0) {
+      return NextResponse.json({ error: 'Original total cannot be negative' }, { status: 400 })
+    }
+  }
+
+  if (updates.negotiated_total !== undefined) {
+    if (updates.negotiated_total === null || isNaN(Number(updates.negotiated_total))) {
+      return NextResponse.json({ error: 'Valid negotiated total is required' }, { status: 400 })
+    }
+    if (Number(updates.negotiated_total) < 0) {
+      return NextResponse.json({ error: 'Negotiated total cannot be negative' }, { status: 400 })
+    }
+  }
+
   const { data, error } = await supabase
     .from('contracts')
     .update(updates)

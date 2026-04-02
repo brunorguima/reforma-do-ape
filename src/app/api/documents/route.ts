@@ -13,6 +13,15 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
+
+  // Validate required fields
+  if (!body.title?.trim()) {
+    return NextResponse.json({ error: 'Title is required' }, { status: 400 })
+  }
+  if (!body.type) {
+    return NextResponse.json({ error: 'Document type is required' }, { status: 400 })
+  }
+
   const { data, error } = await supabase
     .from('documents')
     .insert({

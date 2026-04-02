@@ -18,11 +18,25 @@ export async function POST(req: NextRequest) {
     description, amount, status, notes, scheduled_date, created_by
   } = body
 
+  // Validate required fields
+  if (!professional_id) {
+    return NextResponse.json({ error: 'Professional is required' }, { status: 400 })
+  }
+  if (!description?.trim()) {
+    return NextResponse.json({ error: 'Description is required' }, { status: 400 })
+  }
+  if (amount === null || amount === undefined || isNaN(Number(amount))) {
+    return NextResponse.json({ error: 'Valid amount is required' }, { status: 400 })
+  }
+  if (Number(amount) < 0) {
+    return NextResponse.json({ error: 'Amount cannot be negative' }, { status: 400 })
+  }
+
   const { data, error } = await supabase
     .from('quotes')
     .insert({
       professional_id, service_category_id, room_id,
-      description, amount: amount || 0, status: status || 'recebido',
+      description, amount: Number(amount), status: status || 'recebido',
       notes, scheduled_date, created_by
     })
     .select('*, professional:professionals(*), service_category:service_categories(*), room:rooms(*)')

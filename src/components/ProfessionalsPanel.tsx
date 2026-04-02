@@ -789,7 +789,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
               const cPayments = payments.filter(p => p.professional === contract.professional)
               const totalPaidC = cPayments.filter(p => p.status === 'pago').reduce((s, p) => s + p.amount, 0)
               const economia = contract.original_total - contract.negotiated_total
-              const percentPaid = Math.round((totalPaidC / contract.negotiated_total) * 100)
+              const percentPaid = contract.negotiated_total > 0 ? Math.round((totalPaidC / contract.negotiated_total) * 100) : 0
               const isExpanded = expandedContract === contract.id
               const nextPayment = cPayments.find(p => p.status === 'pendente')
               const categories = [...new Set(cBudgetItems.map(b => b.category))]

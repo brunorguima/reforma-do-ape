@@ -13,8 +13,8 @@ interface ItemCardProps {
 export default function ItemCard({ item, onEdit, onDelete, onStatusChange }: ItemCardProps) {
   const statusConfig = STATUS_CONFIG[item.status]
   const suggestedByUser = USERS.find(u => u.id === item.suggested_by)
-  const bestPrice = item.price_suggestions?.length
-    ? Math.min(...item.price_suggestions.map(p => p.price))
+  const bestPrice = item.price_suggestions && item.price_suggestions.length > 0
+    ? Math.min(...item.price_suggestions.map(p => p.price ?? 0))
     : null
   const hasPromo = item.price_suggestions?.some(p => p.is_promotion)
 

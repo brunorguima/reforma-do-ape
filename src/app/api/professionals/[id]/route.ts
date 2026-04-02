@@ -34,6 +34,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
+  if (!id) {
+    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+  }
+
   const { error } = await supabase
     .from('professionals')
     .delete()

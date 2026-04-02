@@ -30,6 +30,29 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   const { images, ...itemData } = body
 
+  // Validate required fields
+  if (!itemData.name?.trim()) {
+    return NextResponse.json({ error: 'Item name is required' }, { status: 400 })
+  }
+  if (!itemData.room_id) {
+    return NextResponse.json({ error: 'Room is required' }, { status: 400 })
+  }
+
+  // Validate quantity and price if provided
+  const quantity = itemData.quantity || 1
+  if (quantity < 1) {
+    return NextResponse.json({ error: 'Quantity must be at least 1' }, { status: 400 })
+  }
+
+  if (itemData.estimated_price !== null && itemData.estimated_price !== undefined) {
+    if (isNaN(Number(itemData.estimated_price))) {
+      return NextResponse.json({ error: 'Valid price is required' }, { status: 400 })
+    }
+    if (Number(itemData.estimated_price) < 0) {
+      return NextResponse.json({ error: 'Price cannot be negative' }, { status: 400 })
+    }
+  }
+
   // Insert item
   const { data: item, error: itemError } = await supabase
     .from('items')
@@ -38,8 +61,8 @@ export async function POST(request: NextRequest) {
       description: itemData.description,
       room_id: itemData.room_id,
       category_id: itemData.category_id,
-      quantity: itemData.quantity || 1,
-      estimated_price: itemData.estimated_price,
+      quantity,
+      estimated_price: itemData.estimated_price ? Number(itemData.estimated_price) : null,
       status: itemData.status || 'desejado',
       reference_links: itemData.reference_links || [],
       suggested_by: itemData.suggested_by,

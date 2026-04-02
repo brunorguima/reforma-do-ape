@@ -40,8 +40,10 @@ export const STATUS_CONFIG = {
   comprado: { label: 'Comprado', color: '#3B82F6', bg: '#DBEAFE' },
 } as const
 
-export const formatCurrency = (value: number | null) => {
+export const formatCurrency = (value: number | null | undefined) => {
   if (value === null || value === undefined) return 'Sem preço'
+  // Handle NaN and Infinity
+  if (!Number.isFinite(value)) return 'Sem preço'
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',

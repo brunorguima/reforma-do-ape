@@ -6,6 +6,33 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const body = await request.json()
   const { images, ...itemData } = body
 
+  if (!id) {
+    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+  }
+
+  // Validate required fields
+  if (!itemData.name?.trim()) {
+    return NextResponse.json({ error: 'Item name is required' }, { status: 400 })
+  }
+  if (!itemData.room_id) {
+    return NextResponse.json({ error: 'Room is required' }, { status: 400 })
+  }
+
+  // Validate quantity and price
+  const quantity = itemData.quantity || 1
+  if (quantity < 1) {
+    return NextResponse.json({ error: 'Quantity must be at least 1' }, { status: 400 })
+  }
+
+  if (itemData.estimated_price !== null && itemData.estimated_price !== undefined) {
+    if (isNaN(Number(itemData.estimated_price))) {
+      return NextResponse.json({ error: 'Valid price is required' }, { status: 400 })
+    }
+    if (Number(itemData.estimated_price) < 0) {
+      return NextResponse.json({ error: 'Price cannot be negative' }, { status: 400 })
+    }
+  }
+
   const { data: item, error } = await supabase
     .from('items')
     .update({
@@ -13,8 +40,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       description: itemData.description,
       room_id: itemData.room_id,
       category_id: itemData.category_id,
-      quantity: itemData.quantity,
-      estimated_price: itemData.estimated_price,
+      quantity,
+      estimated_price: itemData.estimated_price ? Number(itemData.estimated_price) : null,
       status: itemData.status,
       reference_links: itemData.reference_links || [],
       updated_by: itemData.updated_by,
@@ -58,6 +85,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   const { searchParams } = new URL(request.url)
   const userName = searchParams.get('user') || 'sistema'
 
+  if (!id) {
+    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+  }
+
   // Get item name for log
   const { data: item } = await supabase.from('items').select('name').eq('id', id).single()
 
@@ -70,6 +101,14 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await request.json()
+
+  if (!id) {
+    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+  }
+
+  if (!body.status) {
+    return NextResponse.json({ error: 'Status is required' }, { status: 400 })
+  }
 
   const { data: item, error } = await supabase
     .from('items')
