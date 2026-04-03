@@ -92,6 +92,14 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null)
 
+  // Use our view API for uploaded files to show a clean URL with proper filename
+  const getViewUrl = (doc: Document) => {
+    if (doc.file_path) {
+      return `/api/documents/view?id=${doc.id}`
+    }
+    return doc.url || '#'
+  }
+
   const fetchTasks = useCallback(async () => {
     try {
       const res = await fetch('/api/tasks')
@@ -455,7 +463,7 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
                                 </p>
                               )}
                             </div>
-                            <a href={doc.url} target="_blank" rel="noopener noreferrer"
+                            <a href={getViewUrl(doc)} target="_blank" rel="noopener noreferrer"
                               style={{ padding: '6px 10px', borderRadius: '6px', background: '#D97706', color: 'white', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}
                             >
                               <Eye size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
@@ -477,7 +485,7 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           {doc.url && (
                             <a
-                              href={doc.url}
+                              href={doc.file_path ? getViewUrl(doc) : doc.url}
                               target="_blank"
                               rel="noopener noreferrer"
                               style={{
