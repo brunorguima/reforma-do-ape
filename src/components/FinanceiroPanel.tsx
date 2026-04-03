@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import type { UserID } from '@/lib/constants'
-import { DollarSign, TrendingDown, CheckCircle2, Clock, AlertTriangle, Calendar, CreditCard, PieChart, Users, Plus, Pencil, Trash2, Save, X, ChevronDown, ChevronUp, History } from 'lucide-react'
+import { DollarSign, TrendingDown, CheckCircle2, Clock, AlertTriangle, Calendar, CreditCard, PieChart, Users, Plus, Pencil, Trash2, Save, X, ChevronDown, ChevronUp, History, ShoppingCart } from 'lucide-react'
 
 interface Contract {
   id: string; professional: string; role: string; original_total: number; negotiated_total: number;
@@ -27,6 +27,26 @@ interface Quote {
 interface AuditEntry {
   id: string; action: string; entity_type: string; entity_id: string;
   entity_description: string; old_values: Record<string, unknown>; performed_by: string; performed_at: string;
+}
+interface Material {
+  id: string; name: string; description?: string; category: string; quantity: number;
+  unit_price: number; total_price: number; store?: string; purchase_url?: string;
+  purchased_by: string; purchase_date: string; notes?: string;
+}
+
+const MATERIAL_CATEGORIES: Record<string, { label: string; emoji: string }> = {
+  eletrica: { label: 'Elétrica', emoji: '⚡' },
+  hidraulica: { label: 'Hidráulica', emoji: '🚿' },
+  acabamento: { label: 'Acabamento', emoji: '✨' },
+  pintura: { label: 'Pintura', emoji: '🎨' },
+  alvenaria: { label: 'Alvenaria', emoji: '🧱' },
+  piso: { label: 'Piso/Revestimento', emoji: '🏗️' },
+  iluminacao: { label: 'Iluminação', emoji: '💡' },
+  marcenaria: { label: 'Marcenaria', emoji: '🪚' },
+  ferragem: { label: 'Ferragem', emoji: '🔩' },
+  limpeza: { label: 'Limpeza', emoji: '🧹' },
+  ferramentas: { label: 'Ferramentas', emoji: '🔧' },
+  outro: { label: 'Outro', emoji: '📦' },
 }
 
 const PAYMENT_METHOD_LABELS: Record<string, { label: string; emoji: string }> = {
@@ -55,6 +75,7 @@ export default function FinanceiroPanel({ currentUser }: Props) {
   const [payments, setPayments] = useState<Payment[]>([])
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
   const [quotes, setQuotes] = useState<Quote[]>([])
+  const [materials, setMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedProf, setExpandedProf] = useState<string | null>(null)
   const [editingPayment, setEditingPayment] = useState<string | null>(null)
@@ -87,14 +108,15 @@ export default function FinanceiroPanel({ currentUser }: Props) {
 
   const fetchData = useCallback(async () => {
     try {
-      const [cRes, pRes, bRes, qRes] = await Promise.all([
-        fetch('/api/contracts'), fetch('/api/payments'), fetch('/api/budget-items'), fetch('/api/quotes'),
+      const [cRes, pRes, bRes, qRes, mRes] = await Promise.all([
+        fetch('/api/contracts'), fetch('/api/payments'), fetch('/api/budget-items'), fetch('/api/quotes'), fetch('/api/materials'),
       ])
-      const [cData, pData, bData, qData] = await Promise.all([cRes.json(), pRes.json(), bRes.json(), qRes.json()])
+      const [cData, pData, bData, qData, mData] = await Promise.all([cRes.json(), pRes.json(), bRes.json(), qRes.json(), mRes.json()])
       setContracts(Array.isArray(cData) ? cData : [])
       setPayments(Array.isArray(pData) ? pData : [])
       setBudgetItems(Array.isArray(bData) ? bData : [])
       setQuotes(Array.isArray(qData) ? qData : [])
+      setMaterials(Array.isArray(mData) ? mData : [])
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
   }, [])
@@ -242,10 +264,28 @@ export default function FinanceiroPanel({ currentUser }: Props) {
 
   const totalOriginal = unifiedContracts.reduce((s, c) => s + c.originalTotal, 0)
   const totalNegociado = unifiedContracts.reduce((s, c) => s + c.negotiatedTotal, 0)
-  const totalPago = payments.filter(p => p.status === 'pago').reduce((s, p) => s + p.amount, 0)
+  const totalPagoServicos = payments.filter(p => p.status === 'pago').reduce((s, p) => s + p.amount, 0)
   const totalPendente = payments.filter(p => p.status === 'pendente').reduce((s, p) => s + p.amount, 0)
   const economiaTotal = totalOriginal - totalNegociado
-  const percentPago = totalNegociado > 0 ? Math.round((totalPago / totalNegociado) * 100) : 0
+
+  // Materials totals
+  const materiaisTotal = materials.reduce((s, m) => s + m.total_price, 0)
+  const materiaisPorCategoria = materials.reduce<Record<string, { total: number; count: number }>>((acc, m) => {
+    const cat = m.category || 'outro'
+    if (!acc[cat]) acc[cat] = { total: 0, count: 0 }
+    acc[cat].total += m.total_price
+    acc[cat].count += 1
+    return acc
+  }, {})
+  const materiaisPorComprador = materials.reduce<Record<string, number>>((acc, m) => {
+    acc[m.purchased_by] = (acc[m.purchased_by] || 0) + m.total_price
+    return acc
+  }, {})
+
+  // Grand totals (services + materials)
+  const totalPago = totalPagoServicos + materiaisTotal
+  const totalGeral = totalNegociado + materiaisTotal
+  const percentPago = totalGeral > 0 ? Math.round((totalPago / totalGeral) * 100) : 0
 
   const upcomingPayments = payments.filter(p => p.status === 'pendente').sort((a, b) => a.due_date.localeCompare(b.due_date))
   const nextPayment = upcomingPayments[0]
@@ -340,25 +380,29 @@ export default function FinanceiroPanel({ currentUser }: Props) {
           </div>
         </div>
         <p style={{ fontSize: '12px', opacity: 0.7, margin: '0 0 12px' }}>
-          {unifiedContracts.length} contrato{unifiedContracts.length !== 1 ? 's' : ''} fechado{unifiedContracts.length !== 1 ? 's' : ''}
+          {unifiedContracts.length} contrato{unifiedContracts.length !== 1 ? 's' : ''} · {materials.length} materia{materials.length !== 1 ? 'is' : 'l'}
         </p>
 
         <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', height: '10px', overflow: 'hidden', marginBottom: '12px' }}>
           <div style={{ width: `${percentPago}%`, height: '100%', background: 'linear-gradient(90deg, #60A5FA, #93C5FD)', borderRadius: '8px', transition: 'width 0.5s ease' }} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '14px', fontWeight: 800 }}>{fmt(totalPago)}</div>
-            <div style={{ fontSize: '10px', opacity: 0.7 }}>Pago ({percentPago}%)</div>
+            <div style={{ fontSize: '10px', opacity: 0.7 }}>Total Pago ({percentPago}%)</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '14px', fontWeight: 800 }}>{fmt(totalPendente)}</div>
-            <div style={{ fontSize: '10px', opacity: 0.7 }}>Restante</div>
+            <div style={{ fontSize: '14px', fontWeight: 800 }}>{fmt(totalGeral)}</div>
+            <div style={{ fontSize: '10px', opacity: 0.7 }}>Total Geral</div>
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '14px', fontWeight: 800 }}>{fmt(totalNegociado)}</div>
-            <div style={{ fontSize: '10px', opacity: 0.7 }}>Total Fechado</div>
+            <div style={{ fontSize: '10px', opacity: 0.7 }}>Serviços</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '14px', fontWeight: 800 }}>{fmt(materiaisTotal)}</div>
+            <div style={{ fontSize: '10px', opacity: 0.7 }}>Materiais</div>
           </div>
         </div>
       </div>
@@ -721,6 +765,88 @@ export default function FinanceiroPanel({ currentUser }: Props) {
           </div>
         </div>
       )}
+
+      {/* === MATERIAIS SECTION === */}
+      {materials.length > 0 && (
+        <div style={{
+          marginTop: '20px', borderRadius: '14px', background: '#F0FDF4', border: '1px solid #BBF7D0', padding: '16px',
+        }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#166534', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <ShoppingCart size={16} /> Materiais de Obra
+            <span style={{ fontSize: '12px', fontWeight: 500, color: '#4ADE80', marginLeft: 'auto' }}>{materials.length} ite{materials.length !== 1 ? 'ns' : 'm'}</span>
+          </h3>
+
+          {/* By Category */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+            {Object.entries(materiaisPorCategoria)
+              .sort(([, a], [, b]) => b.total - a.total)
+              .map(([cat, data]) => {
+                const catInfo = MATERIAL_CATEGORIES[cat] || { label: cat, emoji: '📦' }
+                const maxMatCat = Math.max(...Object.values(materiaisPorCategoria).map(d => d.total))
+                return (
+                  <div key={cat} style={{ padding: '10px 12px', borderRadius: '10px', background: 'white', border: '1px solid #D1FAE5' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ fontWeight: 600, fontSize: '13px', color: '#374151' }}>{catInfo.emoji} {catInfo.label}</span>
+                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#166534' }}>{fmt(data.total)}</span>
+                    </div>
+                    <div style={{ background: '#ECFDF5', borderRadius: '4px', height: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${(data.total / maxMatCat) * 100}%`, height: '100%', background: '#059669', borderRadius: '4px' }} />
+                    </div>
+                    <p style={{ fontSize: '11px', color: '#6B7280', margin: '3px 0 0' }}>{data.count} ite{data.count !== 1 ? 'ns' : 'm'}</p>
+                  </div>
+                )
+              })}
+          </div>
+
+          {/* By Buyer */}
+          {Object.keys(materiaisPorComprador).length > 1 && (
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              {Object.entries(materiaisPorComprador).map(([buyer, total]) => (
+                <div key={buyer} style={{
+                  flex: 1, padding: '8px 12px', borderRadius: '8px', background: 'white', border: '1px solid #D1FAE5',
+                  textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: '11px', color: '#6B7280' }}>👤 {buyer}</div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#166534' }}>{fmt(total)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{
+            padding: '10px 14px', borderRadius: '10px', background: '#059669', color: 'white',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <span style={{ fontSize: '13px', fontWeight: 600 }}>Total Materiais</span>
+            <span style={{ fontSize: '16px', fontWeight: 800 }}>{fmt(materiaisTotal)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* === RESUMO GERAL === */}
+      <div style={{
+        marginTop: '20px', borderRadius: '14px', background: 'linear-gradient(135deg, #1E293B, #334155)',
+        padding: '16px', color: 'white',
+      }}>
+        <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 12px' }}>📊 Resumo Geral da Reforma</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', opacity: 0.7 }}>Serviços</div>
+            <div style={{ fontSize: '15px', fontWeight: 800 }}>{fmt(totalNegociado)}</div>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', opacity: 0.7 }}>Materiais</div>
+            <div style={{ fontSize: '15px', fontWeight: 800 }}>{fmt(materiaisTotal)}</div>
+          </div>
+          <div style={{ gridColumn: '1 / -1', background: 'rgba(255,255,255,0.15)', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', opacity: 0.7 }}>Total Investido na Reforma</div>
+            <div style={{ fontSize: '20px', fontWeight: 800 }}>{fmt(totalGeral)}</div>
+            <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px' }}>
+              {fmt(totalPago)} pago · {fmt(totalGeral - totalPago)} restante
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
