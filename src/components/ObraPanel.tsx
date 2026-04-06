@@ -463,7 +463,7 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
                                 </p>
                               )}
                             </div>
-                            <a href={getViewUrl(doc)} target="_blank" rel="noopener noreferrer"
+                            <a href={getViewUrl(doc)}
                               style={{ padding: '6px 10px', borderRadius: '6px', background: '#D97706', color: 'white', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}
                             >
                               <Eye size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
@@ -486,8 +486,7 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
                           {doc.url && (
                             <a
                               href={doc.file_path ? getViewUrl(doc) : doc.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                              {...(doc.file_path ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',

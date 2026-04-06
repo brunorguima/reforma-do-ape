@@ -17,182 +17,132 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Document not found' }, { status: 404 })
   }
 
-  // For link-only documents, redirect
   if (!doc.file_path) {
-    if (doc.url) {
-      return NextResponse.redirect(doc.url)
-    }
+    if (doc.url) return NextResponse.redirect(doc.url)
     return NextResponse.json({ error: 'No file' }, { status: 404 })
   }
 
   const fileName = doc.file_name || doc.title || 'Documento'
   const rawUrl = `/api/documents/raw?id=${id}`
   const isImage = (doc.file_type || '').startsWith('image/')
-  const isPdf = (doc.file_type || '') === 'application/pdf'
 
-  // Return an HTML page with floating back button + full-page document
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${fileName} — Reforma App</title>
+  <title>${fileName}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #111827;
-      overflow: hidden;
-    }
+    html, body { height: 100%; background: #0F172A; overflow: hidden; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
-    /* Floating toolbar - small, stays out of the way */
-    .toolbar {
-      position: fixed; top: 12px; left: 12px; right: 12px; z-index: 1000;
+    /* Top bar - always visible */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; gap: 8px;
-      pointer-events: none;
+      padding: 10px 12px;
+      background: #1E293B;
+      border-bottom: 1px solid #334155;
     }
-    .toolbar > * { pointer-events: auto; }
-
     .btn {
-      display: flex; align-items: center; gap: 5px;
-      padding: 10px 16px;
-      background: rgba(30, 58, 95, 0.95);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      color: white; border: none; border-radius: 12px;
-      font-size: 14px; font-weight: 600;
+      padding: 10px 18px;
+      background: #2563EB; color: white;
+      border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 700;
       cursor: pointer; text-decoration: none;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-      transition: transform 0.15s, background 0.2s;
-      white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 6px;
+      -webkit-tap-highlight-color: transparent;
     }
-    .btn:active { transform: scale(0.95); }
-    .btn:hover { background: rgba(37, 99, 235, 0.95); }
-
-    .btn-back { font-size: 15px; }
-
-    .file-label {
-      flex: 1;
-      padding: 8px 14px;
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border-radius: 10px;
-      color: rgba(255,255,255,0.8);
-      font-size: 12px; font-weight: 500;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      min-width: 0;
-    }
-
-    .btn-download {
-      font-size: 13px;
+    .btn:active { opacity: 0.8; transform: scale(0.97); }
+    .btn-secondary {
+      background: #334155;
+      font-size: 14px; font-weight: 600;
       padding: 10px 14px;
     }
-
-    /* Full-page content */
-    .content {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      overflow: auto;
-      -webkit-overflow-scrolling: touch;
+    .fname {
+      flex: 1; color: #CBD5E1; font-size: 13px; font-weight: 500;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      padding: 0 4px;
     }
 
-    /* PDF: use embed for native viewer with zoom */
-    embed, object {
-      width: 100%; height: 100%;
+    /* Content area */
+    .viewer {
+      position: fixed; top: 53px; left: 0; right: 0; bottom: 0;
+      overflow: auto; -webkit-overflow-scrolling: touch;
     }
 
-    /* Image: zoomable */
-    .img-container {
-      width: 100%; height: 100%;
-      display: flex; align-items: center; justify-content: center;
-      overflow: auto;
-      touch-action: pinch-zoom pan-x pan-y;
-    }
-    .img-container img {
-      max-width: 100%;
-      max-height: 100vh;
-      object-fit: contain;
-    }
+    /* Desktop: embedded PDF */
+    .viewer embed { width: 100%; height: 100%; display: block; }
 
-    /* PDF fallback for mobile that can't render embed */
-    .pdf-fallback {
+    /* Image viewer: scrollable + zoomable */
+    .img-wrap {
+      min-height: 100%; display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .img-wrap img { max-width: 100%; height: auto; border-radius: 4px; }
+
+    /* Mobile fallback card */
+    .mobile-card {
       display: none;
       flex-direction: column; align-items: center; justify-content: center;
-      height: 100%; gap: 16px; color: white; text-align: center; padding: 40px;
+      height: 100%; padding: 40px 24px; text-align: center; gap: 20px;
     }
-    .pdf-fallback .icon { font-size: 64px; }
-    .pdf-fallback p { font-size: 15px; color: rgba(255,255,255,0.7); max-width: 300px; line-height: 1.5; }
-    .pdf-fallback .open-btn {
+    .mobile-card .icon { font-size: 72px; }
+    .mobile-card h2 { color: white; font-size: 18px; word-break: break-word; }
+    .mobile-card p { color: #94A3B8; font-size: 14px; line-height: 1.6; max-width: 280px; }
+    .mobile-card .open-btn {
+      padding: 16px 32px;
+      background: #2563EB; color: white; border: none; border-radius: 14px;
+      font-size: 17px; font-weight: 700; cursor: pointer;
+      text-decoration: none;
       display: inline-flex; align-items: center; gap: 8px;
-      padding: 14px 28px;
-      background: #2563EB; color: white; border: none; border-radius: 12px;
-      font-size: 16px; font-weight: 700;
-      cursor: pointer; text-decoration: none;
     }
+    .mobile-card .open-btn:active { opacity: 0.8; }
+    .mobile-card .hint { color: #64748B; font-size: 12px; margin-top: 4px; }
   </style>
 </head>
 <body>
-  <!-- Floating toolbar -->
-  <div class="toolbar">
-    <button class="btn btn-back" onclick="goBack()" title="Voltar ao app">
-      ← Voltar
-    </button>
-    <div class="file-label">${fileName}</div>
-    <a href="${rawUrl}" download="${fileName}" class="btn btn-download" title="Baixar arquivo">
-      ⬇
-    </a>
+  <div class="topbar">
+    <button class="btn" onclick="goBack()">← Voltar</button>
+    <span class="fname">${fileName}</span>
+    <a href="${rawUrl}" download="${fileName}" class="btn btn-secondary">⬇</a>
   </div>
 
-  <!-- Full-page content behind toolbar -->
-  <div class="content" id="viewer">
+  <div class="viewer" id="viewer">
     ${isImage ? `
-    <div class="img-container">
+    <div class="img-wrap">
       <img src="${rawUrl}" alt="${fileName}" />
     </div>
     ` : `
     <embed src="${rawUrl}" type="application/pdf" id="pdf-embed" />
-    <div class="pdf-fallback" id="pdf-fallback">
+    <div class="mobile-card" id="mobile-card">
       <div class="icon">📄</div>
       <h2>${fileName}</h2>
-      <p>Seu navegador não suporta visualização de PDF embutida. Clique abaixo para abrir o arquivo.</p>
+      <p>Toque no botão abaixo para visualizar o documento. Depois use o botão ← Voltar para retornar ao app.</p>
       <a href="${rawUrl}" target="_blank" class="open-btn">📄 Abrir PDF</a>
+      <span class="hint">Abre em nova aba — feche-a para voltar aqui</span>
     </div>
     `}
   </div>
 
   <script>
     function goBack() {
-      // Try to close this tab (works if opened via target=_blank)
-      if (window.opener || window.history.length <= 1) {
-        window.close();
-        // window.close() might not work in all browsers, fallback after a small delay
-        setTimeout(function() { window.location.href = '/'; }, 300);
-      } else {
+      if (window.history.length > 1) {
         window.history.back();
+      } else {
+        window.location.href = '/';
       }
     }
 
-    ${isPdf ? `
-    // On mobile, embed often fails — show fallback with buttons instead
-    var embed = document.getElementById('pdf-embed');
-    var fallback = document.getElementById('pdf-fallback');
-    if (embed && fallback) {
-      var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        embed.style.display = 'none';
-        fallback.style.display = 'flex';
-      } else {
-        // On desktop, check if embed loaded after a moment
-        setTimeout(function() {
-          try {
-            if (embed.offsetHeight < 50) {
-              embed.style.display = 'none';
-              fallback.style.display = 'flex';
-            }
-          } catch(e) {}
-        }, 2000);
-      }
+    ${!isImage ? `
+    // Mobile can't render <embed> for PDFs — show fallback card
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      var embed = document.getElementById('pdf-embed');
+      var card = document.getElementById('mobile-card');
+      if (embed) embed.style.display = 'none';
+      if (card) card.style.display = 'flex';
     }
     ` : ''}
   </script>
