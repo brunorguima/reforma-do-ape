@@ -100,6 +100,18 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
       setImageUrls(editingItem.images?.map(img => img.url) || [''])
     } else {
       resetForm()
+      // Check for quick-search product from bottom bar
+      try {
+        const stored = sessionStorage.getItem('quickProduct')
+        if (stored && isOpen) {
+          const product = JSON.parse(stored)
+          sessionStorage.removeItem('quickProduct')
+          setName(product.title || '')
+          setEstimatedPrice(product.price > 0 ? product.price.toFixed(2) : '')
+          if (product.image) setImageUrls([product.image])
+          if (product.url) setReferenceLinks([product.url])
+        }
+      } catch {}
     }
   }, [editingItem, isOpen])
 

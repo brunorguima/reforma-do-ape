@@ -12,7 +12,7 @@ import ProfessionalsPanel from '@/components/ProfessionalsPanel'
 import ObraPanel from '@/components/ObraPanel'
 import FinanceiroPanel from '@/components/FinanceiroPanel'
 import WelcomeScreen from '@/components/WelcomeScreen'
-import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign } from 'lucide-react'
+import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check } from 'lucide-react'
 
 type TabType = 'orcamentos' | 'obra' | 'financeiro' | 'mobilia'
 
@@ -33,6 +33,39 @@ export default function HomePage() {
   const [userRole, setUserRole] = useState<string>('owner')
   const [allowedUsers, setAllowedUsers] = useState<UserID[]>(['bruno', 'graziela', 'mari'])
   const [showWelcome, setShowWelcome] = useState(false)
+
+  // Quick search bar state
+  const [quickSearch, setQuickSearch] = useState('')
+  const [quickResults, setQuickResults] = useState<{title:string;price:number;image:string;url:string;store:string}[]>([])
+  const [quickStats, setQuickStats] = useState<{total:number;avgPrice:number;minPrice:number;maxPrice:number}|null>(null)
+  const [quickSearching, setQuickSearching] = useState(false)
+  const [quickExpanded, setQuickExpanded] = useState(false)
+  const [quickSearchLinks, setQuickSearchLinks] = useState<{store:string;url:string}[]>([])
+
+  const handleQuickSearch = async () => {
+    if (!quickSearch || quickSearch.length < 2) return
+    setQuickSearching(true)
+    setQuickResults([])
+    setQuickStats(null)
+    setQuickSearchLinks([])
+    setQuickExpanded(true)
+    try {
+      const res = await fetch(`/api/product-search?q=${encodeURIComponent(quickSearch)}`)
+      const data = await res.json()
+      setQuickResults(data.results || [])
+      setQuickStats(data.stats || null)
+      setQuickSearchLinks(data.searchLinks || [])
+    } catch { /* ignore */ }
+    finally { setQuickSearching(false) }
+  }
+
+  const handleQuickSelect = (product: {title:string;price:number;image:string;url:string;store:string}) => {
+    setEditingItem(null)
+    setIsModalOpen(true)
+    setQuickExpanded(false)
+    // Store selected product in sessionStorage so AddItemModal can pick it up
+    sessionStorage.setItem('quickProduct', JSON.stringify(product))
+  }
 
   // Load saved user or validate access key from URL
   useEffect(() => {
@@ -429,31 +462,199 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Floating Add Button */}
-          <button
-            onClick={() => { setEditingItem(null); setIsModalOpen(true) }}
-            style={{
-              position: 'fixed',
-              bottom: '24px',
-              right: '24px',
-              width: '60px',
-              height: '60px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
-              color: 'white',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 4px 15px rgba(37, 99, 235, 0.4)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.3s',
-              zIndex: 40,
-            }}
-            title="Adicionar novo item"
-          >
-            <Plus size={28} />
-          </button>
+          {/* Floating Quick Search Bar */}
+          <div style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 40,
+            background: 'white',
+            borderTop: '1px solid #E5E7EB',
+            boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+            padding: quickExpanded ? '0' : '12px 16px',
+            transition: 'all 0.3s',
+          }}>
+            {/* Expanded results panel */}
+            {quickExpanded && (
+              <div style={{
+                maxHeight: '60vh',
+                overflowY: 'auto',
+                padding: '12px 16px 0',
+                background: '#F9FAFB',
+              }}>
+                {/* Stats badges */}
+                {quickStats && quickStats.total > 0 && (
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ padding: '4px 10px', background: '#DBEAFE', borderRadius: '8px', color: '#1E40AF', fontWeight: 700, fontSize: '12px' }}>
+                      {quickStats.total} resultado{quickStats.total !== 1 ? 's' : ''}
+                    </span>
+                    <span style={{ padding: '4px 10px', background: '#D1FAE5', borderRadius: '8px', color: '#065F46', fontWeight: 700, fontSize: '12px' }}>
+                      Média: R$ {quickStats.avgPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                    <span style={{ padding: '4px 10px', background: '#FEF3C7', borderRadius: '8px', color: '#92400E', fontWeight: 700, fontSize: '12px' }}>
+                      Min: R$ {quickStats.minPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                    <button
+                      onClick={() => setQuickExpanded(false)}
+                      style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', fontSize: '12px', fontWeight: 600 }}
+                    >
+                      Fechar ▼
+                    </button>
+                  </div>
+                )}
+
+                {/* Loading */}
+                {quickSearching && (
+                  <div style={{ textAlign: 'center', padding: '24px', color: '#6B7280' }}>
+                    <Loader2 size={22} className="spin" style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }} />
+                    <p style={{ fontSize: '13px', marginTop: '8px' }}>Buscando em Amazon, Zoom e Buscapé...</p>
+                  </div>
+                )}
+
+                {/* Results grid */}
+                {!quickSearching && quickResults.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '8px', paddingBottom: '8px' }}>
+                    {quickResults.map((product, i) => (
+                      <div
+                        key={i}
+                        onClick={() => handleQuickSelect(product)}
+                        style={{
+                          display: 'flex', gap: '10px', padding: '10px',
+                          background: 'white', borderRadius: '10px', cursor: 'pointer',
+                          border: '1px solid #E5E7EB', transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#2563EB'; (e.currentTarget as HTMLElement).style.background = '#F0F7FF' }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E5E7EB'; (e.currentTarget as HTMLElement).style.background = 'white' }}
+                      >
+                        {product.image && (
+                          <img
+                            src={product.image}
+                            alt=""
+                            style={{ width: '52px', height: '52px', objectFit: 'contain', borderRadius: '8px', background: '#F3F4F6', flexShrink: 0 }}
+                            onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                          />
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {product.title}
+                          </p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                            <span style={{ fontSize: '15px', fontWeight: 800, color: '#059669' }}>
+                              R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                            <span style={{ fontSize: '10px', color: '#6B7280', background: '#F3F4F6', padding: '2px 6px', borderRadius: '4px' }}>
+                              {product.store}
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                          <Plus size={18} color="#2563EB" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* No results - show manual links */}
+                {!quickSearching && quickResults.length === 0 && quickSearchLinks.length > 0 && (
+                  <div style={{ padding: '16px', textAlign: 'center' }}>
+                    <p style={{ color: '#6B7280', fontSize: '13px', marginBottom: '10px' }}>Nenhum resultado automático. Busque manualmente:</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center', paddingBottom: '8px' }}>
+                      {quickSearchLinks.map((link, i) => (
+                        <a key={i} href={link.url} target="_blank" rel="noopener noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'white', border: '1px solid #D1D5DB', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#374151', textDecoration: 'none' }}>
+                          <ExternalLink size={11} /> {link.store}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Bottom search input bar */}
+            <div style={{
+              display: 'flex', gap: '8px', alignItems: 'center',
+              padding: quickExpanded ? '10px 16px' : '0',
+              background: 'white',
+            }}>
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#F3F4F6',
+                borderRadius: '12px',
+                padding: '10px 14px',
+                border: '2px solid transparent',
+                transition: 'all 0.2s',
+              }}
+              onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = '#2563EB'; (e.currentTarget as HTMLElement).style.background = 'white' }}
+              onBlur={e => { if (!quickExpanded) { (e.currentTarget as HTMLElement).style.borderColor = 'transparent'; (e.currentTarget as HTMLElement).style.background = '#F3F4F6' } }}
+              >
+                <ShoppingBag size={18} color="#6B7280" />
+                <input
+                  value={quickSearch}
+                  onChange={e => setQuickSearch(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleQuickSearch() } }}
+                  onFocus={() => { if (quickResults.length > 0 || quickSearchLinks.length > 0) setQuickExpanded(true) }}
+                  placeholder="Buscar produto na internet e adicionar..."
+                  style={{
+                    flex: 1, border: 'none', background: 'transparent', outline: 'none',
+                    fontSize: '14px', color: '#1F2937', padding: 0,
+                  }}
+                />
+                {quickSearch && (
+                  <button onClick={() => { setQuickSearch(''); setQuickResults([]); setQuickStats(null); setQuickExpanded(false); setQuickSearchLinks([]) }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#9CA3AF' }}>
+                    ✕
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={handleQuickSearch}
+                disabled={quickSearching || quickSearch.length < 2}
+                style={{
+                  padding: '10px 18px',
+                  background: quickSearching ? '#93C5FD' : 'linear-gradient(135deg, #2563EB, #7C3AED)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  cursor: quickSearching ? 'default' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
+                }}
+              >
+                {quickSearching ? <Loader2 size={16} className="spin" /> : <Search size={16} />}
+                Buscar
+              </button>
+              <button
+                onClick={() => { setEditingItem(null); setIsModalOpen(true); setQuickExpanded(false) }}
+                style={{
+                  padding: '10px',
+                  background: '#F3F4F6',
+                  color: '#374151',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                title="Adicionar manualmente"
+              >
+                <Plus size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Spacer for fixed bottom bar */}
+          <div style={{ height: '80px' }} />
 
           {/* Add/Edit Modal */}
           <AddItemModal
