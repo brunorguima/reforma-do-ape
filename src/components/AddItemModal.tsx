@@ -1,8 +1,22 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Room, Category, Item } from '@/lib/supabase'
 import type { UserID } from '@/lib/constants'
-import { X, Plus, Trash2, Link, Image } from 'lucide-react'
+import { X, Plus, Trash2, Link, Image, Search, Loader2, ShoppingBag, ExternalLink, Check } from 'lucide-react'
+
+interface ProductResult {
+  title: string
+  price: number
+  image: string
+  url: string
+  store: string
+}
+
+interface SearchResponse {
+  query: string
+  results: ProductResult[]
+  stats: { total: number; avgPrice: number; minPrice: number; maxPrice: number }
+}
 
 interface AddItemModalProps {
   isOpen: boolean
@@ -24,6 +38,45 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
   const [status, setStatus] = useState<Item['status']>('desejado')
   const [referenceLinks, setReferenceLinks] = useState<string[]>([''])
   const [imageUrls, setImageUrls] = useState<string[]>([''])
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<ProductResult[]>([])
+  const [searchStats, setSearchStats] = useState<SearchResponse['stats'] | null>(null)
+  const [searching, setSearching] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const handleSearch = async (q?: string) => {
+    const query = q || searchQuery
+    if (!query || query.length < 2) return
+    setSearching(true)
+    setSearchResults([])
+    setSearchStats(null)
+    try {
+      const res = await fetch(`/api/product-search?q=${encodeURIComponent(query)}`)
+      const data: SearchResponse = await res.json()
+      setSearchResults(data.results || [])
+      setSearchStats(data.stats || null)
+    } catch { /* ignore */ }
+    finally { setSearching(false) }
+  }
+
+  const selectProduct = (product: ProductResult) => {
+    setName(product.title)
+    setEstimatedPrice(product.price > 0 ? product.price.toFixed(2) : '')
+    if (product.image) setImageUrls([product.image])
+    if (product.url) setReferenceLinks([product.url])
+    setShowSearch(false)
+    setSearchResults([])
+    setSearchQuery('')
+  }
+
+  const fillAvgPrice = () => {
+    if (searchStats?.avgPrice) {
+      setEstimatedPrice(searchStats.avgPrice.toFixed(2))
+    }
+  }
 
   useEffect(() => {
     if (editingItem) {
@@ -107,6 +160,108 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Search bar */}
+          {!editingItem && (
+            <div style={{ background: '#F0F9FF', borderRadius: '12px', padding: '14px', border: '1px solid #BAE6FD' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                <Search size={14} color="#0284C7" />
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#0284C7' }}>Buscar na internet</span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSearch() } }}
+                  placeholder="Ex: geladeira frost free 480L inox..."
+                  style={{ flex: 1, fontSize: '14px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSearch()}
+                  disabled={searching || searchQuery.length < 2}
+                  style={{
+                    padding: '8px 16px', background: '#0284C7', color: 'white', border: 'none',
+                    borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap',
+                    opacity: searching ? 0.6 : 1,
+                  }}>
+                  {searching ? <Loader2 size={14} className="spin" /> : <Search size={14} />}
+                  {searching ? 'Buscando...' : 'Buscar'}
+                </button>
+              </div>
+
+              {/* Search results */}
+              {(searchResults.length > 0 || searching) && (
+                <div style={{ marginTop: '10px', maxHeight: '280px', overflowY: 'auto', borderRadius: '8px' }}>
+                  {searchStats && searchStats.total > 0 && (
+                    <div style={{
+                      display: 'flex', gap: '8px', marginBottom: '8px', fontSize: '11px', flexWrap: 'wrap',
+                    }}>
+                      <span style={{ padding: '3px 8px', background: '#DBEAFE', borderRadius: '6px', color: '#1E40AF', fontWeight: 600 }}>
+                        {searchStats.total} resultado{searchStats.total !== 1 ? 's' : ''}
+                      </span>
+                      <span style={{ padding: '3px 8px', background: '#D1FAE5', borderRadius: '6px', color: '#065F46', fontWeight: 600 }}>
+                        Média: R$ {searchStats.avgPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                      <span style={{ padding: '3px 8px', background: '#FEF3C7', borderRadius: '6px', color: '#92400E', fontWeight: 600 }}>
+                        Min: R$ {searchStats.minPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  {searchResults.map((product, i) => (
+                    <div
+                      key={i}
+                      onClick={() => selectProduct(product)}
+                      style={{
+                        display: 'flex', gap: '10px', padding: '10px', marginBottom: '4px',
+                        background: 'white', borderRadius: '8px', cursor: 'pointer',
+                        border: '1px solid #E5E7EB', transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#0284C7' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E5E7EB' }}
+                    >
+                      {product.image && (
+                        <img
+                          src={product.image}
+                          alt=""
+                          style={{ width: '56px', height: '56px', objectFit: 'contain', borderRadius: '6px', background: '#F9FAFB', flexShrink: 0 }}
+                          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                        />
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
+                          {product.title}
+                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 800, color: '#059669' }}>
+                            R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
+                          <span style={{ fontSize: '10px', color: '#6B7280', background: '#F3F4F6', padding: '1px 6px', borderRadius: '4px' }}>
+                            {product.store}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                        <Check size={16} color="#0284C7" />
+                      </div>
+                    </div>
+                  ))}
+                  {searching && (
+                    <div style={{ textAlign: 'center', padding: '20px', color: '#6B7280' }}>
+                      <Loader2 size={20} className="spin" style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }} />
+                      <p style={{ fontSize: '12px', marginTop: '8px' }}>Buscando em Mercado Livre e Buscapé...</p>
+                    </div>
+                  )}
+                  {!searching && searchResults.length === 0 && searchQuery.length >= 2 && (
+                    <p style={{ textAlign: 'center', padding: '16px', color: '#9CA3AF', fontSize: '13px' }}>
+                      Nenhum resultado encontrado. Tente termos diferentes.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Name */}
           <div>
             <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '4px', display: 'block' }}>Nome do item *</label>
