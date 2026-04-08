@@ -258,7 +258,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
                   {searching && (
                     <div style={{ textAlign: 'center', padding: '20px', color: '#6B7280' }}>
                       <Loader2 size={20} className="spin" style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }} />
-                      <p style={{ fontSize: '12px', marginTop: '8px' }}>Buscando em Mercado Livre e Buscapé...</p>
+                      <p style={{ fontSize: '12px', marginTop: '8px' }}>Buscando em Mercado Livre, Amazon e Buscapé...</p>
                     </div>
                   )}
                   {!searching && searchResults.length === 0 && searchLinks.length > 0 && (
