@@ -12,9 +12,15 @@ interface ProductResult {
   store: string
 }
 
+interface SearchLink {
+  store: string
+  url: string
+}
+
 interface SearchResponse {
   query: string
   results: ProductResult[]
+  searchLinks?: SearchLink[]
   stats: { total: number; avgPrice: number; minPrice: number; maxPrice: number }
 }
 
@@ -45,6 +51,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
   const [searchStats, setSearchStats] = useState<SearchResponse['stats'] | null>(null)
   const [searching, setSearching] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
+  const [searchLinks, setSearchLinks] = useState<SearchLink[]>([])
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleSearch = async (q?: string) => {
@@ -53,11 +60,13 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
     setSearching(true)
     setSearchResults([])
     setSearchStats(null)
+    setSearchLinks([])
     try {
       const res = await fetch(`/api/product-search?q=${encodeURIComponent(query)}`)
       const data: SearchResponse = await res.json()
       setSearchResults(data.results || [])
       setSearchStats(data.stats || null)
+      setSearchLinks(data.searchLinks || [])
     } catch { /* ignore */ }
     finally { setSearching(false) }
   }
@@ -191,7 +200,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
               </div>
 
               {/* Search results */}
-              {(searchResults.length > 0 || searching) && (
+              {(searchResults.length > 0 || searching || searchLinks.length > 0) && (
                 <div style={{ marginTop: '10px', maxHeight: '280px', overflowY: 'auto', borderRadius: '8px' }}>
                   {searchStats && searchStats.total > 0 && (
                     <div style={{
@@ -252,10 +261,30 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
                       <p style={{ fontSize: '12px', marginTop: '8px' }}>Buscando em Mercado Livre e Buscapé...</p>
                     </div>
                   )}
-                  {!searching && searchResults.length === 0 && searchQuery.length >= 2 && (
-                    <p style={{ textAlign: 'center', padding: '16px', color: '#9CA3AF', fontSize: '13px' }}>
-                      Nenhum resultado encontrado. Tente termos diferentes.
-                    </p>
+                  {!searching && searchResults.length === 0 && searchLinks.length > 0 && (
+                    <div style={{ padding: '12px', textAlign: 'center' }}>
+                      <p style={{ color: '#6B7280', fontSize: '13px', marginBottom: '10px' }}>
+                        Nenhum resultado automático. Busque manualmente:
+                      </p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center' }}>
+                        {searchLinks.map((link, i) => (
+                          <a
+                            key={i}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '4px',
+                              padding: '6px 12px', background: 'white', border: '1px solid #D1D5DB',
+                              borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#374151',
+                              textDecoration: 'none', transition: 'all 0.15s',
+                            }}
+                          >
+                            <ExternalLink size={11} /> {link.store}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
