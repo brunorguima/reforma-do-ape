@@ -18,6 +18,18 @@ type TabType = 'orcamentos' | 'obra' | 'financeiro' | 'mobilia'
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<TabType>('orcamentos')
+
+  // Restore tab from URL hash on mount + listen for back/forward
+  useEffect(() => {
+    const validTabs: TabType[] = ['orcamentos', 'obra', 'financeiro', 'mobilia']
+    const readHash = () => {
+      const hash = window.location.hash.replace('#', '') as TabType
+      if (validTabs.includes(hash)) setActiveTab(hash)
+    }
+    readHash()
+    window.addEventListener('hashchange', readHash)
+    return () => window.removeEventListener('hashchange', readHash)
+  }, [])
   const [currentUser, setCurrentUser] = useState<UserID>('bruno')
   const [rooms, setRooms] = useState<Room[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -355,7 +367,7 @@ export default function HomePage() {
           return (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => { setActiveTab(tab.key); window.location.hash = tab.key; }}
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
                 padding: '10px 4px', borderRadius: '10px', border: 'none', cursor: 'pointer',
@@ -523,20 +535,44 @@ export default function HomePage() {
                           display: 'flex', gap: '10px', padding: '10px',
                           background: 'white', borderRadius: '10px', cursor: 'pointer',
                           border: '1px solid #E5E7EB', transition: 'all 0.15s',
+                          position: 'relative',
                         }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#2563EB'; (e.currentTarget as HTMLElement).style.background = '#F0F7FF' }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E5E7EB'; (e.currentTarget as HTMLElement).style.background = 'white' }}
                       >
                         {product.image && (
-                          <img
-                            src={product.image}
-                            alt=""
-                            style={{ width: '52px', height: '52px', objectFit: 'contain', borderRadius: '8px', background: '#F3F4F6', flexShrink: 0 }}
-                            onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                          />
+                          <div style={{ position: 'relative', flexShrink: 0 }} className="img-zoom-container">
+                            <img
+                              src={product.image}
+                              alt=""
+                              style={{ width: '52px', height: '52px', objectFit: 'contain', borderRadius: '8px', background: '#F3F4F6', cursor: 'zoom-in', transition: 'transform 0.2s' }}
+                              onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                              onMouseEnter={e => {
+                                const img = e.target as HTMLImageElement
+                                const zoom = document.createElement('div')
+                                zoom.id = `zoom-${i}`
+                                zoom.style.cssText = `position:fixed;z-index:9999;pointer-events:none;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.25);background:white;padding:8px;`
+                                const rect = img.getBoundingClientRect()
+                                zoom.style.left = `${rect.left - 160}px`
+                                zoom.style.bottom = `${window.innerHeight - rect.top + 8}px`
+                                const zoomImg = document.createElement('img')
+                                zoomImg.src = product.image
+                                zoomImg.style.cssText = 'width:200px;height:200px;object-fit:contain;border-radius:8px;'
+                                zoom.appendChild(zoomImg)
+                                document.body.appendChild(zoom)
+                              }}
+                              onMouseLeave={() => {
+                                const zoom = document.getElementById(`zoom-${i}`)
+                                if (zoom) zoom.remove()
+                              }}
+                            />
+                          </div>
                         )}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <p
+                            title={product.title}
+                            style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                          >
                             {product.title}
                           </p>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
@@ -548,7 +584,21 @@ export default function HomePage() {
                             </span>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                          {product.url && (
+                            <a
+                              href={product.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              title="Ver na loja"
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '6px', background: '#F3F4F6', transition: 'background 0.15s' }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#DBEAFE' }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#F3F4F6' }}
+                            >
+                              <ExternalLink size={14} color="#2563EB" />
+                            </a>
+                          )}
                           <Plus size={18} color="#2563EB" />
                         </div>
                       </div>

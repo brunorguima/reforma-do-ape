@@ -237,20 +237,44 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
                         display: 'flex', gap: '10px', padding: '10px', marginBottom: '4px',
                         background: 'white', borderRadius: '8px', cursor: 'pointer',
                         border: '1px solid #E5E7EB', transition: 'all 0.15s',
+                        position: 'relative',
                       }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#0284C7' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E5E7EB' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#0284C7'; (e.currentTarget as HTMLElement).style.background = '#F0F9FF' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E5E7EB'; (e.currentTarget as HTMLElement).style.background = 'white' }}
                     >
                       {product.image && (
-                        <img
-                          src={product.image}
-                          alt=""
-                          style={{ width: '56px', height: '56px', objectFit: 'contain', borderRadius: '6px', background: '#F9FAFB', flexShrink: 0 }}
-                          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                        />
+                        <div style={{ position: 'relative', flexShrink: 0 }}>
+                          <img
+                            src={product.image}
+                            alt=""
+                            style={{ width: '56px', height: '56px', objectFit: 'contain', borderRadius: '6px', background: '#F9FAFB', cursor: 'zoom-in' }}
+                            onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                            onMouseEnter={e => {
+                              const img = e.target as HTMLImageElement
+                              const zoom = document.createElement('div')
+                              zoom.id = `modal-zoom-${i}`
+                              zoom.style.cssText = 'position:fixed;z-index:9999;pointer-events:none;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.25);background:white;padding:8px;'
+                              const rect = img.getBoundingClientRect()
+                              zoom.style.left = `${rect.right + 12}px`
+                              zoom.style.top = `${rect.top - 60}px`
+                              const zoomImg = document.createElement('img')
+                              zoomImg.src = product.image
+                              zoomImg.style.cssText = 'width:200px;height:200px;object-fit:contain;border-radius:8px;'
+                              zoom.appendChild(zoomImg)
+                              document.body.appendChild(zoom)
+                            }}
+                            onMouseLeave={() => {
+                              const zoom = document.getElementById(`modal-zoom-${i}`)
+                              if (zoom) zoom.remove()
+                            }}
+                          />
+                        </div>
                       )}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
+                        <p
+                          title={product.title}
+                          style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}
+                        >
                           {product.title}
                         </p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
@@ -262,7 +286,21 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
                           </span>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                        {product.url && (
+                          <a
+                            href={product.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            title="Ver na loja"
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '6px', background: '#F3F4F6', transition: 'background 0.15s' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#DBEAFE' }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#F3F4F6' }}
+                          >
+                            <ExternalLink size={14} color="#0284C7" />
+                          </a>
+                        )}
                         <Check size={16} color="#0284C7" />
                       </div>
                     </div>
