@@ -41,6 +41,7 @@ interface NfeHeader {
   numero?: string
   serie?: string
   modelo?: string
+  uf?: string
   emitente_nome?: string
   emitente_cnpj?: string
   data_emissao?: string
@@ -51,6 +52,7 @@ interface NfeHeader {
   valor_desconto?: number
   source?: string
   raw_data?: unknown
+  parse_warning?: string
 }
 
 interface NfePaymentForm {
@@ -228,6 +230,7 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
     numero?: string
     serie?: string
     modelo?: string
+    uf?: string
     emitente_nome?: string
     emitente_cnpj?: string
     data_emissao?: string
@@ -238,6 +241,7 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
     valor_desconto?: number
     source?: string
     raw?: unknown
+    parse_warning?: string
     formas_pagamento?: NfePaymentForm[]
     itens?: Array<{
       numero: number
@@ -274,6 +278,7 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
       numero: data.numero,
       serie: data.serie,
       modelo: data.modelo,
+      uf: data.uf,
       emitente_nome: data.emitente_nome,
       emitente_cnpj: data.emitente_cnpj,
       data_emissao: data.data_emissao,
@@ -284,6 +289,7 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
       valor_desconto: data.valor_desconto,
       source: data.source,
       raw_data: data.raw,
+      parse_warning: data.parse_warning,
     })
     const parsedItems: NfeItemEditable[] = (data.itens || []).map((it) => ({
       numero: it.numero,
@@ -528,6 +534,50 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
 
           {step === 'review' && (
             <div>
+              {/* Parse warning banner */}
+              {header.parse_warning && (
+                <div style={{
+                  padding: '12px 14px', background: '#FEF3C7', borderRadius: '10px',
+                  border: '1px solid #FDE68A', marginBottom: '12px',
+                  display: 'flex', alignItems: 'flex-start', gap: '10px',
+                  fontSize: '12px', color: '#92400E',
+                }}>
+                  <div style={{ fontSize: '18px', lineHeight: 1 }}>⚠️</div>
+                  <div style={{ flex: 1, lineHeight: 1.4 }}>
+                    <strong>Extração parcial</strong> — {header.parse_warning}
+                  </div>
+                </div>
+              )}
+
+              {/* Debug raw text panel (PDF source only) */}
+              {header.source === 'pdf' && header.raw_data != null && (
+                <details style={{
+                  marginBottom: '12px', padding: '10px 12px',
+                  background: '#F3F4F6', borderRadius: '8px', border: '1px solid #E5E7EB',
+                  fontSize: '11px',
+                }}>
+                  <summary style={{ cursor: 'pointer', fontWeight: 600, color: '#4B5563' }}>
+                    🔍 Texto extraído do PDF (debug)
+                  </summary>
+                  <pre style={{
+                    marginTop: '8px', maxHeight: '240px', overflow: 'auto',
+                    padding: '8px', background: '#1F2937', color: '#D1FAE5',
+                    borderRadius: '6px', fontSize: '10px', lineHeight: 1.35,
+                    whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                  }}>
+                    {(() => {
+                      const raw = header.raw_data as { lines?: string[]; full?: string } | undefined
+                      if (raw?.full) return raw.full
+                      if (raw?.lines) return raw.lines.join('\n')
+                      return JSON.stringify(header.raw_data, null, 2)
+                    })()}
+                  </pre>
+                  <div style={{ marginTop: '6px', color: '#6B7280', fontSize: '10px' }}>
+                    Copie esse texto e me mande se o parser não pegou algum campo — ajuda a melhorar.
+                  </div>
+                </details>
+              )}
+
               {/* Header preview */}
               <div style={{
                 padding: '14px', background: '#F0FDF4', borderRadius: '12px',
@@ -597,6 +647,28 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                     />
                   </div>
                   <div>
+                    <label style={labelStyle}>Desconto</label>
+                    <input
+                      style={inputStyle}
+                      type="number"
+                      step="0.01"
+                      value={header.valor_desconto ?? ''}
+                      onChange={(e) => setHeader({ ...header, valor_desconto: Number(e.target.value) || 0 })}
+                      placeholder="0,00"
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Frete</label>
+                    <input
+                      style={inputStyle}
+                      type="number"
+                      step="0.01"
+                      value={header.valor_frete ?? ''}
+                      onChange={(e) => setHeader({ ...header, valor_frete: Number(e.target.value) || 0 })}
+                      placeholder="0,00"
+                    />
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
                     <label style={labelStyle}>Natureza Operação</label>
                     <input
                       style={inputStyle}

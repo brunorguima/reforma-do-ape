@@ -324,32 +324,113 @@ export function parseNfeDanfePdf(pdfText: string): NfeParsed {
     data_emissao = `${y}-${m}-${d}T00:00:00-03:00`
   }
 
-  // ---- Valor Total
+  // ---- Valor Total — muitos layouts diferentes; tentamos vários padrões
   let valor_total: number | undefined
-  const totalMatch = full.match(/VALOR TOTAL DA NOTA[:\s]+R?\$?\s*([\d.,]+)/i)
-  if (totalMatch) valor_total = toNumber(totalMatch[1])
+  const totalPatterns = [
+    /VALOR\s+TOTAL\s+DA\s+NOTA[^\d]{0,40}([\d.]+,\d{2})/i,
+    /V\.?\s*TOTAL\s+DA\s+NOTA[^\d]{0,40}([\d.]+,\d{2})/i,
+    /TOTAL\s+DA\s+NOTA[^\d]{0,40}([\d.]+,\d{2})/i,
+    /VALOR\s+TOTAL\s+DO[S]?\s+SERVI[CÇ]O[S]?[^\d]{0,40}([\d.]+,\d{2})/i,
+    /VL\.?\s*TOTAL\s+DA\s+NOTA[^\d]{0,40}([\d.]+,\d{2})/i,
+    /V\s*\.\s*TOTAL\s*\(.*?\)[^\d]{0,40}([\d.]+,\d{2})/i,
+  ]
+  for (const re of totalPatterns) {
+    const m = full.match(re)
+    if (m) { valor_total = toNumber(m[1]); break }
+  }
+  // Fallback: line-by-line scan for "TOTAL DA NOTA" followed by number on same or next line
+  if (valor_total == null) {
+    for (let i = 0; i < lines.length; i++) {
+      if (/TOTAL\s+DA\s+NOTA/i.test(lines[i])) {
+        // Check current line
+        const sameLine = lines[i].match(/([\d.]+,\d{2})/g)
+        if (sameLine && sameLine.length > 0) {
+          valor_total = toNumber(sameLine[sameLine.length - 1])
+          break
+        }
+        // Check next 3 lines
+        for (let j = 1; j <= 3 && i + j < lines.length; j++) {
+          const nxt = lines[i + j].match(/([\d.]+,\d{2})/)
+          if (nxt) { valor_total = toNumber(nxt[1]); break }
+        }
+        if (valor_total != null) break
+      }
+    }
+  }
+
+  // ---- Valor Desconto
+  let valor_desconto: number | undefined
+  const descPatterns = [
+    /VALOR\s+DO\s+DESCONTO[^\d]{0,40}([\d.]+,\d{2})/i,
+    /VALOR\s+DESCONTO[^\d]{0,40}([\d.]+,\d{2})/i,
+    /V\.?\s*DESCONTO[^\d]{0,40}([\d.]+,\d{2})/i,
+    /VL\.?\s*DESCONTO[^\d]{0,40}([\d.]+,\d{2})/i,
+    /\bDESCONTO\b[^\d]{0,20}([\d.]+,\d{2})/i,
+  ]
+  for (const re of descPatterns) {
+    const m = full.match(re)
+    if (m) {
+      const v = toNumber(m[1])
+      if (v > 0) { valor_desconto = v; break }
+    }
+  }
+
+  // ---- Valor Produtos / Frete
+  let valor_produtos: number | undefined
+  const prodPatterns = [
+    /VALOR\s+TOTAL\s+DO[S]?\s+PRODUTO[S]?[^\d]{0,40}([\d.]+,\d{2})/i,
+    /V\.?\s*TOTAL\s+PRODUTO[S]?[^\d]{0,40}([\d.]+,\d{2})/i,
+    /VL\.?\s*TOTAL\s+PRODUTO[S]?[^\d]{0,40}([\d.]+,\d{2})/i,
+  ]
+  for (const re of prodPatterns) {
+    const m = full.match(re)
+    if (m) { valor_produtos = toNumber(m[1]); break }
+  }
+
+  let valor_frete: number | undefined
+  const freteMatch = full.match(/VALOR\s+DO\s+FRETE[^\d]{0,40}([\d.]+,\d{2})/i)
+  if (freteMatch) valor_frete = toNumber(freteMatch[1])
 
   // ---- Itens
-  // DANFE item table typically has columns:
-  // CÓDIGO | DESCRIÇÃO | NCM/SH | CST | CFOP | UN | QTD | VL.UNIT | VL.TOTAL | ...
-  // We try to find a table section and parse line by line
+  // DANFE item table columns: CÓDIGO | DESCRIÇÃO | NCM | CST | CFOP | UN | QTD | VL.UNIT | VL.TOTAL | BC.ICMS | VL.ICMS | VL.IPI | ALIQ.ICMS | ALIQ.IPI
+  // Cada provedor gera texto com layout ligeiramente diferente. Usamos
+  // múltiplas estratégias: detectar a seção, depois escanear por linhas
+  // que tenham padrão numérico compatível com item de nota.
   const itens: NfeItem[] = []
 
-  // Heuristic: find "DADOS DOS PRODUTOS" section and parse until "CÁLCULO DO IMPOSTO" or similar footer
-  const startIdx = lines.findIndex((l) => /DADOS DOS PRODUTOS/i.test(l) || /DESCRI[CÇ][AÃ]O DO PRODUTO/i.test(l))
-  const endIdx = lines.findIndex((l, i) => i > startIdx && /C[AÁ]LCULO|TRANSPORTADOR|DADOS ADICION/i.test(l))
-  const itemLines = startIdx > -1 ? lines.slice(startIdx + 1, endIdx > startIdx ? endIdx : undefined) : []
+  // 1. Tenta delimitar a seção "DADOS DOS PRODUTOS"
+  const startIdx = lines.findIndex((l) =>
+    /DADOS\s+DOS?\s+PRODUTOS?/i.test(l) ||
+    /PRODUTO[S]?\s*\/\s*SERVI[CÇ]OS?/i.test(l) ||
+    /DESCRI[CÇ][AÃ]O\s+DO\s+PRODUTO/i.test(l),
+  )
+  const endIdx = lines.findIndex((l, i) => i > startIdx && (
+    /C[AÁ]LCULO\s+DO\s+IMPOSTO/i.test(l) ||
+    /TRANSPORTADOR/i.test(l) ||
+    /DADOS\s+ADICIONAIS/i.test(l) ||
+    /INFORMA[CÇ][OÕ]ES?\s+COMPLEMENTARES/i.test(l) ||
+    /ISSQN/i.test(l)
+  ))
+  const itemLinesRaw = startIdx > -1
+    ? lines.slice(startIdx + 1, endIdx > startIdx ? endIdx : undefined)
+    : lines // Fallback: scan everything
 
-  // Line pattern: codigo descricao ncm cst cfop un qtd vunit vtot ...
-  // Brazilian numbers so greedy match
-  const numPat = '[\\d.]+(?:,\\d+)?'
-  const lineRe = new RegExp(
-    '^(\\S+)\\s+(.+?)\\s+(\\d{8})\\s+(\\d{2,4})?\\s*(\\d{4})\\s+(\\w{1,4})\\s+(' + numPat + ')\\s+(' + numPat + ')\\s+(' + numPat + ')',
+  // Remove cabeçalhos repetidos e linhas muito curtas
+  const itemLines = itemLinesRaw.filter((l) =>
+    l.length > 10 &&
+    !/^(C[ÓO]DIGO|DESCRI|NCM|CST|CFOP|UNID|QTDE?|VL\.?UNIT|VALOR\s+UNIT|VL\.?TOTAL|ALIQ|B\.?CALC|BASE|VAL|VR|BC|V\.?BC)/i.test(l.replace(/\s+/g, ' ').trim()),
   )
 
   let itemNum = 0
+
+  // Estratégia A: padrão estrito com NCM (8 dígitos) + CFOP (4 dígitos)
+  const numPat = '[\\d.]+,\\d{2,4}'
+  const numInt = '[\\d.]+(?:,\\d+)?'
+  const strictRe = new RegExp(
+    '^(\\S+)\\s+(.+?)\\s+(\\d{8})\\s+(?:\\d{2,4}\\s+)?(\\d{4})\\s+([A-Za-z]{1,6})\\s+(' + numInt + ')\\s+(' + numPat + ')\\s+(' + numPat + ')',
+  )
   for (const raw of itemLines) {
-    const m = raw.match(lineRe)
+    const m = raw.match(strictRe)
     if (m) {
       itemNum++
       itens.push({
@@ -357,21 +438,22 @@ export function parseNfeDanfePdf(pdfText: string): NfeParsed {
         codigo: m[1],
         descricao: cleanText(m[2]),
         ncm: m[3],
-        cfop: m[5],
-        unidade: m[6],
-        quantidade: toNumber(m[7]),
-        valor_unitario: toNumber(m[8]),
-        valor_total: toNumber(m[9]),
+        cfop: m[4],
+        unidade: m[5],
+        quantidade: toNumber(m[6]),
+        valor_unitario: toNumber(m[7]),
+        valor_total: toNumber(m[8]),
       })
     }
   }
 
-  // Fallback: if regex didn't match any lines (common due to layout noise),
-  // try a simpler heuristic: look for lines ending with three numbers (qtd, vunit, vtot)
-  if (itens.length === 0 && itemLines.length > 0) {
-    const simpleRe = /^(\S+)\s+(.+?)\s+(\w{1,4})\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$/
+  // Estratégia B: sem NCM obrigatório, procura UN + qtd + v.unit + v.total
+  if (itens.length === 0) {
+    const looseRe = new RegExp(
+      '^(\\S+)\\s+(.+?)\\s+([A-Za-z]{1,4})\\s+(' + numInt + ')\\s+(' + numPat + ')\\s+(' + numPat + ')',
+    )
     for (const raw of itemLines) {
-      const m = raw.match(simpleRe)
+      const m = raw.match(looseRe)
       if (m) {
         itemNum++
         itens.push({
@@ -382,6 +464,64 @@ export function parseNfeDanfePdf(pdfText: string): NfeParsed {
           quantidade: toNumber(m[4]),
           valor_unitario: toNumber(m[5]),
           valor_total: toNumber(m[6]),
+        })
+      }
+    }
+  }
+
+  // Estratégia C: últimos 3 números da linha são qtd, v.unit, v.total
+  if (itens.length === 0) {
+    const endNumsRe = /^(.+?)\s+([\d.]+(?:,\d+)?)\s+([\d.]+,\d{2,4})\s+([\d.]+,\d{2,4})\s*$/
+    for (const raw of itemLines) {
+      const m = raw.match(endNumsRe)
+      if (m) {
+        const descPart = m[1].trim()
+        // Tenta separar código (primeira palavra) da descrição
+        const tokens = descPart.split(/\s+/)
+        const codigo = tokens[0]
+        const descricao = tokens.slice(1).join(' ')
+        itemNum++
+        itens.push({
+          numero: itemNum,
+          codigo,
+          descricao: cleanText(descricao || descPart),
+          quantidade: toNumber(m[2]),
+          valor_unitario: toNumber(m[3]),
+          valor_total: toNumber(m[4]),
+        })
+      }
+    }
+  }
+
+  // Estratégia D: multi-line — quando descrição quebra linha, tenta juntar
+  // linhas curtas com a próxima que tem números no final
+  if (itens.length === 0 && itemLines.length > 0) {
+    const joinedLines: string[] = []
+    let buffer = ''
+    for (const raw of itemLines) {
+      buffer = buffer ? buffer + ' ' + raw : raw
+      // Se a linha termina com pelo menos 2 números no formato brasileiro, fecha o buffer
+      if (/[\d.]+,\d{2,4}\s+[\d.]+,\d{2,4}\s*$/.test(buffer)) {
+        joinedLines.push(buffer)
+        buffer = ''
+      }
+    }
+    const endNumsRe = /^(.+?)\s+([\d.]+(?:,\d+)?)\s+([\d.]+,\d{2,4})\s+([\d.]+,\d{2,4})\s*$/
+    for (const joined of joinedLines) {
+      const m = joined.match(endNumsRe)
+      if (m) {
+        const descPart = m[1].trim()
+        const tokens = descPart.split(/\s+/)
+        const codigo = tokens[0]
+        const descricao = tokens.slice(1).join(' ')
+        itemNum++
+        itens.push({
+          numero: itemNum,
+          codigo,
+          descricao: cleanText(descricao || descPart),
+          quantidade: toNumber(m[2]),
+          valor_unitario: toNumber(m[3]),
+          valor_total: toNumber(m[4]),
         })
       }
     }
@@ -454,10 +594,13 @@ export function parseNfeDanfePdf(pdfText: string): NfeParsed {
     data_emissao: finalData,
     natureza_operacao,
     valor_total,
+    valor_produtos,
+    valor_frete,
+    valor_desconto,
     itens,
     formas_pagamento: formas_pagamento.length > 0 ? formas_pagamento : undefined,
     source: 'pdf',
-    raw: { lines: lines.slice(0, 200) },
+    raw: { lines: lines.slice(0, 400), full: full.substring(0, 8000) },
     parse_warning,
   }
 }
