@@ -19,6 +19,54 @@ export interface NfeItem {
   valor_total: number
 }
 
+// NF-e payment form codes per SEFAZ (tPag)
+// 01=Dinheiro, 02=Cheque, 03=Cartão Crédito, 04=Cartão Débito, 05=Crédito Loja,
+// 10=Vale Alimentação, 11=Vale Refeição, 12=Vale Presente, 13=Vale Combustível,
+// 15=Boleto, 16=Depósito, 17=PIX, 18=Transferência, 19=Programa Fidelidade, 90=Sem Pagamento, 99=Outros
+export type NfePaymentKind =
+  | 'dinheiro' | 'cheque' | 'credito' | 'debito' | 'credito_loja'
+  | 'vale' | 'boleto' | 'deposito' | 'pix' | 'transferencia' | 'outros'
+
+export interface NfePaymentForm {
+  tPag?: string           // raw SEFAZ code ('01'..'99')
+  kind: NfePaymentKind    // normalized kind
+  valor: number
+  indPag?: string         // 0=à vista, 1=a prazo
+  description?: string    // human-readable
+}
+
+export function mapTPagToKind(tPag?: string): NfePaymentKind {
+  const code = (tPag || '').padStart(2, '0')
+  switch (code) {
+    case '01': return 'dinheiro'
+    case '02': return 'cheque'
+    case '03': case '05': return 'credito'
+    case '04': return 'debito'
+    case '10': case '11': case '12': case '13': case '19': return 'vale'
+    case '15': return 'boleto'
+    case '16': return 'deposito'
+    case '17': return 'pix'
+    case '18': return 'transferencia'
+    default: return 'outros'
+  }
+}
+
+export function paymentKindLabel(k: NfePaymentKind): string {
+  switch (k) {
+    case 'dinheiro': return 'Dinheiro'
+    case 'cheque': return 'Cheque'
+    case 'credito': return 'Cartão de Crédito'
+    case 'debito': return 'Cartão de Débito'
+    case 'credito_loja': return 'Crédito da Loja'
+    case 'vale': return 'Vale'
+    case 'boleto': return 'Boleto'
+    case 'deposito': return 'Depósito'
+    case 'pix': return 'PIX'
+    case 'transferencia': return 'Transferência'
+    default: return 'Outros'
+  }
+}
+
 export interface NfeParsed {
   chave?: string
   numero?: string
@@ -35,6 +83,7 @@ export interface NfeParsed {
   valor_frete?: number
   valor_desconto?: number
   itens: NfeItem[]
+  formas_pagamento?: NfePaymentForm[]
   source: 'pdf' | 'xml'
   raw?: unknown
 }
@@ -93,6 +142,28 @@ export function parseNfeXml(xmlText: string): NfeParsed {
   const dEmi = ide['dEmi'] as string | undefined
   const data_emissao = dhEmi || dEmi
 
+  // Payment forms: <pag><detPag>... or direct children (legacy layouts)
+  const pagNode = (infNFe['pag'] as Any | undefined) || {}
+  const detPagRaw = pagNode['detPag'] ?? pagNode
+  const detPagArr: Any[] = Array.isArray(detPagRaw)
+    ? (detPagRaw as Any[])
+    : detPagRaw && typeof detPagRaw === 'object'
+      ? [detPagRaw as Any]
+      : []
+  const formas_pagamento: NfePaymentForm[] = detPagArr
+    .filter((p) => p && (p['tPag'] !== undefined || p['vPag'] !== undefined))
+    .map((p) => {
+      const tPag = p['tPag'] ? String(p['tPag']) : undefined
+      const vPag = p['vPag'] ? parseFloat(String(p['vPag'])) : 0
+      const indPag = p['indPag'] ? String(p['indPag']) : undefined
+      return {
+        tPag,
+        kind: mapTPagToKind(tPag),
+        valor: vPag,
+        indPag,
+      }
+    })
+
   return {
     chave,
     numero: ide['nNF'] ? String(ide['nNF']) : undefined,
@@ -109,6 +180,7 @@ export function parseNfeXml(xmlText: string): NfeParsed {
     valor_frete: total['vFrete'] ? parseFloat(String(total['vFrete'])) : undefined,
     valor_desconto: total['vDesc'] ? parseFloat(String(total['vDesc'])) : undefined,
     itens,
+    formas_pagamento: formas_pagamento.length > 0 ? formas_pagamento : undefined,
     source: 'xml',
     raw: doc,
   }
@@ -251,6 +323,30 @@ export function parseNfeDanfePdf(pdfText: string): NfeParsed {
     }
   }
 
+  // ---- Formas de pagamento (DANFE geralmente mostra "FORMA PAGTO" ou "Pagto")
+  const formas_pagamento: NfePaymentForm[] = []
+  // Try to detect common patterns
+  const pagSectionMatch = full.match(
+    /(?:FORMA(?:\s+DE)?\s+PAGTO?|FORMAS?\s+DE\s+PAGAMENTO|PAGAMENTO)[:\s]+([^A-Z]{3,120}?)(?:VALOR|INFORMAÇ|DADOS|FRETE|OBS)/i,
+  )
+  const pagLine = pagSectionMatch?.[1]?.toLowerCase() || ''
+  const fullLower = full.toLowerCase()
+
+  const detectValue = (): number => (valor_total ?? 0)
+  if (/\bpix\b/.test(pagLine) || /\bpix\b/.test(fullLower)) {
+    formas_pagamento.push({ kind: 'pix', valor: detectValue(), tPag: '17' })
+  } else if (/boleto|cobran[cç]a/.test(pagLine) || /boleto|cobran[cç]a banc/.test(fullLower)) {
+    formas_pagamento.push({ kind: 'boleto', valor: detectValue(), tPag: '15' })
+  } else if (/cart[aã]o.*(cr[eé]dito)/.test(pagLine) || /cart[aã]o.*cr[eé]dito/.test(fullLower)) {
+    formas_pagamento.push({ kind: 'credito', valor: detectValue(), tPag: '03' })
+  } else if (/cart[aã]o.*(d[eé]bito)/.test(pagLine) || /cart[aã]o.*d[eé]bito/.test(fullLower)) {
+    formas_pagamento.push({ kind: 'debito', valor: detectValue(), tPag: '04' })
+  } else if (/dinheiro/.test(pagLine)) {
+    formas_pagamento.push({ kind: 'dinheiro', valor: detectValue(), tPag: '01' })
+  } else if (/transfer[eê]ncia|ted\b|doc\b/.test(pagLine)) {
+    formas_pagamento.push({ kind: 'transferencia', valor: detectValue(), tPag: '18' })
+  }
+
   return {
     chave,
     numero,
@@ -262,6 +358,7 @@ export function parseNfeDanfePdf(pdfText: string): NfeParsed {
     natureza_operacao,
     valor_total,
     itens,
+    formas_pagamento: formas_pagamento.length > 0 ? formas_pagamento : undefined,
     source: 'pdf',
     raw: { lines: lines.slice(0, 200) },
   }

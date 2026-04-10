@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { UserID } from '@/lib/constants'
 import { DollarSign, TrendingDown, CheckCircle2, Clock, AlertTriangle, Calendar, CreditCard, PieChart, Users, Plus, Pencil, Trash2, Save, X, ChevronDown, ChevronUp, History, ShoppingCart, FileText } from 'lucide-react'
 import NFeImportModal from './NFeImportModal'
+import PaymentMethodsModal from './PaymentMethodsModal'
 
 interface Contract {
   id: string; professional: string; role: string; original_total: number; negotiated_total: number;
@@ -90,6 +91,7 @@ export default function FinanceiroPanel({ currentUser }: Props) {
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([])
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [showNfeImport, setShowNfeImport] = useState(false)
+  const [showPaymentMethods, setShowPaymentMethods] = useState(false)
 
   const isOwner = currentUser === 'bruno' || currentUser === 'graziela'
 
@@ -564,23 +566,40 @@ export default function FinanceiroPanel({ currentUser }: Props) {
                           </div>
 
                           {isEditing ? (
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <div style={{ display: 'flex', gap: '6px' }}>
-                                <input type="number" value={editAmount} onChange={e => setEditAmount(e.target.value)}
-                                  placeholder="Valor" style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
-                                <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
-                                  style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
-                              </div>
-                              <input type="text" value={editNotes} onChange={e => setEditNotes(e.target.value)}
-                                placeholder="Observação" style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
-                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              <label style={{ fontSize: '11px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Valor pago (R$)</label>
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                step="0.01"
+                                value={editAmount}
+                                onChange={e => setEditAmount(e.target.value)}
+                                placeholder="0,00"
+                                autoFocus
+                                style={{ width: '100%', padding: '14px 16px', borderRadius: '10px', border: '2px solid #BFDBFE', fontSize: '22px', fontWeight: 700, color: '#1E3A8A', background: 'white', boxSizing: 'border-box' }}
+                              />
+                              <label style={{ fontSize: '11px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Data</label>
+                              <input
+                                type="date"
+                                value={editDate}
+                                onChange={e => setEditDate(e.target.value)}
+                                style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '15px', boxSizing: 'border-box' }}
+                              />
+                              <input
+                                type="text"
+                                value={editNotes}
+                                onChange={e => setEditNotes(e.target.value)}
+                                placeholder="Observação (opcional)"
+                                style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }}
+                              />
+                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                 <button onClick={() => handleSaveEdit(p)}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '6px', background: '#10B981', color: 'white', border: 'none', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>
-                                  <Save size={12} /> Salvar
+                                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '10px', background: '#10B981', color: 'white', border: 'none', fontSize: '14px', cursor: 'pointer', fontWeight: 700 }}>
+                                  <Save size={14} /> Salvar
                                 </button>
                                 <button onClick={() => setEditingPayment(null)}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '6px', background: '#6B7280', color: 'white', border: 'none', fontSize: '12px', cursor: 'pointer' }}>
-                                  <X size={12} /> Cancelar
+                                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '10px', background: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB', fontSize: '14px', cursor: 'pointer', fontWeight: 600 }}>
+                                  <X size={14} /> Cancelar
                                 </button>
                               </div>
                             </div>
@@ -779,17 +798,31 @@ export default function FinanceiroPanel({ currentUser }: Props) {
               {materials.length} ite{materials.length !== 1 ? 'ns' : 'm'}
             </span>
           </h3>
-          <button
-            onClick={() => setShowNfeImport(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '8px 14px', borderRadius: '10px',
-              background: '#059669', color: 'white', border: 'none',
-              cursor: 'pointer', fontSize: '13px', fontWeight: 600,
-            }}
-          >
-            <FileText size={14} /> Importar NF-e
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => setShowPaymentMethods(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 14px', borderRadius: '10px',
+                background: 'white', color: '#4338CA', border: '1px solid #C7D2FE',
+                cursor: 'pointer', fontSize: '13px', fontWeight: 600,
+              }}
+              title="Gerenciar formas de pagamento (cartões, PIX, boletos)"
+            >
+              <CreditCard size={14} /> Cartões
+            </button>
+            <button
+              onClick={() => setShowNfeImport(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 14px', borderRadius: '10px',
+                background: '#059669', color: 'white', border: 'none',
+                cursor: 'pointer', fontSize: '13px', fontWeight: 600,
+              }}
+            >
+              <FileText size={14} /> Importar NF-e
+            </button>
+          </div>
         </div>
       {materials.length === 0 && (
         <div style={{ padding: '16px', textAlign: 'center', color: '#6B7280', fontSize: '13px', background: 'white', borderRadius: '10px', border: '1px dashed #BBF7D0' }}>
@@ -880,6 +913,13 @@ export default function FinanceiroPanel({ currentUser }: Props) {
             await fetchData()
             showToast('NF-e importada com sucesso!', 'success')
           }}
+        />
+      )}
+
+      {showPaymentMethods && (
+        <PaymentMethodsModal
+          currentUser={currentUser}
+          onClose={() => setShowPaymentMethods(false)}
         />
       )}
     </div>

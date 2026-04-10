@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { X, Upload, FileText, Loader2, Check, AlertCircle, Trash2 } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { X, Upload, FileText, Loader2, Check, AlertCircle, Trash2, CreditCard, Plus } from 'lucide-react'
 import { USERS, type UserID } from '@/lib/constants'
+import PaymentMethodsModal, { type PaymentMethod, type PaymentMethodKind } from './PaymentMethodsModal'
 
 const MATERIAL_CATEGORIES: { id: string; label: string; emoji: string }[] = [
   { id: 'eletrica', label: 'Elétrica', emoji: '⚡' },
@@ -52,6 +53,82 @@ interface NfeHeader {
   raw_data?: unknown
 }
 
+interface NfePaymentForm {
+  tPag?: string
+  kind: PaymentMethodKind | 'credito_loja' | 'vale' | 'cheque' | 'deposito' | 'outros'
+  valor: number
+  indPag?: string
+  description?: string
+}
+
+const PAYMENT_KIND_LABELS: Record<string, { label: string; emoji: string }> = {
+  credito: { label: 'Cartão de Crédito', emoji: '💳' },
+  debito: { label: 'Cartão de Débito', emoji: '💳' },
+  pix: { label: 'PIX', emoji: '⚡' },
+  dinheiro: { label: 'Dinheiro', emoji: '💵' },
+  boleto: { label: 'Boleto', emoji: '📄' },
+  transferencia: { label: 'Transferência', emoji: '🏦' },
+  credito_loja: { label: 'Crédito Loja', emoji: '🏪' },
+  vale: { label: 'Vale', emoji: '🎫' },
+  cheque: { label: 'Cheque', emoji: '📑' },
+  deposito: { label: 'Depósito', emoji: '🏦' },
+  outros: { label: 'Outros', emoji: '💰' },
+}
+
+/**
+ * Client-side mirror of the server's computePaymentSchedule logic.
+ * Lets the review step show the computed due_date immediately as the
+ * user picks a method, before any round-trip to the backend.
+ */
+function previewSchedule(
+  purchaseDateStr: string | undefined,
+  method: PaymentMethod | null,
+): { due_date: string; paid_date: string | null; status: 'pago' | 'pendente' } {
+  const purchase = purchaseDateStr
+    ? new Date(purchaseDateStr.substring(0, 10) + 'T12:00:00')
+    : new Date()
+  const purchaseISO = purchase.toISOString().substring(0, 10)
+
+  if (!method) return { due_date: purchaseISO, paid_date: null, status: 'pendente' }
+
+  if (method.kind === 'pix' || method.kind === 'debito' || method.kind === 'dinheiro') {
+    return { due_date: purchaseISO, paid_date: purchaseISO, status: 'pago' }
+  }
+  if (method.consolidate_monthly) {
+    const consolidateDay = method.due_day || 28
+    const consolidated = new Date(purchase)
+    consolidated.setDate(consolidateDay)
+    if (purchase.getDate() > consolidateDay) {
+      consolidated.setMonth(consolidated.getMonth() + 1)
+    }
+    return {
+      due_date: consolidated.toISOString().substring(0, 10),
+      paid_date: null,
+      status: 'pendente',
+    }
+  }
+  if (method.kind === 'credito') {
+    const closing = method.closing_day || 28
+    const due = method.due_day || 5
+    const faturaMonth = new Date(purchase)
+    if (purchase.getDate() > closing) {
+      faturaMonth.setMonth(faturaMonth.getMonth() + 1)
+    }
+    const dueDate = new Date(faturaMonth)
+    dueDate.setMonth(dueDate.getMonth() + 1)
+    dueDate.setDate(due)
+    return {
+      due_date: dueDate.toISOString().substring(0, 10),
+      paid_date: null,
+      status: 'pendente',
+    }
+  }
+  const offset = method.default_due_offset_days ?? 15
+  const d = new Date(purchase)
+  d.setDate(d.getDate() + offset)
+  return { due_date: d.toISOString().substring(0, 10), paid_date: null, status: 'pendente' }
+}
+
 interface Props {
   currentUser: UserID
   onClose: () => void
@@ -70,6 +147,41 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
   const [items, setItems] = useState<NfeItemEditable[]>([])
   const [savedCount, setSavedCount] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // --- Payment form state ---
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
+  const [selectedMethodId, setSelectedMethodId] = useState<string>('')
+  const [formasPagamento, setFormasPagamento] = useState<NfePaymentForm[]>([])
+  const [dueDateOverride, setDueDateOverride] = useState<string>('')
+  const [paidDateOverride, setPaidDateOverride] = useState<string>('')
+  const [statusOverride, setStatusOverride] = useState<'pago' | 'pendente'>('pendente')
+  const [manualOverride, setManualOverride] = useState(false)
+  const [showPaymentMethodsModal, setShowPaymentMethodsModal] = useState(false)
+
+  const loadPaymentMethods = useCallback(async () => {
+    try {
+      const res = await fetch('/api/payment-methods')
+      const data = await res.json()
+      if (Array.isArray(data)) setPaymentMethods(data)
+    } catch (e) {
+      console.error('Falha ao carregar formas de pagamento', e)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadPaymentMethods()
+  }, [loadPaymentMethods])
+
+  const selectedMethod = paymentMethods.find((m) => m.id === selectedMethodId) || null
+
+  // Auto-compute due/paid/status whenever inputs change (unless user manually overrode)
+  useEffect(() => {
+    if (manualOverride) return
+    const preview = previewSchedule(header.data_emissao, selectedMethod)
+    setDueDateOverride(preview.due_date)
+    setPaidDateOverride(preview.paid_date || '')
+    setStatusOverride(preview.status)
+  }, [selectedMethodId, header.data_emissao, selectedMethod, manualOverride])
 
   const handleFile = async (file: File) => {
     setLoading(true)
@@ -126,6 +238,7 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
     valor_desconto?: number
     source?: string
     raw?: unknown
+    formas_pagamento?: NfePaymentForm[]
     itens?: Array<{
       numero: number
       codigo?: string
@@ -138,6 +251,21 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
       valor_total: number
       categoria_sugerida?: string
     }>
+  }
+
+  /**
+   * Given a list of detected forms from the NFe, try to pick the best saved
+   * method. Preference: exact kind match → first method of that kind → none.
+   */
+  const autoPickMethod = (formas: NfePaymentForm[], methods: PaymentMethod[]): string => {
+    if (formas.length === 0 || methods.length === 0) return ''
+    // Biggest value form wins
+    const sorted = [...formas].sort((a, b) => (b.valor || 0) - (a.valor || 0))
+    for (const f of sorted) {
+      const match = methods.find((m) => m.kind === f.kind)
+      if (match) return match.id
+    }
+    return ''
   }
 
   const applyParsed = (data: ParseResponse) => {
@@ -173,6 +301,14 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
       import: true,
     }))
     setItems(parsedItems)
+
+    // Capture detected payment forms & auto-pick a registered method
+    const formas = data.formas_pagamento || []
+    setFormasPagamento(formas)
+    setManualOverride(false)
+    const picked = autoPickMethod(formas, paymentMethods)
+    setSelectedMethodId(picked)
+
     setStep('review')
   }
 
@@ -208,6 +344,12 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
         ...header,
         created_by: currentUser,
         itens: items,
+        payment_forms: formasPagamento.length > 0 ? formasPagamento : null,
+        payment_method_id: selectedMethodId || null,
+        payment_due_date: selectedMethodId ? dueDateOverride || null : null,
+        payment_paid_date: selectedMethodId ? (paidDateOverride || null) : null,
+        payment_status_override: selectedMethodId ? statusOverride : null,
+        create_payment: !!selectedMethodId,
       }
       const res = await fetch('/api/nfe/imports', {
         method: 'POST',
@@ -465,6 +607,167 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                 </div>
               </div>
 
+              {/* Payment section */}
+              <div style={{
+                padding: '14px', background: 'linear-gradient(135deg, #EEF2FF, #F5F3FF)',
+                borderRadius: '12px', border: '1px solid #C7D2FE', marginBottom: '16px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#4338CA', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CreditCard size={14} /> Forma de Pagamento
+                  </div>
+                  <button
+                    onClick={() => setShowPaymentMethodsModal(true)}
+                    style={{
+                      padding: '6px 12px', borderRadius: '8px', background: 'white',
+                      border: '1px solid #C7D2FE', cursor: 'pointer',
+                      fontSize: '11px', fontWeight: 700, color: '#4338CA',
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                    }}
+                  >
+                    <Plus size={12} /> Gerenciar cartões
+                  </button>
+                </div>
+
+                {/* Detected forms from NFe */}
+                {formasPagamento.length > 0 && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                      Detectado na nota
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {formasPagamento.map((f, i) => {
+                        const info = PAYMENT_KIND_LABELS[f.kind] || PAYMENT_KIND_LABELS.outros
+                        return (
+                          <div key={i} style={{
+                            padding: '6px 10px', borderRadius: '999px',
+                            background: 'white', border: '1px solid #C7D2FE',
+                            fontSize: '11px', fontWeight: 600, color: '#4338CA',
+                            display: 'flex', alignItems: 'center', gap: '4px',
+                          }}>
+                            <span>{info.emoji}</span>
+                            <span>{info.label}</span>
+                            {f.valor > 0 && <span style={{ color: '#6B7280' }}>· {fmt(f.valor)}</span>}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Method picker */}
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={labelStyle}>Usar método cadastrado</label>
+                  <select
+                    value={selectedMethodId}
+                    onChange={(e) => {
+                      setSelectedMethodId(e.target.value)
+                      setManualOverride(false)
+                    }}
+                    style={{
+                      ...inputStyle, fontSize: '14px', padding: '10px 12px',
+                      fontWeight: 600, background: 'white',
+                    }}
+                  >
+                    <option value="">— Não criar lançamento no Financeiro —</option>
+                    {paymentMethods.map((m) => {
+                      const info = PAYMENT_KIND_LABELS[m.kind] || PAYMENT_KIND_LABELS.outros
+                      return (
+                        <option key={m.id} value={m.id}>
+                          {info.emoji} {m.name}
+                          {m.last4 ? ` •••• ${m.last4}` : ''}
+                          {m.kind === 'credito' && m.closing_day && m.due_day
+                            ? ` (fecha ${m.closing_day} · vence ${m.due_day})`
+                            : ''}
+                          {m.consolidate_monthly ? ` (mensal dia ${m.due_day ?? '?'})` : ''}
+                        </option>
+                      )
+                    })}
+                  </select>
+                  {paymentMethods.length === 0 && (
+                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '6px' }}>
+                      Nenhuma forma de pagamento cadastrada.{' '}
+                      <button
+                        onClick={() => setShowPaymentMethodsModal(true)}
+                        style={{ background: 'none', border: 'none', color: '#4338CA', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer', fontSize: '11px', padding: 0 }}
+                      >
+                        Cadastrar agora
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Schedule preview (editable) */}
+                {selectedMethodId && (
+                  <div style={{
+                    padding: '12px', background: 'white', borderRadius: '10px',
+                    border: '1px solid #E0E7FF',
+                  }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={labelStyle}>Vencimento</label>
+                        <input
+                          type="date"
+                          value={dueDateOverride}
+                          onChange={(e) => { setDueDateOverride(e.target.value); setManualOverride(true) }}
+                          style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Data Paga</label>
+                        <input
+                          type="date"
+                          value={paidDateOverride}
+                          onChange={(e) => {
+                            setPaidDateOverride(e.target.value)
+                            setStatusOverride(e.target.value ? 'pago' : 'pendente')
+                            setManualOverride(true)
+                          }}
+                          style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Status</label>
+                        <select
+                          value={statusOverride}
+                          onChange={(e) => {
+                            const v = e.target.value as 'pago' | 'pendente'
+                            setStatusOverride(v)
+                            if (v === 'pago' && !paidDateOverride) {
+                              setPaidDateOverride(new Date().toISOString().substring(0, 10))
+                            }
+                            if (v === 'pendente') setPaidDateOverride('')
+                            setManualOverride(true)
+                          }}
+                          style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px', fontWeight: 700,
+                            color: statusOverride === 'pago' ? '#065F46' : '#92400E',
+                            background: statusOverride === 'pago' ? '#D1FAE5' : '#FEF3C7',
+                          }}
+                        >
+                          <option value="pendente">⏳ Pendente</option>
+                          <option value="pago">✓ Pago</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '8px', lineHeight: 1.5 }}>
+                      {manualOverride ? (
+                        <>
+                          ✏️ Datas editadas manualmente.{' '}
+                          <button
+                            onClick={() => setManualOverride(false)}
+                            style={{ background: 'none', border: 'none', color: '#4338CA', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer', fontSize: '11px', padding: 0 }}
+                          >
+                            Recalcular automaticamente
+                          </button>
+                        </>
+                      ) : (
+                        <>🤖 Calculado automaticamente pela regra da forma de pagamento. Você pode editar.</>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Items table */}
               <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#374151' }}>
@@ -638,6 +941,15 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
             </div>
           )}
         </div>
+
+        {/* Nested Payment Methods Modal */}
+        {showPaymentMethodsModal && (
+          <PaymentMethodsModal
+            currentUser={currentUser}
+            onClose={() => setShowPaymentMethodsModal(false)}
+            onChanged={() => { loadPaymentMethods() }}
+          />
+        )}
 
         {/* Footer */}
         {step === 'review' && (
