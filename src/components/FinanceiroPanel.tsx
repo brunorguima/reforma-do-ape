@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import type { UserID } from '@/lib/constants'
-import { DollarSign, TrendingDown, CheckCircle2, Clock, AlertTriangle, Calendar, CreditCard, PieChart, Users, Plus, Pencil, Trash2, Save, X, ChevronDown, ChevronUp, History, ShoppingCart } from 'lucide-react'
+import { DollarSign, TrendingDown, CheckCircle2, Clock, AlertTriangle, Calendar, CreditCard, PieChart, Users, Plus, Pencil, Trash2, Save, X, ChevronDown, ChevronUp, History, ShoppingCart, FileText } from 'lucide-react'
+import NFeImportModal from './NFeImportModal'
 
 interface Contract {
   id: string; professional: string; role: string; original_total: number; negotiated_total: number;
@@ -88,6 +89,7 @@ export default function FinanceiroPanel({ currentUser }: Props) {
   const [showAuditLog, setShowAuditLog] = useState(false)
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([])
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
+  const [showNfeImport, setShowNfeImport] = useState(false)
 
   const isOwner = currentUser === 'bruno' || currentUser === 'graziela'
 
@@ -767,15 +769,35 @@ export default function FinanceiroPanel({ currentUser }: Props) {
       )}
 
       {/* === MATERIAIS SECTION === */}
-      {materials.length > 0 && (
-        <div style={{
-          marginTop: '20px', borderRadius: '14px', background: '#F0FDF4', border: '1px solid #BBF7D0', padding: '16px',
-        }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#166534', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={{
+        marginTop: '20px', borderRadius: '14px', background: '#F0FDF4', border: '1px solid #BBF7D0', padding: '16px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#166534', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
             <ShoppingCart size={16} /> Materiais de Obra
-            <span style={{ fontSize: '12px', fontWeight: 500, color: '#4ADE80', marginLeft: 'auto' }}>{materials.length} ite{materials.length !== 1 ? 'ns' : 'm'}</span>
+            <span style={{ fontSize: '12px', fontWeight: 500, color: '#4ADE80', marginLeft: '6px' }}>
+              {materials.length} ite{materials.length !== 1 ? 'ns' : 'm'}
+            </span>
           </h3>
-
+          <button
+            onClick={() => setShowNfeImport(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '8px 14px', borderRadius: '10px',
+              background: '#059669', color: 'white', border: 'none',
+              cursor: 'pointer', fontSize: '13px', fontWeight: 600,
+            }}
+          >
+            <FileText size={14} /> Importar NF-e
+          </button>
+        </div>
+      {materials.length === 0 && (
+        <div style={{ padding: '16px', textAlign: 'center', color: '#6B7280', fontSize: '13px', background: 'white', borderRadius: '10px', border: '1px dashed #BBF7D0' }}>
+          Nenhum material ainda. Clique em &quot;Importar NF-e&quot; para começar.
+        </div>
+      )}
+      {materials.length > 0 && (
+        <>
           {/* By Category */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
             {Object.entries(materiaisPorCategoria)
@@ -820,8 +842,9 @@ export default function FinanceiroPanel({ currentUser }: Props) {
             <span style={{ fontSize: '13px', fontWeight: 600 }}>Total Materiais</span>
             <span style={{ fontSize: '16px', fontWeight: 800 }}>{fmt(materiaisTotal)}</span>
           </div>
-        </div>
+        </>
       )}
+      </div>
 
       {/* === RESUMO GERAL === */}
       <div style={{
@@ -847,6 +870,18 @@ export default function FinanceiroPanel({ currentUser }: Props) {
           </div>
         </div>
       </div>
+
+      {showNfeImport && (
+        <NFeImportModal
+          currentUser={currentUser}
+          onClose={() => setShowNfeImport(false)}
+          onSuccess={async () => {
+            setShowNfeImport(false)
+            await fetchData()
+            showToast('NF-e importada com sucesso!', 'success')
+          }}
+        />
+      )}
     </div>
   )
 }
