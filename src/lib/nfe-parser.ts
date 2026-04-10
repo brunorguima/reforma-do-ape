@@ -570,3 +570,4 @@ export function guessCategory(descricao: string, ncm?: string): string {
   }
   return 'outro'
 }
+/* nfe parser v2 fixed - deployed 2026-04-10T20:30:56Z */
