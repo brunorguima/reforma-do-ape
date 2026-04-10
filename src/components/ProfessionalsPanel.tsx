@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Room } from '@/lib/supabase'
 import type { UserID } from '@/lib/constants'
 import { USERS, formatCurrency } from '@/lib/constants'
-import { Plus, User, Phone, Mail, ChevronDown, ChevronUp, Trash2, Edit3, Check, X, Wrench, FileText, CreditCard, CheckCircle2, Clock, TrendingDown, Users, BookOpen, ShoppingCart, Package, ExternalLink } from 'lucide-react'
+import { Plus, User, Phone, Mail, ChevronDown, ChevronUp, Trash2, Edit3, Check, X, Wrench, FileText, CreditCard, CheckCircle2, Clock, TrendingDown, Users, BookOpen, ShoppingCart, Package, ExternalLink, Upload, File as FileIcon } from 'lucide-react'
 
 interface ServiceCategory {
   id: string
@@ -76,6 +76,20 @@ interface BudgetItem {
 interface Payment {
   id: string; professional: string; installment_number: number; amount: number;
   due_date: string; paid_date: string | null; status: string; notes: string;
+}
+
+interface OrcamentoDoc {
+  id: string
+  title: string
+  description?: string
+  doc_type: string
+  url?: string
+  file_path?: string
+  file_name?: string
+  file_size?: number
+  file_type?: string
+  created_by: string
+  created_at: string
 }
 
 interface Material {
@@ -153,6 +167,12 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
   const [editingProfessional, setEditingProfessional] = useState<string | null>(null)
   const [editProfessionalForm, setEditProfessionalForm] = useState<Partial<Professional>>({})
 
+  // Orçamento docs (memoriais, escopos, PDFs)
+  const [orcamentoDocs, setOrcamentoDocs] = useState<OrcamentoDoc[]>([])
+  const [showAddDoc, setShowAddDoc] = useState(false)
+  const [uploadingDoc, setUploadingDoc] = useState(false)
+  const [newDoc, setNewDoc] = useState<{ title: string; description: string; file: File | null }>({ title: '', description: '', file: null })
+
   // Materials states
   const [materials, setMaterials] = useState<Material[]>([])
   const [showAddMaterial, setShowAddMaterial] = useState(false)
@@ -175,12 +195,14 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
 
   const fetchData = useCallback(async () => {
     try {
-      const [quotesRes, prosRes, catsRes, conRes, budRes, payRes, matRes] = await Promise.all([
+      const [quotesRes, prosRes, catsRes, conRes, budRes, payRes, matRes, docsRes] = await Promise.all([
         fetch('/api/quotes'), fetch('/api/professionals'), fetch('/api/service-categories'),
         fetch('/api/contracts'), fetch('/api/budget-items'), fetch('/api/payments'), fetch('/api/materials'),
+        fetch('/api/documents'),
       ])
-      const [quotesData, prosData, catsData, conData, budData, payData, matData] = await Promise.all([
+      const [quotesData, prosData, catsData, conData, budData, payData, matData, docsData] = await Promise.all([
         quotesRes.json(), prosRes.json(), catsRes.json(), conRes.json(), budRes.json(), payRes.json(), matRes.json(),
+        docsRes.json(),
       ])
       setQuotes(Array.isArray(quotesData) ? quotesData : [])
       setProfessionals(Array.isArray(prosData) ? prosData : [])
@@ -189,6 +211,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       setBudgetItems(Array.isArray(budData) ? budData : [])
       setPayments(Array.isArray(payData) ? payData : [])
       setMaterials(Array.isArray(matData) ? matData : [])
+      setOrcamentoDocs(Array.isArray(docsData) ? docsData.filter((d: OrcamentoDoc) => d.doc_type === 'orcamento' || d.doc_type === 'memorial') : [])
     } catch (err) {
       console.error('Error:', err)
     } finally {
@@ -224,6 +247,56 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
 
   // Quotes that are contratado or pago (for Contratos Fechados section)
   const contratadoQuotes = quotes.filter(q => ['contratado', 'pago'].includes(q.status))
+
+  const handleUploadDoc = async () => {
+    if (!newDoc.title.trim() || !newDoc.file) {
+      alert('Preencha o título e selecione um arquivo')
+      return
+    }
+    setUploadingDoc(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', newDoc.file)
+      formData.append('title', newDoc.title.trim())
+      formData.append('description', newDoc.description || '')
+      formData.append('type', 'orcamento')
+      formData.append('created_by', currentUser)
+      const res = await fetch('/api/documents/upload', { method: 'POST', body: formData })
+      if (!res.ok) {
+        const err = await res.json()
+        alert('Erro no upload: ' + (err.error || 'Falha'))
+        return
+      }
+      await fetchData()
+      setShowAddDoc(false)
+      setNewDoc({ title: '', description: '', file: null })
+    } catch (err) {
+      console.error(err)
+      alert('Erro no upload')
+    } finally {
+      setUploadingDoc(false)
+    }
+  }
+
+  const handleDeleteDoc = async (docId: string) => {
+    const doc = orcamentoDocs.find(d => d.id === docId)
+    if (currentUser === 'mari' && doc?.created_by !== 'mari') {
+      alert('Sem permissão para deletar documentos de outros usuários')
+      return
+    }
+    if (!confirm('Tem certeza que deseja excluir este documento?')) return
+    try {
+      await fetch(`/api/documents/${docId}`, { method: 'DELETE' })
+      await fetchData()
+    } catch (err) { console.error(err) }
+  }
+
+  const fmtFileSize = (bytes?: number) => {
+    if (!bytes) return ''
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
 
   const handleAddProfessional = async () => {
     setFormError('')
@@ -588,6 +661,140 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
           Novo Profissional
         </button>
       </div>
+
+      {/* Memoriais & Documentos de Orçamento */}
+      <div style={{ marginBottom: '20px', background: 'white', borderRadius: '14px', padding: '16px', border: '1px solid #e5e7eb' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileText size={18} color="#7c3aed" />
+            <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: '#111827' }}>Memoriais & Documentos</h3>
+            {orcamentoDocs.length > 0 && (
+              <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#ede9fe', color: '#7c3aed', fontWeight: 600 }}>
+                {orcamentoDocs.length}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => setShowAddDoc(true)}
+            style={{
+              fontSize: '12px', padding: '6px 12px', border: '1.5px solid #7c3aed', borderRadius: '8px',
+              background: 'white', color: '#7c3aed', cursor: 'pointer', fontWeight: 600,
+              display: 'inline-flex', alignItems: 'center', gap: '4px'
+            }}>
+            <Upload size={13} /> Enviar PDF
+          </button>
+        </div>
+        {orcamentoDocs.length === 0 ? (
+          <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0, padding: '12px 0', textAlign: 'center' }}>
+            Nenhum memorial ou documento. Envie PDFs de escopo para solicitar orçamentos competitivos.
+          </p>
+        ) : (
+          <div style={{ display: 'grid', gap: '8px' }}>
+            {orcamentoDocs.map(doc => (
+              <div key={doc.id} style={{
+                display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px',
+                background: '#faf5ff', borderRadius: '10px', border: '1px solid #e9d5ff'
+              }}>
+                <div style={{ fontSize: '20px', flexShrink: 0 }}>📄</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: '13px', fontWeight: 700, margin: 0, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {doc.title}
+                  </p>
+                  {doc.description && (
+                    <p style={{ fontSize: '11px', color: '#6b7280', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {doc.description}
+                    </p>
+                  )}
+                  <p style={{ fontSize: '10px', color: '#9ca3af', margin: '2px 0 0' }}>
+                    {doc.file_size ? fmtFileSize(doc.file_size) + ' · ' : ''}{USERS.find(u => u.id === doc.created_by)?.name || doc.created_by} · {new Date(doc.created_at).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+                {doc.url && (
+                  <a
+                    href={doc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '4px',
+                      padding: '6px 10px', borderRadius: '8px', background: '#7c3aed', color: 'white',
+                      textDecoration: 'none', fontSize: '11px', fontWeight: 600, flexShrink: 0
+                    }}>
+                    <ExternalLink size={12} /> Abrir
+                  </a>
+                )}
+                {(currentUser !== 'mari' || doc.created_by === 'mari') && (
+                  <button
+                    onClick={() => handleDeleteDoc(doc.id)}
+                    title="Excluir"
+                    style={{
+                      padding: '6px', border: 'none', borderRadius: '8px', background: '#fee2e2',
+                      color: '#dc2626', cursor: 'pointer', flexShrink: 0
+                    }}>
+                    <Trash2 size={13} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Upload Doc Modal */}
+      {showAddDoc && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowAddDoc(false) }}>
+          <div className="modal-content">
+            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Enviar Memorial / Documento</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input
+                placeholder="Título do documento *"
+                value={newDoc.title}
+                onChange={e => setNewDoc({ ...newDoc, title: e.target.value })}
+                autoFocus
+              />
+              <textarea
+                placeholder="Descrição (opcional)"
+                value={newDoc.description}
+                onChange={e => setNewDoc({ ...newDoc, description: e.target.value })}
+                rows={2}
+              />
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: '8px', padding: '12px',
+                border: '2px dashed #d1d5db', borderRadius: '10px', cursor: 'pointer',
+                background: newDoc.file ? '#f0fdf4' : '#fafafa',
+                borderColor: newDoc.file ? '#10b981' : '#d1d5db',
+              }}>
+                <Upload size={18} color={newDoc.file ? '#10b981' : '#6b7280'} />
+                <span style={{ fontSize: '13px', color: newDoc.file ? '#065f46' : '#6b7280', fontWeight: 600 }}>
+                  {newDoc.file ? newDoc.file.name : 'Selecionar arquivo PDF...'}
+                </span>
+                <input
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={e => setNewDoc({ ...newDoc, file: e.target.files?.[0] || null })}
+                  style={{ display: 'none' }}
+                />
+              </label>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => { setShowAddDoc(false); setNewDoc({ title: '', description: '', file: null }) }}
+                style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>
+                Cancelar
+              </button>
+              <button
+                className="btn-primary"
+                onClick={handleUploadDoc}
+                disabled={!newDoc.title.trim() || !newDoc.file || uploadingDoc}
+                style={{
+                  padding: '10px 20px',
+                  opacity: (!newDoc.title.trim() || !newDoc.file || uploadingDoc) ? 0.5 : 1,
+                }}>
+                {uploadingDoc ? 'Enviando...' : 'Enviar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab Toggle: Orçamentos / Profissionais */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>

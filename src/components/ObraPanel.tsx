@@ -18,7 +18,7 @@ interface Document {
   id: string
   title: string
   description: string | null
-  doc_type: 'planta' | 'projeto' | 'contrato' | 'nota_fiscal' | 'foto' | 'outro'
+  doc_type: 'planta' | 'projeto' | 'contrato' | 'nota_fiscal' | 'foto' | 'orcamento' | 'memorial' | 'outro'
   url: string | null
   file_path: string | null
   file_name: string | null
@@ -54,6 +54,8 @@ const DOCUMENT_TYPE_CONFIG: Record<string, { label: string; emoji: string; color
   planta: { label: 'Planta', emoji: '📐', color: '#0891B2', bg: '#CFFAFE' },
   projeto: { label: 'Projeto', emoji: '🏗️', color: '#DC2626', bg: '#FEE2E2' },
   contrato: { label: 'Contrato', emoji: '📄', color: '#7C3AED', bg: '#F3E8FF' },
+  orcamento: { label: 'Memorial/Orçamento', emoji: '📋', color: '#7C3AED', bg: '#EDE9FE' },
+  memorial: { label: 'Memorial/Orçamento', emoji: '📋', color: '#7C3AED', bg: '#EDE9FE' },
   nota_fiscal: { label: 'Nota Fiscal', emoji: '🧾', color: '#059669', bg: '#DBEAFE' },
   foto: { label: 'Foto', emoji: '📸', color: '#EA580C', bg: '#FFEDD5' },
   outro: { label: 'Outro', emoji: '📎', color: '#6B7280', bg: '#F3F4F6' },
