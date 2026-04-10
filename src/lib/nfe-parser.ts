@@ -254,6 +254,21 @@ function cleanText(s: string): string {
 }
 
 /**
+ * Splits abutting Brazilian currencies like "157,000,00" → "157,00 0,00".
+ * Only acts on two 2-decimal values merged together, so 3+decimal quantities
+ * like "2,500" (= 2.5) are preserved.
+ */
+function normalizeCurrencyConcat(s: string): string {
+  let prev = ''
+  let cur = s
+  while (prev !== cur) {
+    prev = cur
+    cur = cur.replace(/(\d,\d{2})(\d,\d{2})/g, '$1 $2')
+  }
+  return cur
+}
+
+/**
  * DANFE PDF parser. DANFE layout is highly standardized (SEFAZ layout 1.01)
  * but each provider's PDF library generates slightly different text extraction.
  * We use permissive regex patterns to grab what we can. Users can edit
@@ -262,269 +277,198 @@ function cleanText(s: string): string {
 export function parseNfeDanfePdf(pdfText: string): NfeParsed {
   const text = pdfText.replace(/\r/g, '')
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
-  const full = lines.join(' ')
+  const fullRaw = lines.join(' ')
+  // Normalized version is used for the CALC IMPOSTO box positional extraction
+  // (where abutting currencies like "157,000,00" must be split). It is NOT
+  // used for items because that could corrupt 3+decimal quantities.
+  const full = normalizeCurrencyConcat(fullRaw)
 
-  // ---- Chave de Acesso (44 digits, typically formatted with spaces/dots in DANFE)
-  // Try multiple patterns: bare 44 digits, 11x 4 digits, digits with dots/spaces mixed
+  // ---- Chave de Acesso (44 digits, often formatted as 11 groups of 4 with a
+  // leading "Folha" digit). Try several extraction strategies.
   let chave: string | undefined
-  const plainMatch = text.match(/\b\d{44}\b/)
-  if (plainMatch) {
-    chave = plainMatch[0]
-  } else {
-    // Looser: capture any 44+ digit sequence across whitespace/dots
-    // Walk through all "long digit clusters" and concatenate
-    const normalized = text.replace(/[^\d\s]/g, ' ').replace(/\s+/g, ' ')
+  const chaveCtx = fullRaw.match(/CHAVE\s+DE\s+ACESSO[^\d]*([\d\s.]{50,300})/i)
+  if (chaveCtx) {
+    const chunks = chaveCtx[1].trim().split(/\s+/).filter((c) => /^\d+$/.test(c))
+    let joined = chunks.join('')
+    // Drop a 1-2 digit leading chunk (Folha/page number) if the remaining would give ≥44 digits
+    if (joined.length > 44 && chunks[0] && chunks[0].length <= 2) {
+      joined = chunks.slice(1).join('')
+    }
+    if (joined.length >= 44) chave = joined.substring(0, 44)
+  }
+  if (!chave) {
+    const plainMatch = fullRaw.match(/\b\d{44}\b/)
+    if (plainMatch) chave = plainMatch[0]
+  }
+  if (!chave) {
+    const normalized = fullRaw.replace(/[^\d\s]/g, ' ').replace(/\s+/g, ' ')
     const groups = normalized.match(/(?:\d{4}\s*){11}/g)
-    if (groups && groups.length > 0) {
-      chave = groups[0].replace(/\s+/g, '')
-    } else {
-      // Last resort: strip all non-digits and look for 44-digit window right after "CHAVE DE ACESSO"
-      const chaveSectionMatch = text.match(/CHAVE\s+DE\s+ACESSO[^\d]*([\d\s.]{44,})/i)
-      if (chaveSectionMatch) {
-        const digits = chaveSectionMatch[1].replace(/\D/g, '').substring(0, 44)
-        if (digits.length === 44) chave = digits
+    if (groups && groups.length > 0) chave = groups[0].replace(/\s+/g, '')
+  }
+
+  // ---- Número / série
+  const numSerieMatch = fullRaw.match(/N[º°o]\.?\s*(\d{3,})[^\d]{0,10}S[ée]rie\s*(\d{1,3})/i)
+  const numero = numSerieMatch?.[1]
+  const serie = numSerieMatch?.[2]
+
+  // ---- Emitente nome: "RECEBEMOS DE <nome> OS PRODUTOS" canonical DANFE cabeçalho
+  let emitente_nome: string | undefined
+  const recMatch = fullRaw.match(/RECEBEMOS\s+DE\s+(.+?)\s+OS\s+PRODUTOS/i)
+  if (recMatch) emitente_nome = cleanText(recMatch[1])
+
+  // Fallback: first all-caps-ish line that's not a DANFE label
+  if (!emitente_nome) {
+    for (let i = 0; i < Math.min(60, lines.length); i++) {
+      const l = lines[i]
+      if (l.length > 6 && l.length < 80 && /[A-ZÀ-Ú]/.test(l) && !/DANFE|CHAVE|DOCUMENTO/i.test(l)) {
+        const upperRatio = l.replace(/[^A-ZÀ-Ú]/g, '').length / Math.max(1, l.length)
+        if (upperRatio > 0.4) { emitente_nome = cleanText(l); break }
       }
     }
   }
 
-  // ---- Número / série
-  const numSerieMatch = full.match(/N[º°o]\.?\s*(\d{3,})[^\d]{0,10}S[ée]rie\s*(\d{1,3})/i)
-  const numero = numSerieMatch?.[1]
-  const serie = numSerieMatch?.[2]
-
-  // ---- Emitente (first CNPJ found = emitente)
+  // ---- Emitente CNPJ (first formatted CNPJ in text = emitente)
   let emitente_cnpj: string | undefined
-  const cnpjMatches = full.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g)
+  const cnpjMatches = fullRaw.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g)
   if (cnpjMatches && cnpjMatches.length > 0) {
     emitente_cnpj = normalizeCnpj(cnpjMatches[0])
   }
 
-  // Emitente name: typically the first all-caps line before CNPJ
-  let emitente_nome: string | undefined
-  for (let i = 0; i < Math.min(40, lines.length); i++) {
-    const l = lines[i]
-    if (l.length > 6 && l.length < 80 && /[A-ZÀ-Ú]/.test(l) && !/DANFE|CHAVE|DOCUMENTO/i.test(l)) {
-      const upperRatio = l.replace(/[^A-ZÀ-Ú]/g, '').length / Math.max(1, l.length)
-      if (upperRatio > 0.4) {
-        emitente_nome = cleanText(l)
-        break
-      }
-    }
-  }
-
   // ---- Natureza da operação
-  const natMatch = full.match(/NATUREZA DA OPERA[CÇ][AÃ]O[:\s]+([^\n]{3,80}?)(?:\s{2,}|PROTOCOLO|INSCRI|CNPJ)/i)
+  const natMatch = fullRaw.match(/NATUREZA DA OPERA[CÇ][AÃ]O[:\s]+([^\n]{3,80}?)(?:\s{2,}|PROTOCOLO|INSCRI|CNPJ)/i)
   const natureza_operacao = natMatch?.[1]?.trim()
 
-  // ---- Data de Emissão
+  // ---- Data de Emissão: first DD/MM/YYYY in text (label can come after the date)
   let data_emissao: string | undefined
-  const dateMatch = full.match(/DATA DA EMISS[AÃ]O[:\s]+(\d{2}\/\d{2}\/\d{4})/i)
+  const dateMatch = fullRaw.match(/\b(\d{2})\/(\d{2})\/(\d{4})\b/)
   if (dateMatch) {
-    const [d, m, y] = dateMatch[1].split('/')
+    const [, d, m, y] = dateMatch
     data_emissao = `${y}-${m}-${d}T00:00:00-03:00`
   }
 
-  // ---- Valor Total — muitos layouts diferentes; tentamos vários padrões
+  // ---- Positional extraction from CÁLCULO DO IMPOSTO box
+  // SEFAZ-standard 11 fields in order:
+  // 0: BC ICMS | 1: V ICMS | 2: BC ICMS ST | 3: V ICMS ST | 4: V PROD
+  // 5: V FRETE | 6: V SEGURO | 7: DESCONTO | 8: OUTRAS | 9: V IPI | 10: V TOTAL NOTA
   let valor_total: number | undefined
-  const totalPatterns = [
-    /VALOR\s+TOTAL\s+DA\s+NOTA[^\d]{0,40}([\d.]+,\d{2})/i,
-    /V\.?\s*TOTAL\s+DA\s+NOTA[^\d]{0,40}([\d.]+,\d{2})/i,
-    /TOTAL\s+DA\s+NOTA[^\d]{0,40}([\d.]+,\d{2})/i,
-    /VALOR\s+TOTAL\s+DO[S]?\s+SERVI[CÇ]O[S]?[^\d]{0,40}([\d.]+,\d{2})/i,
-    /VL\.?\s*TOTAL\s+DA\s+NOTA[^\d]{0,40}([\d.]+,\d{2})/i,
-    /V\s*\.\s*TOTAL\s*\(.*?\)[^\d]{0,40}([\d.]+,\d{2})/i,
-  ]
-  for (const re of totalPatterns) {
-    const m = full.match(re)
-    if (m) { valor_total = toNumber(m[1]); break }
-  }
-  // Fallback: line-by-line scan for "TOTAL DA NOTA" followed by number on same or next line
-  if (valor_total == null) {
-    for (let i = 0; i < lines.length; i++) {
-      if (/TOTAL\s+DA\s+NOTA/i.test(lines[i])) {
-        // Check current line
-        const sameLine = lines[i].match(/([\d.]+,\d{2})/g)
-        if (sameLine && sameLine.length > 0) {
-          valor_total = toNumber(sameLine[sameLine.length - 1])
-          break
-        }
-        // Check next 3 lines
-        for (let j = 1; j <= 3 && i + j < lines.length; j++) {
-          const nxt = lines[i + j].match(/([\d.]+,\d{2})/)
-          if (nxt) { valor_total = toNumber(nxt[1]); break }
-        }
-        if (valor_total != null) break
-      }
-    }
-  }
-
-  // ---- Valor Desconto
-  let valor_desconto: number | undefined
-  const descPatterns = [
-    /VALOR\s+DO\s+DESCONTO[^\d]{0,40}([\d.]+,\d{2})/i,
-    /VALOR\s+DESCONTO[^\d]{0,40}([\d.]+,\d{2})/i,
-    /V\.?\s*DESCONTO[^\d]{0,40}([\d.]+,\d{2})/i,
-    /VL\.?\s*DESCONTO[^\d]{0,40}([\d.]+,\d{2})/i,
-    /\bDESCONTO\b[^\d]{0,20}([\d.]+,\d{2})/i,
-  ]
-  for (const re of descPatterns) {
-    const m = full.match(re)
-    if (m) {
-      const v = toNumber(m[1])
-      if (v > 0) { valor_desconto = v; break }
-    }
-  }
-
-  // ---- Valor Produtos / Frete
   let valor_produtos: number | undefined
-  const prodPatterns = [
-    /VALOR\s+TOTAL\s+DO[S]?\s+PRODUTO[S]?[^\d]{0,40}([\d.]+,\d{2})/i,
-    /V\.?\s*TOTAL\s+PRODUTO[S]?[^\d]{0,40}([\d.]+,\d{2})/i,
-    /VL\.?\s*TOTAL\s+PRODUTO[S]?[^\d]{0,40}([\d.]+,\d{2})/i,
-  ]
-  for (const re of prodPatterns) {
-    const m = full.match(re)
-    if (m) { valor_produtos = toNumber(m[1]); break }
-  }
-
   let valor_frete: number | undefined
-  const freteMatch = full.match(/VALOR\s+DO\s+FRETE[^\d]{0,40}([\d.]+,\d{2})/i)
-  if (freteMatch) valor_frete = toNumber(freteMatch[1])
+  let valor_desconto: number | undefined
 
-  // ---- Itens
-  // DANFE item table columns: CÓDIGO | DESCRIÇÃO | NCM | CST | CFOP | UN | QTD | VL.UNIT | VL.TOTAL | BC.ICMS | VL.ICMS | VL.IPI | ALIQ.ICMS | ALIQ.IPI
-  // Cada provedor gera texto com layout ligeiramente diferente. Usamos
-  // múltiplas estratégias: detectar a seção, depois escanear por linhas
-  // que tenham padrão numérico compatível com item de nota.
+  const boxStart = full.search(/BASE\s+DE\s+C[ÁA]LCULO\s+DO\s+ICMS/i)
+  if (boxStart >= 0) {
+    const rest = full.substring(boxStart)
+    const endRel = rest.search(/C[ÁA]LCULO\s+DO\s+IMPOSTO|TRANSPORTADOR|DADOS\s+DO\s+PRODUTO/i)
+    const box = endRel > 0 ? rest.substring(0, endRel) : rest.substring(0, 800)
+    const nums = (box.match(/[\d.]+,\d{2}/g) || []).map(toNumber)
+    if (nums.length >= 11) {
+      valor_produtos = nums[4]
+      valor_frete = nums[5]
+      valor_desconto = nums[7]
+      // Positions 9/10 order varies by provider (IPI vs TOTAL). TOTAL ≥ IPI, so take max.
+      valor_total = Math.max(nums[9], nums[10])
+    } else if (nums.length >= 5) {
+      valor_produtos = nums[4]
+      valor_total = Math.max(...nums)
+    }
+  }
+
+  // Fallback for total: labelled pattern
+  if (valor_total == null) {
+    const totalPatterns = [
+      /VALOR\s+TOTAL\s+DA\s+NOTA[^\d]{0,40}([\d.]+,\d{2})/i,
+      /V\.?\s*TOTAL\s+DA\s+NOTA[^\d]{0,40}([\d.]+,\d{2})/i,
+      /TOTAL\s+DA\s+NOTA[^\d]{0,40}([\d.]+,\d{2})/i,
+    ]
+    for (const re of totalPatterns) {
+      const m = full.match(re)
+      if (m) { valor_total = toNumber(m[1]); break }
+    }
+  }
+
+  // ---- Itens: NCM-anchor strategy on RAW (non-normalized) text
+  // This preserves 3+decimal quantities. The inter-item gap (which holds 5 tax
+  // columns as concatenated currencies) is normalized locally when needed.
   const itens: NfeItem[] = []
-
-  // 1. Tenta delimitar a seção "DADOS DOS PRODUTOS"
-  const startIdx = lines.findIndex((l) =>
-    /DADOS\s+DOS?\s+PRODUTOS?/i.test(l) ||
-    /PRODUTO[S]?\s*\/\s*SERVI[CÇ]OS?/i.test(l) ||
-    /DESCRI[CÇ][AÃ]O\s+DO\s+PRODUTO/i.test(l),
+  const itemsStart = fullRaw.search(/DADOS\s+DO\s+PRODUTO/i)
+  const itemsBlockRaw = itemsStart >= 0 ? fullRaw.substring(itemsStart) : fullRaw
+  const endMarkerIdx = itemsBlockRaw.search(
+    /C[ÁA]LCULO\s+DO\s+ISSQN|DADOS\s+ADICIONAIS|INFORMA[CÇ][OÕ]ES\s+COMPLEMENTARES/i,
   )
-  const endIdx = lines.findIndex((l, i) => i > startIdx && (
-    /C[AÁ]LCULO\s+DO\s+IMPOSTO/i.test(l) ||
-    /TRANSPORTADOR/i.test(l) ||
-    /DADOS\s+ADICIONAIS/i.test(l) ||
-    /INFORMA[CÇ][OÕ]ES?\s+COMPLEMENTARES/i.test(l) ||
-    /ISSQN/i.test(l)
-  ))
-  const itemLinesRaw = startIdx > -1
-    ? lines.slice(startIdx + 1, endIdx > startIdx ? endIdx : undefined)
-    : lines // Fallback: scan everything
+  let itemsText = endMarkerIdx > 0 ? itemsBlockRaw.substring(0, endMarkerIdx) : itemsBlockRaw
 
-  // Remove cabeçalhos repetidos e linhas muito curtas
-  const itemLines = itemLinesRaw.filter((l) =>
-    l.length > 10 &&
-    !/^(C[ÓO]DIGO|DESCRI|NCM|CST|CFOP|UNID|QTDE?|VL\.?UNIT|VALOR\s+UNIT|VL\.?TOTAL|ALIQ|B\.?CALC|BASE|VAL|VR|BC|V\.?BC)/i.test(l.replace(/\s+/g, ' ').trim()),
-  )
-
-  let itemNum = 0
-
-  // Estratégia A: padrão estrito com NCM (8 dígitos) + CFOP (4 dígitos)
-  const numPat = '[\\d.]+,\\d{2,4}'
-  const numInt = '[\\d.]+(?:,\\d+)?'
-  const strictRe = new RegExp(
-    '^(\\S+)\\s+(.+?)\\s+(\\d{8})\\s+(?:\\d{2,4}\\s+)?(\\d{4})\\s+([A-Za-z]{1,6})\\s+(' + numInt + ')\\s+(' + numPat + ')\\s+(' + numPat + ')',
-  )
-  for (const raw of itemLines) {
-    const m = raw.match(strictRe)
-    if (m) {
-      itemNum++
-      itens.push({
-        numero: itemNum,
-        codigo: m[1],
-        descricao: cleanText(m[2]),
-        ncm: m[3],
-        cfop: m[4],
-        unidade: m[5],
-        quantidade: toNumber(m[6]),
-        valor_unitario: toNumber(m[7]),
-        valor_total: toNumber(m[8]),
-      })
-    }
+  // Strip column headers up to the "VALOR PRODUTO" anchor (last header before first row)
+  const headerEnd = itemsText.search(/VALOR\s+PRODUTO/i)
+  if (headerEnd >= 0) {
+    itemsText = itemsText.substring(headerEnd + 'VALOR PRODUTO'.length)
   }
 
-  // Estratégia B: sem NCM obrigatório, procura UN + qtd + v.unit + v.total
-  if (itens.length === 0) {
-    const looseRe = new RegExp(
-      '^(\\S+)\\s+(.+?)\\s+([A-Za-z]{1,4})\\s+(' + numInt + ')\\s+(' + numPat + ')\\s+(' + numPat + ')',
-    )
-    for (const raw of itemLines) {
-      const m = raw.match(looseRe)
-      if (m) {
-        itemNum++
-        itens.push({
-          numero: itemNum,
-          codigo: m[1],
-          descricao: cleanText(m[2]),
-          unidade: m[3],
-          quantidade: toNumber(m[4]),
-          valor_unitario: toNumber(m[5]),
-          valor_total: toNumber(m[6]),
-        })
-      }
-    }
+  // NCM (8d) + CSOSN/CST (3-4d) + CFOP (4d) + UN (letters) + qtd + vunit + vtotal
+  const itemRe = /(\d{8})\s+(\d{3,4})\s+(\d{4})\s+([A-Za-z]{1,5})\s+([\d.]+(?:,\d+)?)\s+([\d.]+,\d{2,4})\s+([\d.]+,\d{2,4})/g
+
+  interface ItemMatch {
+    index: number
+    end: number
+    ncm: string
+    cfop: string
+    unidade: string
+    quantidade: number
+    valor_unitario: number
+    valor_total: number
+  }
+  const matches: ItemMatch[] = []
+  let mExec: RegExpExecArray | null
+  while ((mExec = itemRe.exec(itemsText)) !== null) {
+    matches.push({
+      index: mExec.index,
+      end: itemRe.lastIndex,
+      ncm: mExec[1],
+      cfop: mExec[3],
+      unidade: mExec[4],
+      quantidade: toNumber(mExec[5]),
+      valor_unitario: toNumber(mExec[6]),
+      valor_total: toNumber(mExec[7]),
+    })
   }
 
-  // Estratégia C: últimos 3 números da linha são qtd, v.unit, v.total
-  if (itens.length === 0) {
-    const endNumsRe = /^(.+?)\s+([\d.]+(?:,\d+)?)\s+([\d.]+,\d{2,4})\s+([\d.]+,\d{2,4})\s*$/
-    for (const raw of itemLines) {
-      const m = raw.match(endNumsRe)
-      if (m) {
-        const descPart = m[1].trim()
-        // Tenta separar código (primeira palavra) da descrição
-        const tokens = descPart.split(/\s+/)
-        const codigo = tokens[0]
-        const descricao = tokens.slice(1).join(' ')
-        itemNum++
-        itens.push({
-          numero: itemNum,
-          codigo,
-          descricao: cleanText(descricao || descPart),
-          quantidade: toNumber(m[2]),
-          valor_unitario: toNumber(m[3]),
-          valor_total: toNumber(m[4]),
-        })
-      }
-    }
-  }
+  let cursor = 0
+  for (let i = 0; i < matches.length; i++) {
+    const mt = matches[i]
+    let preceding = itemsText.substring(cursor, mt.index).trim()
 
-  // Estratégia D: multi-line — quando descrição quebra linha, tenta juntar
-  // linhas curtas com a próxima que tem números no final
-  if (itens.length === 0 && itemLines.length > 0) {
-    const joinedLines: string[] = []
-    let buffer = ''
-    for (const raw of itemLines) {
-      buffer = buffer ? buffer + ' ' + raw : raw
-      // Se a linha termina com pelo menos 2 números no formato brasileiro, fecha o buffer
-      if (/[\d.]+,\d{2,4}\s+[\d.]+,\d{2,4}\s*$/.test(buffer)) {
-        joinedLines.push(buffer)
-        buffer = ''
+    if (i > 0) {
+      // Between items there are 5 numeric tax tokens (possibly concat'd).
+      // Normalize just this gap (safe: all currencies), then skip up to 5 numerics.
+      const normalizedGap = normalizeCurrencyConcat(preceding)
+      const tokens = normalizedGap.split(/\s+/)
+      let dropUntil = 0
+      let numericCount = 0
+      for (let t = 0; t < tokens.length && t < 12; t++) {
+        if (/^[\d.]+(?:,\d+)?$/.test(tokens[t])) {
+          numericCount++
+          dropUntil = t + 1
+          if (numericCount >= 5) break
+        } else break
       }
+      preceding = tokens.slice(dropUntil).join(' ').trim()
     }
-    const endNumsRe = /^(.+?)\s+([\d.]+(?:,\d+)?)\s+([\d.]+,\d{2,4})\s+([\d.]+,\d{2,4})\s*$/
-    for (const joined of joinedLines) {
-      const m = joined.match(endNumsRe)
-      if (m) {
-        const descPart = m[1].trim()
-        const tokens = descPart.split(/\s+/)
-        const codigo = tokens[0]
-        const descricao = tokens.slice(1).join(' ')
-        itemNum++
-        itens.push({
-          numero: itemNum,
-          codigo,
-          descricao: cleanText(descricao || descPart),
-          quantidade: toNumber(m[2]),
-          valor_unitario: toNumber(m[3]),
-          valor_total: toNumber(m[4]),
-        })
-      }
-    }
+
+    const parts = preceding.split(/\s+/)
+    const codigo = parts[0] || ''
+    const descricao = parts.slice(1).join(' ')
+
+    itens.push({
+      numero: i + 1,
+      codigo,
+      descricao: cleanText(descricao || preceding),
+      ncm: mt.ncm,
+      cfop: mt.cfop,
+      unidade: mt.unidade,
+      quantidade: mt.quantidade,
+      valor_unitario: mt.valor_unitario,
+      valor_total: mt.valor_total,
+    })
+    cursor = mt.end
   }
 
   // ---- Formas de pagamento (DANFE geralmente mostra "FORMA PAGTO" ou "Pagto")
