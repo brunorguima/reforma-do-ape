@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { parseNfeXml, parseNfeDanfePdf, guessCategory, type NfeParsed } from '@/lib/nfe-parser'
+import { parseNfeXml, parseNfeDanfePdf, parseFromChave, guessCategory, type NfeParsed } from '@/lib/nfe-parser'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -41,19 +41,10 @@ export async function POST(req: NextRequest) {
       if (body.xml && typeof body.xml === 'string') {
         parsed = parseNfeXml(body.xml)
       } else if (body.chave && typeof body.chave === 'string') {
-        // Chave-only: return skeleton for manual entry (scraping blocked by captcha)
-        const chave = body.chave.replace(/\D/g, '')
-        if (chave.length !== 44) {
-          return NextResponse.json({ error: 'Chave deve ter 44 dígitos' }, { status: 400 })
-        }
-        parsed = {
-          chave,
-          modelo: chave.substring(20, 22),
-          serie: String(parseInt(chave.substring(22, 25), 10)),
-          numero: String(parseInt(chave.substring(25, 34), 10)),
-          emitente_cnpj: chave.substring(6, 20),
-          itens: [],
-          source: 'xml',
+        try {
+          parsed = parseFromChave(body.chave)
+        } catch (e) {
+          return NextResponse.json({ error: e instanceof Error ? e.message : 'Chave inválida' }, { status: 400 })
         }
       } else {
         return NextResponse.json({ error: 'Envie xml ou chave' }, { status: 400 })

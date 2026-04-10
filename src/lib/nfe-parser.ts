@@ -72,6 +72,7 @@ export interface NfeParsed {
   numero?: string
   serie?: string
   modelo?: string
+  uf?: string               // UF do emitente (ex: "SP", "RJ")
   emitente_nome?: string
   emitente_cnpj?: string
   emitente_ie?: string
@@ -86,6 +87,56 @@ export interface NfeParsed {
   formas_pagamento?: NfePaymentForm[]
   source: 'pdf' | 'xml'
   raw?: unknown
+  parse_warning?: string    // mensagem amigável quando a extração foi parcial
+}
+
+// UF codes (IBGE) → sigla
+const UF_BY_CODE: Record<string, string> = {
+  '11': 'RO', '12': 'AC', '13': 'AM', '14': 'RR', '15': 'PA', '16': 'AP', '17': 'TO',
+  '21': 'MA', '22': 'PI', '23': 'CE', '24': 'RN', '25': 'PB', '26': 'PE', '27': 'AL',
+  '28': 'SE', '29': 'BA', '31': 'MG', '32': 'ES', '33': 'RJ', '35': 'SP',
+  '41': 'PR', '42': 'SC', '43': 'RS', '50': 'MS', '51': 'MT', '52': 'GO', '53': 'DF',
+}
+
+/**
+ * Extrai tudo que é possível a partir apenas da chave de acesso de 44 dígitos.
+ * Estrutura SEFAZ: cUF(2) AAMM(4) CNPJ(14) mod(2) serie(3) nNF(9) tpEmis(1) cNF(8) cDV(1)
+ */
+export function parseFromChave(chave: string): NfeParsed {
+  const clean = chave.replace(/\D/g, '')
+  if (clean.length !== 44) throw new Error('Chave deve ter 44 dígitos')
+  const cUF = clean.substring(0, 2)
+  const aamm = clean.substring(2, 6)  // AAMM (ex: "2604" = abril/2026)
+  const cnpj = clean.substring(6, 20)
+  const mod = clean.substring(20, 22)
+  const serie = String(parseInt(clean.substring(22, 25), 10))
+  const nNF = String(parseInt(clean.substring(25, 34), 10))
+
+  // AAMM → data de emissão aproximada (primeiro dia do mês)
+  // Assumimos século 20XX
+  const yy = parseInt(aamm.substring(0, 2), 10)
+  const mm = parseInt(aamm.substring(2, 4), 10)
+  let data_emissao: string | undefined
+  if (yy >= 0 && yy <= 99 && mm >= 1 && mm <= 12) {
+    const year = 2000 + yy
+    const mStr = String(mm).padStart(2, '0')
+    // Primeiro dia do mês (aproximação — usuário pode editar)
+    data_emissao = `${year}-${mStr}-01T12:00:00-03:00`
+  }
+
+  return {
+    chave: clean,
+    numero: nNF,
+    serie,
+    modelo: mod,
+    uf: UF_BY_CODE[cUF],
+    emitente_cnpj: cnpj,
+    data_emissao,
+    itens: [],
+    source: 'xml',
+    parse_warning:
+      'Extraído apenas da chave de acesso. Preencha emitente, valor, data exata e itens manualmente.',
+  }
 }
 
 // =============== XML PARSING ===============
@@ -213,14 +264,27 @@ export function parseNfeDanfePdf(pdfText: string): NfeParsed {
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
   const full = lines.join(' ')
 
-  // ---- Chave de Acesso (44 digits, typically formatted with spaces in DANFE)
+  // ---- Chave de Acesso (44 digits, typically formatted with spaces/dots in DANFE)
+  // Try multiple patterns: bare 44 digits, 11x 4 digits, digits with dots/spaces mixed
   let chave: string | undefined
-  const chaveMatch = text.match(/(\d{4}\s*){11}/)
-  if (chaveMatch) {
-    chave = chaveMatch[0].replace(/\s+/g, '')
+  const plainMatch = text.match(/\b\d{44}\b/)
+  if (plainMatch) {
+    chave = plainMatch[0]
   } else {
-    const plain = text.match(/\b\d{44}\b/)
-    if (plain) chave = plain[0]
+    // Looser: capture any 44+ digit sequence across whitespace/dots
+    // Walk through all "long digit clusters" and concatenate
+    const normalized = text.replace(/[^\d\s]/g, ' ').replace(/\s+/g, ' ')
+    const groups = normalized.match(/(?:\d{4}\s*){11}/g)
+    if (groups && groups.length > 0) {
+      chave = groups[0].replace(/\s+/g, '')
+    } else {
+      // Last resort: strip all non-digits and look for 44-digit window right after "CHAVE DE ACESSO"
+      const chaveSectionMatch = text.match(/CHAVE\s+DE\s+ACESSO[^\d]*([\d\s.]{44,})/i)
+      if (chaveSectionMatch) {
+        const digits = chaveSectionMatch[1].replace(/\D/g, '').substring(0, 44)
+        if (digits.length === 44) chave = digits
+      }
+    }
   }
 
   // ---- Número / série
@@ -347,20 +411,54 @@ export function parseNfeDanfePdf(pdfText: string): NfeParsed {
     formas_pagamento.push({ kind: 'transferencia', valor: detectValue(), tPag: '18' })
   }
 
+  // Enrichment: if we have the chave, fill in any fields the PDF parser missed
+  let uf: string | undefined
+  let modelo: string | undefined
+  let serieFromChave: string | undefined
+  let numeroFromChave: string | undefined
+  let emitenteCnpjFromChave: string | undefined
+  let dataFromChave: string | undefined
+  if (chave && chave.length === 44) {
+    try {
+      const fromChave = parseFromChave(chave)
+      uf = fromChave.uf
+      modelo = fromChave.modelo
+      serieFromChave = fromChave.serie
+      numeroFromChave = fromChave.numero
+      emitenteCnpjFromChave = fromChave.emitente_cnpj
+      dataFromChave = fromChave.data_emissao
+    } catch {
+      // ignore
+    }
+  }
+
+  const finalNumero = numero || numeroFromChave
+  const finalSerie = serie || serieFromChave
+  const finalCnpj = emitente_cnpj || emitenteCnpjFromChave
+  const finalData = data_emissao || dataFromChave
+
+  // Determine if extraction was partial
+  const hasEssentials = !!(emitente_nome && valor_total && data_emissao && itens.length > 0)
+  const parse_warning = hasEssentials
+    ? undefined
+    : 'Extração parcial do PDF. Verifique e complete emitente, valores, data e itens antes de salvar.'
+
   return {
     chave,
-    numero,
-    serie,
-    modelo: chave && chave.length === 44 ? chave.substring(20, 22) : undefined,
+    numero: finalNumero,
+    serie: finalSerie,
+    modelo,
+    uf,
     emitente_nome,
-    emitente_cnpj,
-    data_emissao,
+    emitente_cnpj: finalCnpj,
+    data_emissao: finalData,
     natureza_operacao,
     valor_total,
     itens,
     formas_pagamento: formas_pagamento.length > 0 ? formas_pagamento : undefined,
     source: 'pdf',
     raw: { lines: lines.slice(0, 200) },
+    parse_warning,
   }
 }
 

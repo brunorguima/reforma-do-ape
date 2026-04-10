@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     closing_day: body.closing_day ?? null,
     due_day: body.due_day ?? null,
     brand: body.brand || null,
+    issuer_bank: body.issuer_bank || null,
     last4: body.last4 || null,
     holder: body.holder || null,
     consolidate_monthly: !!body.consolidate_monthly,

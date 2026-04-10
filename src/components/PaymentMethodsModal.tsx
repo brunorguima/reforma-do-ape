@@ -14,6 +14,7 @@ export interface PaymentMethod {
   closing_day: number | null
   due_day: number | null
   brand: string | null
+  issuer_bank: string | null
   last4: string | null
   holder: string | null
   consolidate_monthly: boolean
@@ -31,6 +32,47 @@ const KIND_OPTIONS: { id: PaymentMethodKind; label: string; emoji: string; descr
   { id: 'boleto', label: 'Boleto', emoji: '📄', description: 'Vence em X dias após a compra' },
   { id: 'transferencia', label: 'Transferência / TED', emoji: '🏦', description: 'Prazo customizável' },
 ]
+
+// Bandeiras de cartão mais comuns no Brasil
+const CARD_BRANDS = [
+  'Visa',
+  'Mastercard',
+  'Elo',
+  'American Express',
+  'Hipercard',
+  'Diners Club',
+  'Discover',
+  'Cabal',
+  'Outro',
+]
+
+// Bancos emissores mais comuns no Brasil (foco em fintechs e top 10)
+const ISSUER_BANKS = [
+  'Nubank',
+  'Itaú',
+  'Bradesco',
+  'Santander',
+  'Banco do Brasil',
+  'Caixa',
+  'Inter',
+  'C6 Bank',
+  'BTG Pactual',
+  'Next',
+  'PicPay',
+  'XP',
+  'Will Bank',
+  'Neon',
+  'PagBank',
+  'Mercado Pago',
+  'Safra',
+  'Sicoob',
+  'Sicredi',
+  'Original',
+  'Outro',
+]
+
+// Gera array 1..31 para dropdowns de dia
+const DAYS_1_31 = Array.from({ length: 31 }, (_, i) => i + 1)
 
 interface Props {
   currentUser: UserID
@@ -68,6 +110,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
       closing_day: 20,
       due_day: 5,
       brand: null,
+      issuer_bank: null,
       last4: null,
       holder: currentUser === 'graziela' ? 'Graziela' : 'Bruno',
       consolidate_monthly: false,
@@ -201,6 +244,8 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                       </div>
                       <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
                         {ki.label}
+                        {m.brand && <> · {m.brand}</>}
+                        {m.issuer_bank && <> · {m.issuer_bank}</>}
                         {m.kind === 'credito' && m.closing_day && m.due_day && (
                           <> · fecha dia {m.closing_day} · vence dia {m.due_day}</>
                         )}
@@ -281,48 +326,121 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     <div>
                       <label style={labelStyle}>Dia do fechamento</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={31}
+                      <select
                         style={inputStyle}
                         value={editing.closing_day ?? ''}
                         onChange={(e) => setEditing({ ...editing, closing_day: e.target.value ? Number(e.target.value) : null })}
-                      />
+                      >
+                        <option value="">—</option>
+                        {DAYS_1_31.map((d) => (
+                          <option key={d} value={d}>Dia {d}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label style={labelStyle}>Dia do pagamento</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={31}
+                      <select
                         style={inputStyle}
                         value={editing.due_day ?? ''}
                         onChange={(e) => setEditing({ ...editing, due_day: e.target.value ? Number(e.target.value) : null })}
-                      />
+                      >
+                        <option value="">—</option>
+                        {DAYS_1_31.map((d) => (
+                          <option key={d} value={d}>Dia {d}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
                     <div>
                       <label style={labelStyle}>Bandeira</label>
-                      <input
+                      <select
                         style={inputStyle}
                         value={editing.brand || ''}
                         onChange={(e) => setEditing({ ...editing, brand: e.target.value || null })}
-                        placeholder="Visa, Mastercard…"
-                      />
+                      >
+                        <option value="">Selecione…</option>
+                        {CARD_BRANDS.map((b) => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
-                      <label style={labelStyle}>Final do cartão</label>
-                      <input
+                      <label style={labelStyle}>Banco emissor</label>
+                      <select
                         style={inputStyle}
-                        maxLength={4}
-                        value={editing.last4 || ''}
-                        onChange={(e) => setEditing({ ...editing, last4: e.target.value || null })}
-                        placeholder="1234"
-                      />
+                        value={editing.issuer_bank || ''}
+                        onChange={(e) => setEditing({ ...editing, issuer_bank: e.target.value || null })}
+                      >
+                        <option value="">Selecione…</option>
+                        {ISSUER_BANKS.map((b) => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
+                  <div style={{ marginTop: '10px' }}>
+                    <label style={labelStyle}>Final do cartão</label>
+                    <input
+                      style={inputStyle}
+                      maxLength={4}
+                      value={editing.last4 || ''}
+                      onChange={(e) => setEditing({ ...editing, last4: e.target.value.replace(/\D/g, '') || null })}
+                      placeholder="1234"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {editing.kind === 'debito' && (
+                <div style={{
+                  padding: '12px', background: '#ECFDF5', borderRadius: '10px',
+                  border: '1px solid #A7F3D0',
+                }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={labelStyle}>Bandeira</label>
+                      <select
+                        style={inputStyle}
+                        value={editing.brand || ''}
+                        onChange={(e) => setEditing({ ...editing, brand: e.target.value || null })}
+                      >
+                        <option value="">Selecione…</option>
+                        {CARD_BRANDS.map((b) => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Banco</label>
+                      <select
+                        style={inputStyle}
+                        value={editing.issuer_bank || ''}
+                        onChange={(e) => setEditing({ ...editing, issuer_bank: e.target.value || null })}
+                      >
+                        <option value="">Selecione…</option>
+                        {ISSUER_BANKS.map((b) => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {(editing.kind === 'pix' || editing.kind === 'transferencia') && (
+                <div>
+                  <label style={labelStyle}>Banco</label>
+                  <select
+                    style={inputStyle}
+                    value={editing.issuer_bank || ''}
+                    onChange={(e) => setEditing({ ...editing, issuer_bank: e.target.value || null })}
+                  >
+                    <option value="">Selecione…</option>
+                    {ISSUER_BANKS.map((b) => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
                 </div>
               )}
 
@@ -357,14 +475,16 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                   {editing.consolidate_monthly && (
                     <div style={{ marginTop: '10px' }}>
                       <label style={labelStyle}>Dia de pagamento mensal</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={31}
+                      <select
                         style={inputStyle}
                         value={editing.due_day ?? ''}
                         onChange={(e) => setEditing({ ...editing, due_day: e.target.value ? Number(e.target.value) : null })}
-                      />
+                      >
+                        <option value="">—</option>
+                        {DAYS_1_31.map((d) => (
+                          <option key={d} value={d}>Dia {d}</option>
+                        ))}
+                      </select>
                     </div>
                   )}
                 </div>

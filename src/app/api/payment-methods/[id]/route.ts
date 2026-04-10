@@ -12,7 +12,7 @@ export async function PATCH(
 
   const updates: Record<string, unknown> = {}
   const allowed = [
-    'name', 'kind', 'closing_day', 'due_day', 'brand', 'last4', 'holder',
+    'name', 'kind', 'closing_day', 'due_day', 'brand', 'issuer_bank', 'last4', 'holder',
     'consolidate_monthly', 'default_due_offset_days', 'is_active', 'notes',
   ]
   for (const k of allowed) {
