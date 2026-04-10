@@ -28,11 +28,21 @@ export async function POST(req: NextRequest) {
         const xmlText = buf.toString('utf-8')
         parsed = parseNfeXml(xmlText)
       } else if (name.endsWith('.pdf') || file.type.includes('pdf')) {
-        const { PDFParse } = await import('pdf-parse')
-        const parser = new PDFParse({ data: new Uint8Array(buf) })
-        const textResult = await parser.getText()
-        await parser.destroy()
-        parsed = parseNfeDanfePdf(textResult.text)
+        // unpdf is a serverless-friendly wrapper around pdfjs-dist that avoids
+        // the DOMMatrix/browser-API issue in Node.js environments
+        const { extractText, getDocumentProxy } = await import('unpdf')
+        try {
+          const pdf = await getDocumentProxy(new Uint8Array(buf))
+          const { text } = await extractText(pdf, { mergePages: true })
+          const pdfText = Array.isArray(text) ? text.join('\n') : text
+          parsed = parseNfeDanfePdf(pdfText)
+        } catch (pdfErr) {
+          const msg = pdfErr instanceof Error ? pdfErr.message : 'PDF ilegível'
+          return NextResponse.json(
+            { error: `Não foi possível ler o PDF: ${msg}. Tente colar a chave de acesso manualmente.` },
+            { status: 400 },
+          )
+        }
       } else {
         return NextResponse.json({ error: 'Formato não suportado. Envie PDF (DANFE) ou XML.' }, { status: 400 })
       }
