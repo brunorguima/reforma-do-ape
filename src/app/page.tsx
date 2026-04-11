@@ -11,17 +11,18 @@ import CostSummary from '@/components/CostSummary'
 import ProfessionalsPanel from '@/components/ProfessionalsPanel'
 import ObraPanel from '@/components/ObraPanel'
 import FinanceiroPanel from '@/components/FinanceiroPanel'
+import DocumentsPanel from '@/components/DocumentsPanel'
 import WelcomeScreen from '@/components/WelcomeScreen'
-import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check } from 'lucide-react'
+import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, FolderOpen } from 'lucide-react'
 
-type TabType = 'orcamentos' | 'obra' | 'financeiro' | 'mobilia'
+type TabType = 'orcamentos' | 'obra' | 'financeiro' | 'mobilia' | 'documentos'
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<TabType>('orcamentos')
 
   // Restore tab from URL hash on mount + listen for back/forward
   useEffect(() => {
-    const validTabs: TabType[] = ['orcamentos', 'obra', 'financeiro', 'mobilia']
+    const validTabs: TabType[] = ['orcamentos', 'obra', 'financeiro', 'mobilia', 'documentos']
     const readHash = () => {
       const hash = window.location.hash.replace('#', '') as TabType
       if (validTabs.includes(hash)) setActiveTab(hash)
@@ -356,11 +357,12 @@ export default function HomePage() {
       </header>
 
       {/* Tab Navigation */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '24px', background: '#f3f4f6', borderRadius: '12px', padding: '4px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', marginBottom: '24px', background: '#f3f4f6', borderRadius: '12px', padding: '4px' }}>
         {([
           { key: 'orcamentos' as TabType, label: 'Orçamentos', icon: <Wrench size={18} />, color: '#7c3aed' },
           { key: 'obra' as TabType, label: 'Obra', icon: <HardHat size={18} />, color: '#D97706' },
           { key: 'financeiro' as TabType, label: 'Financeiro', icon: <DollarSign size={18} />, color: '#047857' },
+          { key: 'documentos' as TabType, label: 'Documentos', icon: <FolderOpen size={18} />, color: '#db2777' },
           { key: 'mobilia' as TabType, label: 'Mobília', icon: <Sofa size={18} />, color: '#2563eb' },
         ]).map(tab => {
           const isActive = activeTab === tab.key
@@ -391,6 +393,8 @@ export default function HomePage() {
         <ObraPanel currentUser={currentUser} />
       ) : activeTab === 'financeiro' ? (
         <FinanceiroPanel currentUser={currentUser} />
+      ) : activeTab === 'documentos' ? (
+        <DocumentsPanel currentUser={currentUser} rooms={rooms} />
       ) : (
         <>
           {/* Cost Summary */}
