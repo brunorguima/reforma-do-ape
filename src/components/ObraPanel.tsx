@@ -1,6 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ClipboardList, Lock, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Plus, X, LayoutGrid, List, ExternalLink, Trash2, Upload, FileText, Image as ImageIcon, Eye } from 'lucide-react'
+import MaterialsPanel from './MaterialsPanel'
+import type { UserID } from '@/lib/constants'
 
 interface Task {
   id: string
@@ -983,6 +985,9 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
           </div>
         </div>
       )}
+
+      {/* === MATERIAIS COMPRADOS (movido da aba Orçamentos) === */}
+      <MaterialsPanel currentUser={currentUser as UserID} />
     </div>
   )
 }
