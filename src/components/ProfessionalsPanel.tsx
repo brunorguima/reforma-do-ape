@@ -92,6 +92,51 @@ interface OrcamentoDoc {
   created_at: string
 }
 
+interface OrcamentoParsedItem {
+  numero: number
+  descricao: string
+  quantidade: number
+  unidade: string | null
+  valor_unitario: number
+  valor_total: number
+  categoria: string | null
+  ambiente_sugerido: string | null
+  observacoes: string | null
+  room_id?: string | null
+}
+
+interface OrcamentoParsed {
+  profissional_sugerido: string | null
+  especialidade_sugerida: string | null
+  telefone: string | null
+  email: string | null
+  cnpj_cpf: string | null
+  data_orcamento: string | null
+  validade_dias: number | null
+  condicoes_pagamento: string | null
+  total: number
+  total_mao_obra: number | null
+  total_material: number | null
+  itens: OrcamentoParsedItem[]
+  observacoes: string | null
+  confidence: 'alta' | 'media' | 'baixa'
+  warnings: string[]
+  file_name?: string
+  file_size?: number
+}
+
+interface OrcamentoFlow {
+  proId: string
+  step: 'select' | 'parsing' | 'review'
+  file: File | null
+  documentId: string | null
+  parsed: OrcamentoParsed | null
+  description: string
+  editedItems: OrcamentoParsedItem[]
+  saving: boolean
+  error: string | null
+}
+
 interface Material {
   id: string
   name: string
@@ -172,6 +217,9 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
   const [showAddDoc, setShowAddDoc] = useState(false)
   const [uploadingDoc, setUploadingDoc] = useState(false)
   const [newDoc, setNewDoc] = useState<{ title: string; description: string; file: File | null }>({ title: '', description: '', file: null })
+
+  // OCR Orçamento flow
+  const [orcamentoFlow, setOrcamentoFlow] = useState<OrcamentoFlow | null>(null)
 
   // Materials states
   const [materials, setMaterials] = useState<Material[]>([])
@@ -297,6 +345,160 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
+
+  // === OCR ORÇAMENTO FLOW ===
+  const openOrcamentoFlow = (proId: string) => {
+    setOrcamentoFlow({
+      proId,
+      step: 'select',
+      file: null,
+      documentId: null,
+      parsed: null,
+      description: '',
+      editedItems: [],
+      saving: false,
+      error: null,
+    })
+  }
+
+  const closeOrcamentoFlow = () => setOrcamentoFlow(null)
+
+  const handleParseOrcamento = async () => {
+    if (!orcamentoFlow || !orcamentoFlow.file) return
+    setOrcamentoFlow({ ...orcamentoFlow, step: 'parsing', error: null })
+    try {
+      const pro = professionals.find(p => p.id === orcamentoFlow.proId)
+      // 1. Upload PDF to storage (type=orcamento, link to professional)
+      const fd = new FormData()
+      fd.append('file', orcamentoFlow.file)
+      fd.append('title', `Orçamento ${pro?.name ?? ''} - ${orcamentoFlow.file.name}`)
+      fd.append('description', `Orçamento OCR de ${pro?.name ?? ''}`)
+      fd.append('type', 'orcamento')
+      fd.append('created_by', currentUser)
+      fd.append('professional_id', orcamentoFlow.proId)
+      fd.append('allow_duplicate', 'true') // allow reparse
+      const upRes = await fetch('/api/documents/upload', { method: 'POST', body: fd })
+      if (!upRes.ok) {
+        const err = await upRes.json()
+        throw new Error(err.error || 'Falha no upload do PDF')
+      }
+      const upData = await upRes.json()
+      const documentId = upData.id
+
+      // 2. Parse with Gemini
+      const parseForm = new FormData()
+      parseForm.append('file', orcamentoFlow.file)
+      const parseRes = await fetch('/api/orcamento/parse', { method: 'POST', body: parseForm })
+      if (!parseRes.ok) {
+        const err = await parseRes.json()
+        throw new Error(err.error || 'Falha ao parsear orçamento')
+      }
+      const parsed: OrcamentoParsed = await parseRes.json()
+
+      // 3. Fill parsed_data on the document record so we keep history
+      try {
+        await fetch(`/api/documents/${documentId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parsed_data: parsed }),
+        })
+      } catch { /* non-critical */ }
+
+      const autoDescription = parsed.itens.length > 0
+        ? `Orçamento - ${parsed.itens.length} ite${parsed.itens.length === 1 ? 'm' : 'ns'}`
+        : `Orçamento ${pro?.name ?? ''}`
+
+      setOrcamentoFlow((prev) => prev ? {
+        ...prev,
+        step: 'review',
+        documentId,
+        parsed,
+        description: autoDescription,
+        editedItems: parsed.itens.map(it => ({ ...it, room_id: null })),
+      } : null)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido'
+      setOrcamentoFlow((prev) => prev ? { ...prev, step: 'select', error: msg } : null)
+    }
+  }
+
+  const updateOrcItem = (index: number, patch: Partial<OrcamentoParsedItem>) => {
+    setOrcamentoFlow((prev) => {
+      if (!prev) return prev
+      const next = [...prev.editedItems]
+      const merged = { ...next[index], ...patch }
+      // Recalculate valor_total if quantity or unit price changed
+      if ('quantidade' in patch || 'valor_unitario' in patch) {
+        merged.valor_total = (Number(merged.quantidade) || 0) * (Number(merged.valor_unitario) || 0)
+      }
+      next[index] = merged
+      return { ...prev, editedItems: next }
+    })
+  }
+
+  const removeOrcItem = (index: number) => {
+    setOrcamentoFlow((prev) => {
+      if (!prev) return prev
+      const next = prev.editedItems.filter((_, i) => i !== index)
+      return { ...prev, editedItems: next }
+    })
+  }
+
+  const addOrcItem = () => {
+    setOrcamentoFlow((prev) => {
+      if (!prev) return prev
+      const next: OrcamentoParsedItem = {
+        numero: prev.editedItems.length + 1,
+        descricao: '',
+        quantidade: 1,
+        unidade: null,
+        valor_unitario: 0,
+        valor_total: 0,
+        categoria: null,
+        ambiente_sugerido: null,
+        observacoes: null,
+        room_id: null,
+      }
+      return { ...prev, editedItems: [...prev.editedItems, next] }
+    })
+  }
+
+  const handleSaveOrcamento = async () => {
+    if (!orcamentoFlow || !orcamentoFlow.parsed) return
+    const totalCalc = orcamentoFlow.editedItems.reduce((s, it) => s + (Number(it.valor_total) || 0), 0)
+    setOrcamentoFlow({ ...orcamentoFlow, saving: true, error: null })
+    try {
+      const res = await fetch('/api/orcamento/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          professional_id: orcamentoFlow.proId,
+          description: orcamentoFlow.description || 'Orçamento',
+          amount: totalCalc > 0 ? totalCalc : orcamentoFlow.parsed.total,
+          status: 'avaliando',
+          notes: orcamentoFlow.parsed.observacoes || null,
+          itens: orcamentoFlow.editedItems,
+          document_id: orcamentoFlow.documentId,
+          created_by: currentUser,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Falha ao salvar orçamento')
+      }
+      closeOrcamentoFlow()
+      await fetchData()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido'
+      setOrcamentoFlow((prev) => prev ? { ...prev, saving: false, error: msg } : null)
+    }
+  }
+
+  const orcCategories = [
+    'eletrica', 'hidraulica', 'alvenaria', 'piso', 'pintura', 'gesso',
+    'marcenaria', 'serralheria', 'vidraçaria', 'impermeabilizacao',
+    'ar_condicionado', 'demolicao', 'limpeza', 'mao_de_obra', 'material', 'outro',
+  ]
 
   const handleAddProfessional = async () => {
     setFormError('')
@@ -1788,6 +1990,306 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
         )}
       </div>
 
+      {/* === OCR Orçamento Modal === */}
+      {orcamentoFlow && (() => {
+        const pro = professionals.find(p => p.id === orcamentoFlow.proId)
+        const totalCalc = orcamentoFlow.editedItems.reduce((s, it) => s + (Number(it.valor_total) || 0), 0)
+        return (
+          <div
+            className="modal-overlay"
+            onClick={(e) => { if (e.target === e.currentTarget && !orcamentoFlow.saving && orcamentoFlow.step !== 'parsing') closeOrcamentoFlow() }}
+            style={{ alignItems: 'flex-start', paddingTop: '24px', paddingBottom: '24px', overflowY: 'auto' }}
+          >
+            <div className="modal-content" style={{ maxWidth: '900px', width: '95%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>
+                    📄 Subir Orçamento (OCR)
+                  </h3>
+                  <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>
+                    {pro?.name} — Gemini vai ler o PDF e extrair itens e valores automaticamente
+                  </p>
+                </div>
+                <button
+                  onClick={closeOrcamentoFlow}
+                  disabled={orcamentoFlow.saving || orcamentoFlow.step === 'parsing'}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                >
+                  <X size={20} color="#6b7280" />
+                </button>
+              </div>
+
+              {/* Step indicator */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                {(['select', 'parsing', 'review'] as const).map((s, i) => {
+                  const active = orcamentoFlow.step === s
+                  const done = (['select', 'parsing', 'review'] as const).indexOf(orcamentoFlow.step) > i
+                  return (
+                    <div key={s} style={{
+                      flex: 1, height: '4px', borderRadius: '2px',
+                      background: active ? '#7c3aed' : done ? '#a78bfa' : '#e5e7eb',
+                    }} />
+                  )
+                })}
+              </div>
+
+              {orcamentoFlow.error && (
+                <div style={{
+                  padding: '10px 12px', background: '#fee2e2', color: '#991b1b',
+                  borderRadius: '8px', fontSize: '12px', marginBottom: '12px', border: '1px solid #fecaca',
+                }}>
+                  ⚠️ {orcamentoFlow.error}
+                </div>
+              )}
+
+              {/* STEP: SELECT FILE */}
+              {orcamentoFlow.step === 'select' && (
+                <div>
+                  <label style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: '8px', padding: '32px', border: '2px dashed #d1d5db', borderRadius: '12px',
+                    cursor: 'pointer',
+                    background: orcamentoFlow.file ? '#f0fdf4' : '#fafafa',
+                    borderColor: orcamentoFlow.file ? '#10b981' : '#d1d5db',
+                  }}>
+                    <Upload size={32} color={orcamentoFlow.file ? '#10b981' : '#9ca3af'} />
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: orcamentoFlow.file ? '#065f46' : '#374151' }}>
+                      {orcamentoFlow.file ? orcamentoFlow.file.name : 'Clique para selecionar o PDF do orçamento'}
+                    </span>
+                    {orcamentoFlow.file ? (
+                      <span style={{ fontSize: '12px', color: '#059669' }}>
+                        {fmtFileSize(orcamentoFlow.file.size)} · pronto pra analisar
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '12px', color: '#6b7280' }}>PDF até 20MB (nativo ou escaneado)</span>
+                    )}
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={e => setOrcamentoFlow({ ...orcamentoFlow, file: e.target.files?.[0] || null, error: null })}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={closeOrcamentoFlow}
+                      style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>
+                      Cancelar
+                    </button>
+                    <button
+                      className="btn-primary"
+                      onClick={handleParseOrcamento}
+                      disabled={!orcamentoFlow.file}
+                      style={{ padding: '10px 20px', opacity: orcamentoFlow.file ? 1 : 0.5 }}>
+                      🤖 Analisar com Gemini OCR
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP: PARSING */}
+              {orcamentoFlow.step === 'parsing' && (
+                <div style={{ padding: '48px 16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>🤖</div>
+                  <h4 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 8px', color: '#111827' }}>
+                    Analisando PDF com Gemini...
+                  </h4>
+                  <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
+                    Lendo itens, valores, datas e cômodos. Pode levar 10-30 segundos.
+                  </p>
+                  <div style={{
+                    marginTop: '20px', height: '4px', background: '#e5e7eb', borderRadius: '2px', overflow: 'hidden', position: 'relative'
+                  }}>
+                    <div style={{
+                      position: 'absolute', top: 0, left: 0, height: '100%', width: '30%',
+                      background: 'linear-gradient(90deg, #7c3aed, #2563eb)',
+                      animation: 'progress 1.5s ease-in-out infinite',
+                    }} />
+                  </div>
+                  <style>{`@keyframes progress { 0% { left: -30%; } 100% { left: 100%; } }`}</style>
+                </div>
+              )}
+
+              {/* STEP: REVIEW */}
+              {orcamentoFlow.step === 'review' && orcamentoFlow.parsed && (
+                <div>
+                  {/* Header: parsed metadata */}
+                  <div style={{
+                    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                    gap: '8px', marginBottom: '12px', padding: '12px', background: '#faf5ff',
+                    borderRadius: '10px', border: '1px solid #e9d5ff',
+                  }}>
+                    <div>
+                      <p style={{ fontSize: '10px', color: '#7c3aed', margin: 0, fontWeight: 700 }}>CONFIANÇA</p>
+                      <p style={{ fontSize: '13px', margin: '2px 0 0', fontWeight: 600, color: '#111827' }}>
+                        {orcamentoFlow.parsed.confidence === 'alta' ? '🟢 Alta' : orcamentoFlow.parsed.confidence === 'media' ? '🟡 Média' : '🔴 Baixa'}
+                      </p>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: '10px', color: '#7c3aed', margin: 0, fontWeight: 700 }}>TOTAL DECLARADO</p>
+                      <p style={{ fontSize: '13px', margin: '2px 0 0', fontWeight: 600, color: '#111827' }}>
+                        {fmtBRL(orcamentoFlow.parsed.total)}
+                      </p>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: '10px', color: '#7c3aed', margin: 0, fontWeight: 700 }}>TOTAL CALCULADO</p>
+                      <p style={{ fontSize: '13px', margin: '2px 0 0', fontWeight: 600, color: totalCalc > 0 && Math.abs(totalCalc - orcamentoFlow.parsed.total) / (orcamentoFlow.parsed.total || 1) > 0.02 ? '#dc2626' : '#111827' }}>
+                        {fmtBRL(totalCalc)}
+                      </p>
+                    </div>
+                    {orcamentoFlow.parsed.data_orcamento && (
+                      <div>
+                        <p style={{ fontSize: '10px', color: '#7c3aed', margin: 0, fontWeight: 700 }}>DATA</p>
+                        <p style={{ fontSize: '13px', margin: '2px 0 0', fontWeight: 600, color: '#111827' }}>
+                          {orcamentoFlow.parsed.data_orcamento}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Warnings */}
+                  {orcamentoFlow.parsed.warnings.length > 0 && (
+                    <div style={{
+                      padding: '10px 12px', background: '#fef3c7', border: '1px solid #fde68a',
+                      borderRadius: '8px', marginBottom: '12px',
+                    }}>
+                      <p style={{ fontSize: '11px', fontWeight: 700, color: '#92400e', margin: '0 0 4px' }}>⚠️ Avisos do OCR</p>
+                      {orcamentoFlow.parsed.warnings.map((w, i) => (
+                        <p key={i} style={{ fontSize: '11px', color: '#92400e', margin: '2px 0' }}>• {w}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Description */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#374151', display: 'block', marginBottom: '4px' }}>
+                      DESCRIÇÃO DO ORÇAMENTO *
+                    </label>
+                    <input
+                      value={orcamentoFlow.description}
+                      onChange={e => setOrcamentoFlow({ ...orcamentoFlow, description: e.target.value })}
+                      placeholder="Ex: Elétrica completa da cozinha"
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '13px', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  {/* Items table (editable) */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#374151' }}>
+                        ITENS EXTRAÍDOS ({orcamentoFlow.editedItems.length})
+                      </label>
+                      <button
+                        onClick={addOrcItem}
+                        style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 600, border: '1px solid #7c3aed', background: 'white', color: '#7c3aed', borderRadius: '6px', cursor: 'pointer' }}>
+                        + Novo Item
+                      </button>
+                    </div>
+                    <div style={{ border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden', maxHeight: '360px', overflowY: 'auto' }}>
+                      {orcamentoFlow.editedItems.length === 0 ? (
+                        <p style={{ padding: '16px', textAlign: 'center', fontSize: '12px', color: '#9ca3af', margin: 0 }}>
+                          Nenhum item extraído. Adicione manualmente.
+                        </p>
+                      ) : orcamentoFlow.editedItems.map((item, i) => (
+                        <div key={i} style={{
+                          padding: '10px 12px',
+                          borderBottom: i < orcamentoFlow.editedItems.length - 1 ? '1px solid #f3f4f6' : 'none',
+                          background: i % 2 === 0 ? 'white' : '#fafafa',
+                        }}>
+                          <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', alignItems: 'flex-start' }}>
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#7c3aed', minWidth: '18px', paddingTop: '8px' }}>
+                              #{item.numero}
+                            </span>
+                            <input
+                              value={item.descricao}
+                              onChange={e => updateOrcItem(i, { descricao: e.target.value })}
+                              placeholder="Descrição"
+                              style={{ flex: 1, padding: '6px 8px', fontSize: '12px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box' }}
+                            />
+                            <button
+                              onClick={() => removeOrcItem(i)}
+                              title="Remover"
+                              style={{ padding: '6px', border: 'none', background: '#fee2e2', color: '#dc2626', borderRadius: '6px', cursor: 'pointer' }}>
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '60px 70px 100px 100px 1fr 1fr', gap: '6px', marginLeft: '24px' }}>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={item.quantidade}
+                              onChange={e => updateOrcItem(i, { quantidade: Number(e.target.value) || 0 })}
+                              placeholder="Qtd"
+                              style={{ padding: '6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box' }}
+                            />
+                            <input
+                              value={item.unidade ?? ''}
+                              onChange={e => updateOrcItem(i, { unidade: e.target.value || null })}
+                              placeholder="un"
+                              style={{ padding: '6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box' }}
+                            />
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={item.valor_unitario}
+                              onChange={e => updateOrcItem(i, { valor_unitario: Number(e.target.value) || 0 })}
+                              placeholder="V. Unit"
+                              style={{ padding: '6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box' }}
+                            />
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={item.valor_total}
+                              onChange={e => updateOrcItem(i, { valor_total: Number(e.target.value) || 0 })}
+                              placeholder="Total"
+                              style={{ padding: '6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box', fontWeight: 600 }}
+                            />
+                            <select
+                              value={item.categoria ?? ''}
+                              onChange={e => updateOrcItem(i, { categoria: e.target.value || null })}
+                              style={{ padding: '6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box' }}>
+                              <option value="">Categoria</option>
+                              {orcCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                            <select
+                              value={item.room_id ?? ''}
+                              onChange={e => updateOrcItem(i, { room_id: e.target.value || null })}
+                              style={{ padding: '6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box' }}>
+                              <option value="">{item.ambiente_sugerido ?? 'Cômodo'}</option>
+                              {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', paddingTop: '8px', borderTop: '1px solid #e5e7eb' }}>
+                    <button
+                      onClick={closeOrcamentoFlow}
+                      disabled={orcamentoFlow.saving}
+                      style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>
+                      Cancelar
+                    </button>
+                    <button
+                      className="btn-primary"
+                      onClick={handleSaveOrcamento}
+                      disabled={orcamentoFlow.saving || !orcamentoFlow.description.trim()}
+                      style={{
+                        padding: '10px 20px',
+                        opacity: (orcamentoFlow.saving || !orcamentoFlow.description.trim()) ? 0.6 : 1,
+                      }}>
+                      {orcamentoFlow.saving ? 'Salvando...' : `💾 Salvar Orçamento (${fmtBRL(totalCalc || orcamentoFlow.parsed.total)})`}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Profissionais Cadastrados Section */}
       {showProfessionalsList && (
         <div style={{ marginTop: '28px' }}>
@@ -1837,8 +2339,18 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
                     {/* Expanded Details */}
                     {isExpanded && (
                       <div style={{ padding: '14px', borderTop: '1px solid #E5E7EB' }}>
-                        {/* Edit Button */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                        {/* Action Row: Subir Orçamento OCR + Edit */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '8px', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => openOrcamentoFlow(pro.id)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px',
+                              border: 'none', background: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)',
+                              color: 'white', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                              boxShadow: '0 2px 4px rgba(124, 58, 237, 0.2)',
+                            }}>
+                            <Upload size={13} /> Subir Orçamento (OCR)
+                          </button>
                           {editingProfessional === pro.id ? (
                             <div style={{ display: 'flex', gap: '6px' }}>
                               <button onClick={handleSaveProfessional}
