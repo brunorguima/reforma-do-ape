@@ -220,6 +220,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
 
   // OCR Orçamento flow
   const [orcamentoFlow, setOrcamentoFlow] = useState<OrcamentoFlow | null>(null)
+  const [showOcrProSelect, setShowOcrProSelect] = useState(false)
 
   // Materials states
   const [materials, setMaterials] = useState<Material[]>([])
@@ -857,12 +858,90 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
           <Plus size={16} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
           Novo Orçamento
         </button>
+        <button
+          onClick={() => setShowOcrProSelect(true)}
+          style={{
+            fontSize: '14px', padding: '10px 16px', borderRadius: '10px', border: 'none',
+            background: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)', color: 'white',
+            cursor: 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px',
+            boxShadow: '0 2px 8px rgba(124,58,237,0.25)'
+          }}
+          title="Subir PDF de orçamento e extrair itens automaticamente com Gemini OCR"
+        >
+          📄 Subir Orçamento (OCR)
+        </button>
         <button onClick={() => setShowAddProfessional(!showAddProfessional)}
           style={{ fontSize: '14px', padding: '10px 16px', border: '2px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer' }}>
           <User size={16} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
           Novo Profissional
         </button>
       </div>
+
+      {/* OCR Professional Selector Modal */}
+      {showOcrProSelect && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowOcrProSelect(false) }}
+        >
+          <div className="modal-content" style={{ maxWidth: '520px', width: '95%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>📄 Subir Orçamento (OCR)</h3>
+                <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>
+                  Escolha o profissional pra vincular o PDF. O Gemini vai ler tudo e extrair itens + valores.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowOcrProSelect(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={20} color="#6b7280" />
+              </button>
+            </div>
+            {professionals.length === 0 ? (
+              <div style={{ padding: '24px', textAlign: 'center', background: '#fef3c7', borderRadius: '10px', border: '1px solid #fde68a' }}>
+                <p style={{ fontSize: '14px', color: '#92400e', margin: 0, fontWeight: 600 }}>
+                  Nenhum profissional cadastrado ainda.
+                </p>
+                <p style={{ fontSize: '12px', color: '#b45309', margin: '6px 0 0' }}>
+                  Clique em &ldquo;Novo Profissional&rdquo; primeiro e volte aqui.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '8px', maxHeight: '420px', overflowY: 'auto', padding: '4px' }}>
+                {professionals.map(pro => {
+                  const proQuotes = quotes.filter(q => q.professional_id === pro.id)
+                  return (
+                    <button
+                      key={pro.id}
+                      onClick={() => {
+                        setShowOcrProSelect(false)
+                        openOrcamentoFlow(pro.id)
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '12px 14px', border: '1.5px solid #e5e7eb', borderRadius: '10px',
+                        background: 'white', cursor: 'pointer', textAlign: 'left', width: '100%',
+                        transition: 'all 0.15s'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.background = '#faf5ff' }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.background = 'white' }}
+                    >
+                      <div>
+                        <p style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: '#111827' }}>{pro.name}</p>
+                        <p style={{ fontSize: '12px', color: '#6b7280', margin: '2px 0 0' }}>
+                          {pro.specialty || 'Profissional'} · {proQuotes.length} orçamento{proQuotes.length !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      <Upload size={18} color="#7c3aed" />
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Memoriais & Documentos de Orçamento */}
       <div style={{ marginBottom: '20px', background: 'white', borderRadius: '14px', padding: '16px', border: '1px solid #e5e7eb' }}>
