@@ -5,6 +5,7 @@ import {
   User as UserIcon, Home as HomeIcon, Filter as FilterIcon, Calendar, Loader2, Layers,
 } from 'lucide-react'
 import type { Room } from '@/lib/supabase'
+import { apiUrl, withProjectId } from '@/lib/project-client'
 
 // ============================================================================
 // Types
@@ -66,9 +67,11 @@ const fmtMoney = (value: number | null | undefined) =>
 export default function DocumentsPanel({
   currentUser,
   rooms,
+  projectId,
 }: {
   currentUser: string
   rooms: Room[]
+  projectId?: string | null
 }) {
   const [docs, setDocs] = useState<DocumentRow[]>([])
   const [pros, setPros] = useState<Professional[]>([])
@@ -123,9 +126,9 @@ export default function DocumentsPanel({
     setError(null)
     try {
       const [docsRes, prosRes, quotesRes] = await Promise.all([
-        fetch('/api/documents').then(r => r.json()),
-        fetch('/api/professionals').then(r => r.json()),
-        fetch('/api/quotes').then(r => r.json()),
+        fetch(apiUrl('/api/documents', projectId)).then(r => r.json()),
+        fetch(apiUrl('/api/professionals', projectId)).then(r => r.json()),
+        fetch(apiUrl('/api/quotes', projectId)).then(r => r.json()),
       ])
       setDocs(Array.isArray(docsRes) ? docsRes : [])
       setPros(Array.isArray(prosRes) ? prosRes : [])
@@ -136,7 +139,7 @@ export default function DocumentsPanel({
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [projectId])
 
   useEffect(() => { reload() }, [reload])
 
@@ -206,7 +209,7 @@ export default function DocumentsPanel({
       const res = await fetch(`/api/documents/${editingId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(withProjectId(editForm as Record<string, unknown>, projectId)),
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
@@ -227,7 +230,7 @@ export default function DocumentsPanel({
   const deleteDoc = async (id: string) => {
     if (!confirm('Excluir este documento? Essa ação não pode ser desfeita.')) return
     try {
-      const res = await fetch(`/api/documents/${id}`, { method: 'DELETE' })
+      const res = await fetch(apiUrl(`/api/documents/${id}`, projectId), { method: 'DELETE' })
       if (!res.ok) throw new Error('Falha ao excluir')
       await reload()
     } catch (e) {
@@ -259,7 +262,7 @@ export default function DocumentsPanel({
       return fetch(`/api/documents/${d.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tags: nextTags }),
+        body: JSON.stringify(withProjectId({ tags: nextTags }, projectId)),
       })
     }))
     setBulkMode(null); setBulkValue(''); setSelected(new Set()); reload()
@@ -271,7 +274,7 @@ export default function DocumentsPanel({
       fetch(`/api/documents/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ professional_id: bulkValue || null }),
+        body: JSON.stringify(withProjectId({ professional_id: bulkValue || null }, projectId)),
       })
     ))
     setBulkMode(null); setBulkValue(''); setSelected(new Set()); reload()
@@ -280,7 +283,7 @@ export default function DocumentsPanel({
   const runBulkDelete = async () => {
     if (!confirm(`Excluir ${selected.size} documento(s) selecionado(s)?`)) return
     const ids = Array.from(selected)
-    await Promise.all(ids.map(id => fetch(`/api/documents/${id}`, { method: 'DELETE' })))
+    await Promise.all(ids.map(id => fetch(apiUrl(`/api/documents/${id}`, projectId), { method: 'DELETE' })))
     setSelected(new Set()); reload()
   }
 
@@ -295,6 +298,7 @@ export default function DocumentsPanel({
       fd.append('description', uploadForm.description)
       fd.append('type', uploadForm.doc_type)
       fd.append('created_by', currentUser)
+      fd.append('project_id', projectId || '')
       if (uploadForm.professional_id) fd.append('professional_id', uploadForm.professional_id)
       if (uploadForm.room_id) fd.append('room_id', uploadForm.room_id)
       const tags = uploadForm.tagsInput.split(',').map(t => t.trim()).filter(Boolean)

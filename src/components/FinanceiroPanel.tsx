@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import type { UserID } from '@/lib/constants'
+import { apiUrl, withProjectId } from '@/lib/project-client'
 import { DollarSign, TrendingDown, CheckCircle2, Clock, AlertTriangle, Calendar, CreditCard, PieChart, Users, Plus, Pencil, Trash2, Save, X, ChevronDown, ChevronUp, History, ShoppingCart, FileText } from 'lucide-react'
 import NFeImportModal from './NFeImportModal'
 import PaymentMethodsModal from './PaymentMethodsModal'
@@ -70,9 +71,10 @@ const fmtDateTime = (d: string) => new Date(d).toLocaleString('pt-BR', { day: '2
 
 interface Props {
   currentUser: UserID
+  projectId?: string | null
 }
 
-export default function FinanceiroPanel({ currentUser }: Props) {
+export default function FinanceiroPanel({ currentUser, projectId }: Props) {
   const [contracts, setContracts] = useState<Contract[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
@@ -105,7 +107,7 @@ export default function FinanceiroPanel({ currentUser }: Props) {
       await fetch('/api/audit-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, entity_type: entityType, entity_id: entityId, entity_description: description, old_values: oldValues || null, performed_by: currentUser }),
+        body: JSON.stringify(withProjectId({ action, entity_type: entityType, entity_id: entityId, entity_description: description, old_values: oldValues || null, performed_by: currentUser }, projectId)),
       })
     } catch (e) { console.error('audit log error', e) }
   }
@@ -113,7 +115,7 @@ export default function FinanceiroPanel({ currentUser }: Props) {
   const fetchData = useCallback(async () => {
     try {
       const [cRes, pRes, bRes, qRes, mRes] = await Promise.all([
-        fetch('/api/contracts'), fetch('/api/payments'), fetch('/api/budget-items'), fetch('/api/quotes'), fetch('/api/materials'),
+        fetch(apiUrl('/api/contracts', projectId)), fetch(apiUrl('/api/payments', projectId)), fetch(apiUrl('/api/budget-items', projectId)), fetch(apiUrl('/api/quotes', projectId)), fetch(apiUrl('/api/materials', projectId)),
       ])
       const [cData, pData, bData, qData, mData] = await Promise.all([cRes.json(), pRes.json(), bRes.json(), qRes.json(), mRes.json()])
       setContracts(Array.isArray(cData) ? cData : [])
@@ -123,12 +125,12 @@ export default function FinanceiroPanel({ currentUser }: Props) {
       setMaterials(Array.isArray(mData) ? mData : [])
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
-  }, [])
+  }, [projectId])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   const fetchAuditLog = async () => {
-    const res = await fetch('/api/audit-log')
+    const res = await fetch(apiUrl('/api/audit-log', projectId))
     const data = await res.json()
     setAuditLog(Array.isArray(data) ? data : [])
   }
@@ -138,7 +140,7 @@ export default function FinanceiroPanel({ currentUser }: Props) {
     await fetch('/api/payments', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: payment.id, status: 'pago', paid_date: new Date().toISOString().split('T')[0] }),
+      body: JSON.stringify(withProjectId({ id: payment.id, status: 'pago', paid_date: new Date().toISOString().split('T')[0] }, projectId)),
     })
     await logAction('status_change', 'payment', payment.id, `Parcela ${payment.installment_number} de ${payment.professional} marcada como paga (${fmt(payment.amount)})`, { status: 'pendente', amount: payment.amount })
     showToast(`Parcela ${payment.installment_number} marcada como paga!`)
@@ -149,7 +151,7 @@ export default function FinanceiroPanel({ currentUser }: Props) {
     await fetch('/api/payments', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: payment.id, status: 'pendente', paid_date: null }),
+      body: JSON.stringify(withProjectId({ id: payment.id, status: 'pendente', paid_date: null }, projectId)),
     })
     await logAction('status_change', 'payment', payment.id, `Parcela ${payment.installment_number} de ${payment.professional} revertida para pendente`, { status: 'pago' })
     showToast('Parcela revertida para pendente')
@@ -178,7 +180,7 @@ export default function FinanceiroPanel({ currentUser }: Props) {
     await fetch('/api/payments', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: payment.id, ...updates }),
+      body: JSON.stringify(withProjectId({ id: payment.id, ...updates }, projectId)),
     })
     await logAction('edit', 'payment', payment.id, `Parcela ${payment.installment_number} de ${payment.professional} editada`, oldValues)
     showToast('Parcela atualizada!')
@@ -200,7 +202,7 @@ export default function FinanceiroPanel({ currentUser }: Props) {
     await fetch('/api/payments', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: payment.id }),
+      body: JSON.stringify(withProjectId({ id: payment.id }, projectId)),
     })
     await logAction('delete', 'payment', payment.id, `Parcela ${payment.installment_number} de ${payment.professional} deletada (${fmt(payment.amount)}, vencimento ${payment.due_date})`, { amount: payment.amount, due_date: payment.due_date, notes: payment.notes, installment_number: payment.installment_number, professional: payment.professional })
     showToast('Parcela removida')
@@ -214,7 +216,7 @@ export default function FinanceiroPanel({ currentUser }: Props) {
     await fetch('/api/payments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body: JSON.stringify(withProjectId({
         professional,
         installment_number: maxInstall + 1,
         amount: parseFloat(newPayment.amount),
@@ -223,7 +225,7 @@ export default function FinanceiroPanel({ currentUser }: Props) {
         contract_id: contractId || null,
         quote_id: quoteId || null,
         source: quoteId ? 'quote' : contractId ? 'contract' : 'manual',
-      }),
+      }, projectId)),
     })
     await logAction('create', 'payment', '', `Nova parcela ${maxInstall + 1} para ${professional}: ${fmt(parseFloat(newPayment.amount))}`)
     showToast(`Parcela ${maxInstall + 1} adicionada!`)

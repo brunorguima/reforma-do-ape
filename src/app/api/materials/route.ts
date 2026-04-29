@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getProjectId } from '@/lib/project'
 
-export async function GET() {
-  const { data, error } = await supabase
+export async function GET(req: NextRequest) {
+  const projectId = getProjectId(req)
+  let query = supabase
     .from('materials')
     .select('*')
-    .order('purchase_date', { ascending: false })
+  if (projectId) query = query.eq('project_id', projectId)
+  const { data, error } = await query.order('purchase_date', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
@@ -40,6 +43,7 @@ export async function POST(req: NextRequest) {
       purchase_date: body.purchase_date || new Date().toISOString().split('T')[0],
       receipt_url: body.receipt_url || null,
       notes: body.notes || null,
+      project_id: body.project_id || null,
     })
     .select()
     .single()

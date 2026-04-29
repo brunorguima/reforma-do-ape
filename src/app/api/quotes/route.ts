@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getProjectId } from '@/lib/project'
 
-export async function GET() {
-  const { data, error } = await supabase
+export async function GET(req: NextRequest) {
+  const projectId = getProjectId(req)
+  let query = supabase
     .from('quotes')
     .select('*, professional:professionals(*), service_category:service_categories(*), room:rooms(*)')
-    .order('created_at', { ascending: false })
+  if (projectId) query = query.eq('project_id', projectId)
+  const { data, error } = await query.order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
@@ -37,7 +40,8 @@ export async function POST(req: NextRequest) {
     .insert({
       professional_id, service_category_id, room_id,
       description, amount: Number(amount), status: status || 'recebido',
-      notes, scheduled_date, created_by
+      notes, scheduled_date, created_by,
+      project_id: body.project_id || null
     })
     .select('*, professional:professionals(*), service_category:service_categories(*), room:rooms(*)')
     .single()

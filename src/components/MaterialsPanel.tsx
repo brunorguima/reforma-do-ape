@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import type { UserID } from '@/lib/constants'
+import { apiUrl, withProjectId } from '@/lib/project-client'
 import {
   Plus, Trash2, Edit3, Check, X, ChevronDown, ChevronUp,
   ShoppingCart, Package, ExternalLink,
@@ -44,9 +45,10 @@ const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('pt-
 
 interface Props {
   currentUser: UserID
+  projectId?: string | null
 }
 
-export default function MaterialsPanel({ currentUser }: Props) {
+export default function MaterialsPanel({ currentUser, projectId }: Props) {
   const [materials, setMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddMaterial, setShowAddMaterial] = useState(false)
@@ -64,7 +66,7 @@ export default function MaterialsPanel({ currentUser }: Props) {
 
   const fetchMaterials = useCallback(async () => {
     try {
-      const res = await fetch('/api/materials')
+      const res = await fetch(apiUrl('/api/materials', projectId))
       const data = await res.json()
       setMaterials(Array.isArray(data) ? data : [])
     } catch (err) {
@@ -72,7 +74,7 @@ export default function MaterialsPanel({ currentUser }: Props) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [projectId])
 
   useEffect(() => {
     fetchMaterials()
@@ -92,14 +94,14 @@ export default function MaterialsPanel({ currentUser }: Props) {
     if (!newMaterial.unit_price || isNaN(Number(newMaterial.unit_price))) { setFormError('Valor unitário inválido'); return }
     setSaving(true)
     try {
-      const res = await fetch('/api/materials', {
+      const res = await fetch(apiUrl('/api/materials', projectId), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withProjectId({
           ...newMaterial,
           quantity: Number(newMaterial.quantity) || 1,
           unit_price: Number(newMaterial.unit_price),
-        }),
+        }, projectId)),
       })
       if (!res.ok) { const err = await res.json(); setFormError(err.error || 'Erro ao salvar'); return }
       setNewMaterial({
@@ -122,10 +124,10 @@ export default function MaterialsPanel({ currentUser }: Props) {
   const handleSaveMaterial = async () => {
     if (!editingMaterial) return
     try {
-      await fetch(`/api/materials/${editingMaterial}`, {
+      await fetch(apiUrl(`/api/materials/${editingMaterial}`, projectId), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withProjectId({
           name: editMaterialForm.name,
           description: editMaterialForm.description,
           category: editMaterialForm.category,
@@ -137,7 +139,7 @@ export default function MaterialsPanel({ currentUser }: Props) {
           purchased_by: editMaterialForm.purchased_by,
           purchase_date: editMaterialForm.purchase_date,
           notes: editMaterialForm.notes,
-        }),
+        }, projectId)),
       })
       setEditingMaterial(null)
       setEditMaterialForm({})
@@ -148,7 +150,7 @@ export default function MaterialsPanel({ currentUser }: Props) {
   const handleDeleteMaterial = async (id: string) => {
     if (!confirm('Excluir este material?')) return
     try {
-      await fetch(`/api/materials/${id}`, { method: 'DELETE' })
+      await fetch(apiUrl(`/api/materials/${id}`, projectId), { method: 'DELETE' })
       await fetchMaterials()
     } catch (err) { console.error(err) }
   }

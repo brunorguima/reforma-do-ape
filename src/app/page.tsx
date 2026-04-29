@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Room, Category, Item } from '@/lib/supabase'
 import type { UserID } from '@/lib/constants'
 import { USERS, USER_GREETINGS, APP_NAME, APP_SUBTITLE, ACCESS_KEY_USER_MAP } from '@/lib/constants'
+import { apiUrl, withProjectId } from '@/lib/project-client'
 import UserSelector from '@/components/UserSelector'
 import RoomSelector from '@/components/RoomSelector'
 import ItemCard from '@/components/ItemCard'
@@ -13,12 +14,25 @@ import ObraPanel from '@/components/ObraPanel'
 import FinanceiroPanel from '@/components/FinanceiroPanel'
 import DocumentsPanel from '@/components/DocumentsPanel'
 import WelcomeScreen from '@/components/WelcomeScreen'
-import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, FolderOpen } from 'lucide-react'
+import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, FolderOpen, Building2, ChevronDown } from 'lucide-react'
+
+interface Project {
+  id: string
+  name: string
+  slug: string
+  description: string
+  project_type: string
+  owners: string[]
+  is_active: boolean
+}
 
 type TabType = 'orcamentos' | 'obra' | 'financeiro' | 'mobilia' | 'documentos'
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<TabType>('orcamentos')
+  const [projects, setProjects] = useState<Project[]>([])
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
+  const [allowedProjectIds, setAllowedProjectIds] = useState<string[]>([])
 
   // Restore tab from URL hash on mount + listen for back/forward
   useEffect(() => {
@@ -119,6 +133,25 @@ export default function HomePage() {
               localStorage.setItem('reforma-current-user', uid)
               localStorage.setItem('reforma-allowed-users', JSON.stringify([uid]))
             }
+            // Multi-project: save allowed project IDs
+            const pIds: string[] = data.project_ids || []
+            setAllowedProjectIds(pIds)
+            localStorage.setItem('reforma-project-ids', JSON.stringify(pIds))
+            // Auto-select first project or restore saved
+            const savedProjId = localStorage.getItem('reforma-active-project')
+            if (savedProjId && pIds.includes(savedProjId)) {
+              setActiveProjectId(savedProjId)
+            } else if (pIds.length > 0) {
+              setActiveProjectId(pIds[0])
+              localStorage.setItem('reforma-active-project', pIds[0])
+            }
+            // Fetch project details
+            if (pIds.length > 0) {
+              fetch(`/api/projects?ids=${pIds.join(',')}`)
+                .then(r => r.json())
+                .then(p => setProjects(Array.isArray(p) ? p : []))
+                .catch(() => {})
+            }
             localStorage.setItem('reforma-access-key', key)
             localStorage.setItem('reforma-user-role', data.role)
             // Clean URL
@@ -156,6 +189,26 @@ export default function HomePage() {
       if (savedRole) {
         setUserRole(savedRole)
       }
+      // Restore project state from localStorage
+      const savedProjIds = localStorage.getItem('reforma-project-ids')
+      const savedActiveProjId = localStorage.getItem('reforma-active-project')
+      if (savedProjIds) {
+        try {
+          const pIds = JSON.parse(savedProjIds) as string[]
+          setAllowedProjectIds(pIds)
+          if (savedActiveProjId && pIds.includes(savedActiveProjId)) {
+            setActiveProjectId(savedActiveProjId)
+          } else if (pIds.length > 0) {
+            setActiveProjectId(pIds[0])
+          }
+          if (pIds.length > 0) {
+            fetch(`/api/projects?ids=${pIds.join(',')}`)
+              .then(r => r.json())
+              .then(p => setProjects(Array.isArray(p) ? p : []))
+              .catch(() => {})
+          }
+        } catch { /* ignore */ }
+      }
     }
   }, [])
 
@@ -164,13 +217,18 @@ export default function HomePage() {
     localStorage.setItem('reforma-current-user', user)
   }
 
+  const handleProjectChange = (projectId: string) => {
+    setActiveProjectId(projectId)
+    localStorage.setItem('reforma-active-project', projectId)
+  }
+
   // Fetch data
   const fetchData = useCallback(async () => {
     try {
       const [roomsRes, catsRes, itemsRes] = await Promise.all([
-        fetch('/api/rooms'),
-        fetch('/api/categories'),
-        fetch('/api/items'),
+        fetch(apiUrl('/api/rooms', activeProjectId)),
+        fetch(apiUrl('/api/categories', activeProjectId)),
+        fetch(apiUrl('/api/items', activeProjectId)),
       ])
       const [roomsData, catsData, itemsData] = await Promise.all([
         roomsRes.json(),
@@ -186,7 +244,7 @@ export default function HomePage() {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [])
+  }, [activeProjectId])
 
   useEffect(() => {
     fetchData()
@@ -207,13 +265,13 @@ export default function HomePage() {
         await fetch(`/api/items/${itemData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(withProjectId(payload, activeProjectId)),
         })
       } else {
         await fetch('/api/items', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(withProjectId(payload, activeProjectId)),
         })
       }
       fetchData()
@@ -235,12 +293,12 @@ export default function HomePage() {
       await fetch('/api/audit-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withProjectId({
           action: 'delete', entity_type: 'item', entity_id: itemId,
           entity_description: `Item "${item?.name}" deletado`,
           old_values: item ? { name: item.name, status: item.status, estimated_price: item.estimated_price } : null,
           performed_by: currentUser,
-        }),
+        }, activeProjectId)),
       })
       await fetch(`/api/items/${itemId}?user=${currentUser}`, { method: 'DELETE' })
       fetchData()
@@ -329,6 +387,33 @@ export default function HomePage() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Project Selector */}
+            {projects.length > 1 && (
+              <div style={{ position: 'relative' }}>
+                <select
+                  value={activeProjectId || ''}
+                  onChange={e => handleProjectChange(e.target.value)}
+                  style={{
+                    appearance: 'none',
+                    padding: '6px 28px 6px 32px',
+                    borderRadius: '10px',
+                    border: '2px solid #e5e7eb',
+                    background: 'white',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: '#1f2937',
+                    cursor: 'pointer',
+                    minWidth: '130px',
+                  }}
+                >
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <Building2 size={14} color="#6b7280" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                <ChevronDown size={14} color="#6b7280" style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              </div>
+            )}
             <button
               onClick={handleRefresh}
               style={{ padding: '8px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: '#f3f4f6' }}
@@ -351,7 +436,11 @@ export default function HomePage() {
             <p style={{ fontSize: '16px', fontWeight: 700, color: '#1f2937', margin: '0 0 2px' }}>
               {greeting.greeting}
             </p>
-            <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>{greeting.subtitle}</p>
+            <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
+              {projects.length > 1 && activeProjectId
+                ? `Projeto: ${projects.find(p => p.id === activeProjectId)?.name || greeting.subtitle}`
+                : greeting.subtitle}
+            </p>
           </div>
         )}
       </header>
@@ -388,13 +477,13 @@ export default function HomePage() {
 
       {/* Tab Content */}
       {activeTab === 'orcamentos' ? (
-        <ProfessionalsPanel currentUser={currentUser} rooms={rooms} />
+        <ProfessionalsPanel currentUser={currentUser} rooms={rooms} projectId={activeProjectId} />
       ) : activeTab === 'obra' ? (
-        <ObraPanel currentUser={currentUser} />
+        <ObraPanel currentUser={currentUser} projectId={activeProjectId} />
       ) : activeTab === 'financeiro' ? (
-        <FinanceiroPanel currentUser={currentUser} />
+        <FinanceiroPanel currentUser={currentUser} projectId={activeProjectId} />
       ) : activeTab === 'documentos' ? (
-        <DocumentsPanel currentUser={currentUser} rooms={rooms} />
+        <DocumentsPanel currentUser={currentUser} rooms={rooms} projectId={activeProjectId} />
       ) : (
         <>
           {/* Cost Summary */}

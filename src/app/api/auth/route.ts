@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     user_id: data.user_id,  // e.g. 'bruno_graziela' or 'mari'
     role: data.role,
     access_key_id: data.id,
+    project_ids: data.project_ids || [],
   })
 }
 

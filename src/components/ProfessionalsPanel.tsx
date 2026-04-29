@@ -4,6 +4,7 @@ import type { Room } from '@/lib/supabase'
 import type { UserID } from '@/lib/constants'
 import { USERS, formatCurrency } from '@/lib/constants'
 import { Plus, User, Phone, Mail, ChevronDown, ChevronUp, Trash2, Edit3, Check, X, Wrench, FileText, CreditCard, CheckCircle2, Clock, TrendingDown, Users, BookOpen, ExternalLink, Upload, File as FileIcon } from 'lucide-react'
+import { apiUrl, withProjectId } from '@/lib/project-client'
 
 interface ServiceCategory {
   id: string
@@ -145,9 +146,10 @@ const STATUS_FLOW = ['recebido', 'avaliando', 'aprovado', 'contratado']
 interface Props {
   currentUser: UserID
   rooms: Room[]
+  projectId?: string | null
 }
 
-export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
+export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Props) {
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [professionals, setProfessionals] = useState<Professional[]>([])
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([])
@@ -199,9 +201,9 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
   const fetchData = useCallback(async () => {
     try {
       const [quotesRes, prosRes, catsRes, conRes, budRes, payRes, docsRes] = await Promise.all([
-        fetch('/api/quotes'), fetch('/api/professionals'), fetch('/api/service-categories'),
-        fetch('/api/contracts'), fetch('/api/budget-items'), fetch('/api/payments'),
-        fetch('/api/documents'),
+        fetch(apiUrl('/api/quotes', projectId)), fetch(apiUrl('/api/professionals', projectId)), fetch(apiUrl('/api/service-categories', projectId)),
+        fetch(apiUrl('/api/contracts', projectId)), fetch(apiUrl('/api/budget-items', projectId)), fetch(apiUrl('/api/payments', projectId)),
+        fetch(apiUrl('/api/documents', projectId)),
       ])
       const [quotesData, prosData, catsData, conData, budData, payData, docsData] = await Promise.all([
         quotesRes.json(), prosRes.json(), catsRes.json(), conRes.json(), budRes.json(), payRes.json(),
@@ -219,7 +221,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [projectId])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -263,6 +265,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       formData.append('description', newDoc.description || '')
       formData.append('type', 'orcamento')
       formData.append('created_by', currentUser)
+      formData.append('project_id', projectId || '')
       const res = await fetch('/api/documents/upload', { method: 'POST', body: formData })
       if (!res.ok) {
         const err = await res.json()
@@ -331,6 +334,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       fd.append('created_by', currentUser)
       fd.append('professional_id', orcamentoFlow.proId)
       fd.append('allow_duplicate', 'true') // allow reparse
+      fd.append('project_id', projectId || '')
       const upRes = await fetch('/api/documents/upload', { method: 'POST', body: fd })
       if (!upRes.ok) {
         const err = await upRes.json()
@@ -342,6 +346,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       // 2. Parse with Gemini
       const parseForm = new FormData()
       parseForm.append('file', orcamentoFlow.file)
+      parseForm.append('project_id', projectId || '')
       const parseRes = await fetch('/api/orcamento/parse', { method: 'POST', body: parseForm })
       if (!parseRes.ok) {
         const err = await parseRes.json()
@@ -354,7 +359,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
         await fetch(`/api/documents/${documentId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ parsed_data: parsed }),
+          body: JSON.stringify(withProjectId({ parsed_data: parsed }, projectId)),
         })
       } catch { /* non-critical */ }
 
@@ -425,7 +430,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       const res = await fetch('/api/orcamento/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withProjectId({
           professional_id: orcamentoFlow.proId,
           description: orcamentoFlow.description || 'Orçamento',
           amount: totalCalc > 0 ? totalCalc : orcamentoFlow.parsed.total,
@@ -434,7 +439,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
           itens: orcamentoFlow.editedItems,
           document_id: orcamentoFlow.documentId,
           created_by: currentUser,
-        }),
+        }, projectId)),
       })
       if (!res.ok) {
         const err = await res.json()
@@ -465,7 +470,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       const res = await fetch('/api/professionals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newProfessional, created_by: currentUser }),
+        body: JSON.stringify(withProjectId({ ...newProfessional, created_by: currentUser }, projectId)),
       })
       if (!res.ok) {
         const err = await res.json()
@@ -498,7 +503,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       const res = await fetch('/api/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withProjectId({
           ...newQuote,
           amount: parseFloat(newQuote.amount) || 0,
           service_category_id: newQuote.service_category_id || null,
@@ -506,7 +511,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
           scheduled_date: newQuote.scheduled_date || null,
           notes: newQuote.notes || null,
           created_by: currentUser,
-        }),
+        }, projectId)),
       })
       if (!res.ok) {
         const err = await res.json()
@@ -539,7 +544,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
     await fetch(`/api/quotes/${quoteId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus, updated_by: currentUser }),
+      body: JSON.stringify(withProjectId({ status: newStatus, updated_by: currentUser }, projectId)),
     })
     fetchData()
   }
@@ -551,13 +556,13 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       await fetch(`/api/quotes/${paymentModal.quoteId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withProjectId({
           status: paymentModal.targetStatus,
           updated_by: currentUser,
           payment_method: paymentForm.payment_method || null,
           payment_details: paymentForm.payment_details || null,
           negotiated_amount: paymentForm.negotiated_amount ? parseFloat(paymentForm.negotiated_amount) : null,
-        }),
+        }, projectId)),
       })
       setPaymentModal(null)
       setPaymentForm({ payment_method: '', payment_details: '', negotiated_amount: '' })
@@ -583,12 +588,12 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       await fetch('/api/audit-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withProjectId({
           action: 'delete', entity_type: 'quote', entity_id: quoteId,
           entity_description: `Orçamento "${quote?.description}" de ${quote?.professional?.name || '?'} (${fmtBRL(Number(quote?.amount || 0))}) deletado`,
           old_values: quote ? { description: quote.description, amount: quote.amount, status: quote.status, professional: quote.professional?.name } : null,
           performed_by: currentUser,
-        }),
+        }, projectId)),
       })
     } catch (e) { console.error(e) }
     fetchData()
@@ -600,7 +605,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       await fetch('/api/payments', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: payment.id, status: 'pago', paid_date: new Date().toISOString().split('T')[0] }),
+        body: JSON.stringify(withProjectId({ id: payment.id, status: 'pago', paid_date: new Date().toISOString().split('T')[0] }, projectId)),
       })
       await fetchData()
     } catch (err) { console.error(err) }
@@ -612,7 +617,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       await fetch(`/api/professionals/${professionalId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes: newNotes }),
+        body: JSON.stringify(withProjectId({ notes: newNotes }, projectId)),
       })
       setEditingNotes({ ...editingNotes, [professionalId]: '' })
       await fetchData()
@@ -630,7 +635,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       await fetch('/api/contracts', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editingContract, ...editContractForm }),
+        body: JSON.stringify(withProjectId({ id: editingContract, ...editContractForm }, projectId)),
       })
       setEditingContract(null)
       setEditContractForm({})
@@ -657,12 +662,12 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       await fetch(`/api/quotes/${editingQuote}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withProjectId({
           ...editQuoteForm,
           amount: Number(editQuoteForm.amount) || 0,
           negotiated_amount: editQuoteForm.negotiated_amount ? Number(editQuoteForm.negotiated_amount) : null,
           updated_by: currentUser,
-        }),
+        }, projectId)),
       })
       setEditingQuote(null)
       setEditQuoteForm({})
@@ -681,7 +686,7 @@ export default function ProfessionalsPanel({ currentUser, rooms }: Props) {
       await fetch(`/api/professionals/${editingProfessional}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editProfessionalForm),
+        body: JSON.stringify(withProjectId(editProfessionalForm, projectId)),
       })
       setEditingProfessional(null)
       setEditProfessionalForm({})

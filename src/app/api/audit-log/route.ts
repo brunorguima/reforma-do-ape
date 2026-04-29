@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getProjectId } from '@/lib/project'
 
-export async function GET() {
-  const { data, error } = await supabase
+export async function GET(req: NextRequest) {
+  const projectId = getProjectId(req)
+  let query = supabase
     .from('audit_log')
     .select('*')
+  if (projectId) query = query.eq('project_id', projectId)
+  const { data, error } = await query
     .order('performed_at', { ascending: false })
     .limit(100)
 

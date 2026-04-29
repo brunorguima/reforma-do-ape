@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { ClipboardList, Lock, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Plus, X, LayoutGrid, List, ExternalLink, Trash2, Upload, FileText, Image as ImageIcon, Eye } from 'lucide-react'
 import MaterialsPanel from './MaterialsPanel'
 import type { UserID } from '@/lib/constants'
+import { apiUrl, withProjectId } from '@/lib/project-client'
 
 interface Task {
   id: string
@@ -75,9 +76,10 @@ const STATUS_ORDER = ['em_andamento', 'a_fazer', 'bloqueada', 'concluido']
 
 interface ObraPanelProps {
   currentUser: string
+  projectId?: string | null
 }
 
-export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
+export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
@@ -106,7 +108,7 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
 
   const fetchTasks = useCallback(async () => {
     try {
-      const res = await fetch('/api/tasks')
+      const res = await fetch(apiUrl('/api/tasks', projectId))
       const data = await res.json()
       setTasks(Array.isArray(data) ? data : [])
     } catch (err) {
@@ -114,17 +116,17 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [projectId])
 
   const fetchDocuments = useCallback(async () => {
     try {
-      const res = await fetch('/api/documents')
+      const res = await fetch(apiUrl('/api/documents', projectId))
       const data = await res.json()
       setDocuments(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error('Error fetching documents:', err)
     }
-  }, [])
+  }, [projectId])
 
   useEffect(() => {
     fetchTasks()
@@ -134,10 +136,10 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     setUpdatingTask(taskId)
     try {
-      await fetch(`/api/tasks/${taskId}`, {
+      await fetch(apiUrl(`/api/tasks/${taskId}`, projectId), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(withProjectId({ status: newStatus }, projectId)),
       })
       await fetchTasks()
     } catch (err) {
@@ -150,10 +152,10 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
   const handleAddTask = async () => {
     if (!newTask.title.trim()) return
     try {
-      await fetch('/api/tasks', {
+      await fetch(apiUrl('/api/tasks', projectId), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newTask, status: 'a_fazer', sort_order: tasks.length + 1 }),
+        body: JSON.stringify(withProjectId({ ...newTask, status: 'a_fazer', sort_order: tasks.length + 1 }, projectId)),
       })
       await fetchTasks()
       setShowAddModal(false)
@@ -198,7 +200,8 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
         formData.append('description', newDocument.description || '')
         formData.append('type', newDocument.type)
         formData.append('created_by', currentUser)
-        const res = await fetch('/api/documents/upload', { method: 'POST', body: formData })
+        formData.append('project_id', projectId || '')
+        const res = await fetch(apiUrl('/api/documents/upload', projectId), { method: 'POST', body: formData })
         if (!res.ok) {
           const err = await res.json()
           alert('Erro no upload: ' + (err.error || 'Falha'))
@@ -206,10 +209,10 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
         }
       } else {
         // Link-only document
-        await fetch('/api/documents', {
+        await fetch(apiUrl('/api/documents', projectId), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...newDocument, created_by: currentUser }),
+          body: JSON.stringify(withProjectId({ ...newDocument, created_by: currentUser }, projectId)),
         })
       }
       await fetchDocuments()
@@ -229,17 +232,17 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
     }
     if (!confirm('Tem certeza que deseja excluir este documento?')) return
     try {
-      await fetch(`/api/documents/${docId}`, { method: 'DELETE' })
+      await fetch(apiUrl(`/api/documents/${docId}`, projectId), { method: 'DELETE' })
       // Log deletion
-      await fetch('/api/audit-log', {
+      await fetch(apiUrl('/api/audit-log', projectId), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withProjectId({
           action: 'delete', entity_type: 'document', entity_id: docId,
           entity_description: `Documento "${doc?.title}" deletado`,
           old_values: doc ? { title: doc.title, doc_type: doc.doc_type, url: doc.url } : null,
           performed_by: currentUser,
-        }),
+        }, projectId)),
       })
       await fetchDocuments()
     } catch (err) { console.error(err) }
@@ -987,7 +990,7 @@ export default function ObraPanel({ currentUser = 'bruno' }: ObraPanelProps) {
       )}
 
       {/* === MATERIAIS COMPRADOS (movido da aba Orçamentos) === */}
-      <MaterialsPanel currentUser={currentUser as UserID} />
+      <MaterialsPanel currentUser={currentUser as UserID} projectId={projectId} />
     </div>
   )
 }

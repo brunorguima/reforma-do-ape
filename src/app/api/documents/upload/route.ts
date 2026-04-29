@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
     const tagsRaw = (formData.get('tags') as string | null) || null
     const parsedDataRaw = (formData.get('parsed_data') as string | null) || null
     const allowDuplicateRaw = (formData.get('allow_duplicate') as string | null) || null
+    const project_id = (formData.get('project_id') as string | null) || null
     const allowDuplicate = allowDuplicateRaw === 'true' || allowDuplicateRaw === '1'
 
     if (!file) {
@@ -108,6 +109,7 @@ export async function POST(req: NextRequest) {
         tags,
         parsed_data: parsedData,
         created_by: created_by || 'bruno',
+        project_id,
       })
       .select()
       .single()

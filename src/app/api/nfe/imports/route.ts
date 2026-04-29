@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getProjectId } from '@/lib/project'
 
 export const runtime = 'nodejs'
 
@@ -87,11 +88,13 @@ function computePaymentSchedule(
  * GET /api/nfe/imports
  * Lists all imported NF-e records with item counts.
  */
-export async function GET() {
-  const { data, error } = await supabase
+export async function GET(req: NextRequest) {
+  const projectId = getProjectId(req)
+  let query = supabase
     .from('nfe_imports')
     .select('*')
-    .order('data_emissao', { ascending: false, nullsFirst: false })
+  if (projectId) query = query.eq('project_id', projectId)
+  const { data, error } = await query.order('data_emissao', { ascending: false, nullsFirst: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
@@ -165,6 +168,7 @@ export async function POST(req: NextRequest) {
       payment_status: body.payment_method_id ? 'pendente' : 'consolidar',
       created_by: body.created_by,
       updated_at: new Date().toISOString(),
+      project_id: body.project_id || null,
     }
 
     let header
@@ -228,6 +232,7 @@ export async function POST(req: NextRequest) {
       cfop: it.cfop || null,
       codigo_produto: it.codigo || null,
       unidade: it.unidade || null,
+      project_id: body.project_id || null,
     }))
 
     let createdMaterials: unknown[] = []
@@ -283,6 +288,7 @@ export async function POST(req: NextRequest) {
         source: 'nfe',
         nfe_import_id: nfeImportId,
         payment_method_id: body.payment_method_id,
+        project_id: body.project_id || null,
       }
 
       const { data: payData, error: payError } = await supabase

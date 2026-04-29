@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getProjectId } from '@/lib/project'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
-  const { data, error } = await supabase
+export async function GET(req: NextRequest) {
+  const projectId = getProjectId(req)
+  let query = supabase
     .from('payment_methods')
     .select('*')
     .eq('is_active', true)
+  if (projectId) query = query.eq('project_id', projectId)
+  const { data, error } = await query
     .order('kind', { ascending: true })
     .order('name', { ascending: true })
 
@@ -42,6 +46,7 @@ export async function POST(req: NextRequest) {
     is_active: body.is_active !== false,
     notes: body.notes || null,
     created_by: body.created_by,
+    project_id: body.project_id || null,
   }
 
   const { data, error } = await supabase

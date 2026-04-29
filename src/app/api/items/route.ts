@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getProjectId } from '@/lib/project'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const roomId = searchParams.get('room_id')
   const status = searchParams.get('status')
+  const projectId = getProjectId(request)
 
   let query = supabase
     .from('items')
@@ -17,6 +19,7 @@ export async function GET(request: NextRequest) {
     `)
     .order('created_at', { ascending: false })
 
+  if (projectId) query = query.eq('project_id', projectId)
   if (roomId) query = query.eq('room_id', roomId)
   if (status) query = query.eq('status', status)
 
@@ -68,6 +71,7 @@ export async function POST(request: NextRequest) {
       suggested_by: itemData.suggested_by,
       created_by: itemData.created_by,
       updated_by: itemData.updated_by,
+      project_id: itemData.project_id || null,
     })
     .select()
     .single()
