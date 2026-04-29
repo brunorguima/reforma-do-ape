@@ -223,6 +223,31 @@ function HomeContent() {
               .catch(() => {})
           }
         } catch { /* ignore */ }
+      } else {
+        // No project_ids in localStorage — re-auth with saved key to fetch them
+        const savedKey = localStorage.getItem('reforma-access-key')
+        if (savedKey) {
+          fetch('/api/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_key: savedKey }),
+          })
+            .then(r => r.json())
+            .then(data => {
+              if (data.project_ids && data.project_ids.length > 0) {
+                const pIds: string[] = data.project_ids
+                setAllowedProjectIds(pIds)
+                localStorage.setItem('reforma-project-ids', JSON.stringify(pIds))
+                setActiveProjectId(pIds[0])
+                localStorage.setItem('reforma-active-project', pIds[0])
+                fetch(`/api/projects?ids=${pIds.join(',')}`)
+                  .then(r => r.json())
+                  .then(p => setProjects(Array.isArray(p) ? p : []))
+                  .catch(() => {})
+              }
+            })
+            .catch(() => {})
+        }
       }
     }
   }, [])
