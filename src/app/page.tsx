@@ -15,6 +15,9 @@ import FinanceiroPanel from '@/components/FinanceiroPanel'
 import DocumentsPanel from '@/components/DocumentsPanel'
 import WelcomeScreen from '@/components/WelcomeScreen'
 import { Plus, Search, Filter, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, FolderOpen, ChevronDown, Settings } from 'lucide-react'
+import { ToastProvider, useToast } from '@/components/Toast'
+import RoomManager from '@/components/RoomManager'
+import ConfirmModal from '@/components/ConfirmModal'
 
 interface Project {
   id: string
@@ -29,6 +32,15 @@ interface Project {
 type TabType = 'orcamentos' | 'obra' | 'financeiro' | 'mobilia' | 'documentos'
 
 export default function HomePage() {
+  return (
+    <ToastProvider>
+      <HomeContent />
+    </ToastProvider>
+  )
+}
+
+function HomeContent() {
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<TabType>('orcamentos')
   const [projects, setProjects] = useState<Project[]>([])
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
@@ -60,6 +72,9 @@ export default function HomePage() {
   const [userRole, setUserRole] = useState<string>('owner')
   const [allowedUsers, setAllowedUsers] = useState<UserID[]>(['bruno', 'graziela', 'mari'])
   const [showWelcome, setShowWelcome] = useState(false)
+
+  const [showRoomManager, setShowRoomManager] = useState(false)
+  const [confirmState, setConfirmState] = useState<{ open: boolean; itemId: string; itemName: string }>({ open: false, itemId: '', itemName: '' })
 
   // Quick search bar state
   const [quickSearch, setQuickSearch] = useState('')
@@ -284,12 +299,17 @@ export default function HomePage() {
     const item = items.find(i => i.id === itemId)
     // Mari can only delete her own items
     if (currentUser === 'mari' && item?.created_by !== 'mari') {
-      alert('Sem permissão para deletar itens de outros usuários')
+      toast('Sem permissão para deletar itens de outros usuários', 'error')
       return
     }
-    if (!confirm('Tem certeza que deseja excluir este item?')) return
+    setConfirmState({ open: true, itemId, itemName: item?.name || '' })
+  }
+
+  const executeDelete = async () => {
+    const { itemId } = confirmState
+    const item = items.find(i => i.id === itemId)
+    setConfirmState({ open: false, itemId: '', itemName: '' })
     try {
-      // Log deletion
       await fetch('/api/audit-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -301,9 +321,11 @@ export default function HomePage() {
         }, activeProjectId)),
       })
       await fetch(`/api/items/${itemId}?user=${currentUser}`, { method: 'DELETE' })
+      toast(`"${item?.name}" excluído`, 'success')
       fetchData()
     } catch (err) {
       console.error('Error deleting item:', err)
+      toast('Erro ao excluir item', 'error')
     }
   }
 
@@ -454,7 +476,13 @@ export default function HomePage() {
 
           {/* Room Selector */}
           <div style={{ marginBottom: '24px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#374151', marginBottom: '12px' }}>Cômodos</h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>Cômodos</h2>
+              <button className="btn-ghost" onClick={() => setShowRoomManager(true)} style={{ gap: 4 }}>
+                <Settings size={14} />
+                Gerenciar
+              </button>
+            </div>
             <RoomSelector
               rooms={rooms}
               selectedRoom={selectedRoom}
@@ -773,6 +801,27 @@ export default function HomePage() {
         </>
       )}
     </div>
+
+      {/* Room Manager Modal */}
+      {showRoomManager && (
+        <RoomManager
+          rooms={rooms}
+          projectId={activeProjectId}
+          onRoomsChange={() => { fetchData(); }}
+          onClose={() => setShowRoomManager(false)}
+        />
+      )}
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={confirmState.open}
+        title="Excluir item"
+        message={`Tem certeza que deseja excluir "${confirmState.itemName}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        danger
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmState({ open: false, itemId: '', itemName: '' })}
+      />
     </>
   )
 }

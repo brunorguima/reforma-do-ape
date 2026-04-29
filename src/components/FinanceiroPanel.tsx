@@ -360,57 +360,47 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
       )}
 
       {/* === HEADER === */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1E3A5F, #2563EB)',
-        borderRadius: '16px', padding: '20px', marginBottom: '16px', color: 'white',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '6px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <DollarSign size={20} />
-            <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0 }}>Visão Geral</h2>
-          </div>
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            {economiaTotal > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '4px 8px' }}>
-                <TrendingDown size={12} />
-                <span style={{ fontSize: '11px', fontWeight: 600 }}>Economia: {fmt(economiaTotal)}</span>
-              </div>
-            )}
-            {isOwner && (
-              <button onClick={() => { setShowAuditLog(!showAuditLog); if (!showAuditLog) fetchAuditLog() }}
-                style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '8px', padding: '4px 8px', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center' }}
-                title="Ver histórico de alterações">
-                <History size={14} />
-              </button>
-            )}
-          </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <DollarSign size={20} color="var(--foreground)" />
+          <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0 }}>Visão Geral</h2>
         </div>
-        <p style={{ fontSize: '12px', opacity: 0.7, margin: '0 0 12px' }}>
-          {unifiedContracts.length} contrato{unifiedContracts.length !== 1 ? 's' : ''} · {materials.length} materia{materials.length !== 1 ? 'is' : 'l'}
-        </p>
+        {isOwner && (
+          <button onClick={() => { setShowAuditLog(!showAuditLog); if (!showAuditLog) fetchAuditLog() }}
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '4px 8px', cursor: 'pointer', color: 'var(--foreground)', display: 'flex', alignItems: 'center' }}
+            title="Ver histórico de alterações">
+            <History size={14} />
+          </button>
+        )}
+      </div>
 
-        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', height: '10px', overflow: 'hidden', marginBottom: '12px' }}>
-          <div style={{ width: `${percentPago}%`, height: '100%', background: 'linear-gradient(90deg, #60A5FA, #93C5FD)', borderRadius: '8px', transition: 'width 0.5s ease' }} />
+      {/* KPI Cards */}
+      <div className="kpi-grid">
+        <div className="kpi-card" data-accent="green">
+          <p className="kpi-label">Total Pago</p>
+          <p className="kpi-value">{fmt(totalPago)}</p>
+          <p className="kpi-sub">{percentPago}% do total</p>
         </div>
+        <div className="kpi-card" data-accent="indigo">
+          <p className="kpi-label">Serviços</p>
+          <p className="kpi-value">{fmt(totalNegociado)}</p>
+          <p className="kpi-sub">{unifiedContracts.length} contratos</p>
+        </div>
+        <div className="kpi-card" data-accent="amber">
+          <p className="kpi-label">Materiais</p>
+          <p className="kpi-value">{fmt(materiaisTotal)}</p>
+          <p className="kpi-sub">{materials.length} itens</p>
+        </div>
+        <div className="kpi-card" data-accent="blue">
+          <p className="kpi-label">Total Geral</p>
+          <p className="kpi-value">{fmt(totalGeral)}</p>
+          {economiaTotal > 0 && <p className="kpi-sub" style={{ color: 'var(--success)' }}>Economia: {fmt(economiaTotal)}</p>}
+        </div>
+      </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '14px', fontWeight: 800 }}>{fmt(totalPago)}</div>
-            <div style={{ fontSize: '10px', opacity: 0.7 }}>Total Pago ({percentPago}%)</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '14px', fontWeight: 800 }}>{fmt(totalGeral)}</div>
-            <div style={{ fontSize: '10px', opacity: 0.7 }}>Total Geral</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '14px', fontWeight: 800 }}>{fmt(totalNegociado)}</div>
-            <div style={{ fontSize: '10px', opacity: 0.7 }}>Serviços</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '14px', fontWeight: 800 }}>{fmt(materiaisTotal)}</div>
-            <div style={{ fontSize: '10px', opacity: 0.7 }}>Materiais</div>
-          </div>
-        </div>
+      {/* Progress Bar */}
+      <div style={{ background: '#F3F4F6', borderRadius: '8px', height: '8px', overflow: 'hidden', marginBottom: '16px' }}>
+        <div style={{ width: `${percentPago}%`, height: '100%', background: 'linear-gradient(90deg, #3B82F6, #60A5FA)', borderRadius: '8px', transition: 'width 0.5s ease' }} />
       </div>
 
       {/* === AUDIT LOG PANEL === */}

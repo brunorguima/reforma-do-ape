@@ -709,52 +709,43 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
   return (
     <div>
-      {/* Summary Cards */}
-      <div style={{
-        background: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)',
-        borderRadius: '16px', padding: '20px', marginBottom: '24px', color: 'white'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '4px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Wrench size={20} />
-            <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0 }}>Orçamentos</h2>
-          </div>
-          <span style={{ fontSize: '12px', opacity: 0.8 }}>
-            {activeQuotes.length} ativo{activeQuotes.length !== 1 ? 's' : ''}
-          </span>
+      {/* KPI Cards */}
+      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <div className="kpi-card" data-accent="indigo">
+          <p className="kpi-label">Orçado</p>
+          <p className="kpi-value">{formatCurrency(totalOrcado)}</p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-          <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '10px 6px', textAlign: 'center' }}>
-            <p style={{ fontSize: '11px', opacity: 0.8, margin: '0 0 4px' }}>📋 Orçado</p>
-            <p style={{ fontSize: '14px', fontWeight: 800, margin: 0 }}>{formatCurrency(totalOrcado)}</p>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '10px 6px', textAlign: 'center' }}>
-            <p style={{ fontSize: '11px', opacity: 0.8, margin: '0 0 4px' }}>🤝 Contratado</p>
-            <p style={{ fontSize: '14px', fontWeight: 800, margin: 0 }}>{formatCurrency(totalContratado)}</p>
-          </div>
+        <div className="kpi-card" data-accent="green">
+          <p className="kpi-label">Contratado</p>
+          <p className="kpi-value">{formatCurrency(totalContratado)}</p>
+        </div>
+        <div className="kpi-card" data-accent="blue">
+          <p className="kpi-label">Pago</p>
+          <p className="kpi-value">{formatCurrency(totalPago)}</p>
+        </div>
+        <div className="kpi-card" data-accent="amber">
+          <p className="kpi-label">Profissionais</p>
+          <p className="kpi-value">{activeQuotes.length}</p>
+          <p className="kpi-sub">orçamentos ativos</p>
         </div>
       </div>
 
       {/* Action Buttons */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <button className="btn-primary" onClick={() => setShowAddQuote(!showAddQuote)} style={{ fontSize: '14px', padding: '10px 16px' }}>
+        <button className="btn-primary" onClick={() => setShowAddQuote(!showAddQuote)}>
           <Plus size={16} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
           Novo Orçamento
         </button>
         <button
           onClick={() => setShowOcrProSelect(true)}
-          style={{
-            fontSize: '14px', padding: '10px 16px', borderRadius: '10px', border: 'none',
-            background: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)', color: 'white',
-            cursor: 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px',
-            boxShadow: '0 2px 8px rgba(124,58,237,0.25)'
-          }}
+          className="btn-primary"
+          style={{ fontSize: '13px' }}
           title="Subir PDF de orçamento e extrair itens automaticamente com Gemini OCR"
         >
           📄 Subir Orçamento (OCR)
         </button>
         <button onClick={() => setShowAddProfessional(!showAddProfessional)}
-          style={{ fontSize: '14px', padding: '10px 16px', border: '2px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer' }}>
+          className="btn-secondary">
           <User size={16} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
           Novo Profissional
         </button>
