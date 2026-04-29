@@ -14,7 +14,7 @@ import ObraPanel from '@/components/ObraPanel'
 import FinanceiroPanel from '@/components/FinanceiroPanel'
 import DocumentsPanel from '@/components/DocumentsPanel'
 import WelcomeScreen from '@/components/WelcomeScreen'
-import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, FolderOpen, Building2, ChevronDown } from 'lucide-react'
+import { Plus, Search, Filter, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, FolderOpen, ChevronDown, Settings } from 'lucide-react'
 
 interface Project {
   id: string
@@ -348,18 +348,20 @@ export default function HomePage() {
     roomTotals[item.room_id] = (roomTotals[item.room_id] || 0) + ((item.estimated_price || 0) * item.quantity)
   })
 
+  const activeProject = projects.find(p => p.id === activeProjectId)
+  const projectColor = activeProject?.project_type === 'construcao' ? '#f59e0b' : '#6366f1'
+
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏠</div>
-          <p style={{ color: '#6b7280', fontSize: '16px' }}>Carregando...</p>
+          <div className="skeleton" style={{ width: 48, height: 48, borderRadius: '50%', margin: '0 auto 16px' }} />
+          <div className="skeleton" style={{ width: 160, height: 14, borderRadius: 7, margin: '0 auto' }} />
         </div>
       </div>
     )
   }
 
-  const greeting = USER_GREETINGS[currentUser]
   const currentUserObj = USERS.find(u => u.id === currentUser)
 
   const handleWelcomeDismiss = () => {
@@ -368,7 +370,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="app-container">
+    <>
       {showWelcome && (
         <WelcomeScreen
           userRole={userRole}
@@ -376,104 +378,63 @@ export default function HomePage() {
           onDismiss={handleWelcomeDismiss}
         />
       )}
-      {/* Header */}
-      <header style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Home size={28} color="#2563eb" />
-            <div>
-              <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#1f2937', margin: 0 }}>{APP_NAME}</h1>
-              <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{APP_SUBTITLE}</p>
+
+      {/* === HEADER === */}
+      <header className="app-header">
+        <div className="app-header-left">
+          <span className="app-logo">Reforma App</span>
+
+          {/* Project Selector Pill */}
+          {projects.length > 1 ? (
+            <div className="project-pill" style={{ background: projectColor }}>
+              <select
+                value={activeProjectId || ''}
+                onChange={e => handleProjectChange(e.target.value)}
+              >
+                {projects.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={12} />
             </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {/* Project Selector */}
-            {projects.length > 1 && (
-              <div style={{ position: 'relative' }}>
-                <select
-                  value={activeProjectId || ''}
-                  onChange={e => handleProjectChange(e.target.value)}
-                  style={{
-                    appearance: 'none',
-                    padding: '6px 28px 6px 32px',
-                    borderRadius: '10px',
-                    border: '2px solid #e5e7eb',
-                    background: 'white',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    color: '#1f2937',
-                    cursor: 'pointer',
-                    minWidth: '130px',
-                  }}
-                >
-                  {projects.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-                <Building2 size={14} color="#6b7280" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-                <ChevronDown size={14} color="#6b7280" style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-              </div>
-            )}
-            <button
-              onClick={handleRefresh}
-              style={{ padding: '8px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: '#f3f4f6' }}
-              title="Atualizar"
-            >
-              <RefreshCw size={18} color="#6b7280" className={refreshing ? 'animate-spin' : ''} />
-            </button>
-            <UserSelector currentUser={currentUser} onUserChange={handleUserChange} allowedUsers={allowedUsers} />
-          </div>
+          ) : activeProject && (
+            <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.7 }}>{activeProject.name}</span>
+          )}
         </div>
-        {/* Personalized Greeting */}
-        {greeting && (
-          <div style={{
-            marginTop: '12px',
-            padding: '12px 16px',
-            borderRadius: '12px',
-            background: `linear-gradient(135deg, ${currentUserObj?.color || '#2563eb'}15, ${currentUserObj?.color || '#2563eb'}08)`,
-            borderLeft: `4px solid ${currentUserObj?.color || '#2563eb'}`,
-          }}>
-            <p style={{ fontSize: '16px', fontWeight: 700, color: '#1f2937', margin: '0 0 2px' }}>
-              {greeting.greeting}
-            </p>
-            <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
-              {projects.length > 1 && activeProjectId
-                ? `Projeto: ${projects.find(p => p.id === activeProjectId)?.name || greeting.subtitle}`
-                : greeting.subtitle}
-            </p>
-          </div>
-        )}
+
+        <div className="app-header-right">
+          <button
+            onClick={handleRefresh}
+            style={{ padding: 6, borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center' }}
+            title="Atualizar"
+          >
+            <RefreshCw size={15} color="rgba(255,255,255,0.7)" className={refreshing ? 'animate-spin' : ''} />
+          </button>
+          <UserSelector currentUser={currentUser} onUserChange={handleUserChange} allowedUsers={allowedUsers} />
+        </div>
       </header>
 
-      {/* Tab Navigation */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', marginBottom: '24px', background: '#f3f4f6', borderRadius: '12px', padding: '4px' }}>
+      <div className="app-container">
+
+      {/* === TAB NAVIGATION === */}
+      <nav className="tab-nav">
         {([
-          { key: 'orcamentos' as TabType, label: 'Orçamentos', icon: <Wrench size={18} />, color: '#7c3aed' },
-          { key: 'obra' as TabType, label: 'Obra', icon: <HardHat size={18} />, color: '#D97706' },
-          { key: 'financeiro' as TabType, label: 'Financeiro', icon: <DollarSign size={18} />, color: '#047857' },
-          { key: 'documentos' as TabType, label: 'Documentos', icon: <FolderOpen size={18} />, color: '#db2777' },
-          { key: 'mobilia' as TabType, label: 'Mobília', icon: <Sofa size={18} />, color: '#2563eb' },
-        ]).map(tab => {
-          const isActive = activeTab === tab.key
-          return (
-            <button
-              key={tab.key}
-              onClick={() => { setActiveTab(tab.key); window.location.hash = tab.key; }}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
-                padding: '10px 4px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                fontWeight: 600, fontSize: '11px', transition: 'all 0.2s',
-                background: isActive ? 'white' : 'transparent',
-                color: isActive ? tab.color : '#6b7280',
-                boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              }}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          )
-        })}
-      </div>
+          { key: 'orcamentos' as TabType, label: 'Orçamentos', icon: <Wrench size={16} /> },
+          { key: 'obra' as TabType, label: 'Obra', icon: <HardHat size={16} /> },
+          { key: 'financeiro' as TabType, label: 'Financeiro', icon: <DollarSign size={16} /> },
+          { key: 'documentos' as TabType, label: 'Documentos', icon: <FolderOpen size={16} /> },
+          { key: 'mobilia' as TabType, label: 'Mobília', icon: <Sofa size={16} /> },
+        ]).map(tab => (
+          <button
+            key={tab.key}
+            className={`tab-btn ${activeTab === tab.key ? 'active' : ''}`}
+            onClick={() => { setActiveTab(tab.key); window.location.hash = tab.key; }}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </nav>
 
       {/* Tab Content */}
       {activeTab === 'orcamentos' ? (
@@ -812,5 +773,6 @@ export default function HomePage() {
         </>
       )}
     </div>
+    </>
   )
 }

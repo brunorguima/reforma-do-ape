@@ -20,8 +20,8 @@ export default function UserSelector({ currentUser, onUserChange, allowedUsers }
           onClick={() => onUserChange(user.id)}
           className="user-chip"
           style={{
-            backgroundColor: currentUser === user.id ? user.color : '#f3f4f6',
-            color: currentUser === user.id ? 'white' : '#6b7280',
+            backgroundColor: currentUser === user.id ? user.color : 'rgba(255,255,255,0.1)',
+            color: currentUser === user.id ? 'white' : 'rgba(255,255,255,0.6)',
             borderColor: currentUser === user.id ? user.color : 'transparent',
           }}
         >

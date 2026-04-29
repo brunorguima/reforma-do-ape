@@ -1,10 +1,16 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Reforma do Apê - Controle de Mobília",
-  description: "App de controle de mobília, eletrodomésticos e itens para a reforma do apartamento",
+  title: "Reforma App — Controle Total",
+  description: "Gestão completa de reformas e construções: orçamentos, obra, financeiro, documentos e mobília",
 };
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#0f172a',
+}
 
 export default function RootLayout({
   children,
