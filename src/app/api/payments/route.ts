@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
       quote_id: body.quote_id || null,
       contract_id: body.contract_id || null,
       source: body.source || 'manual',
+      payment_type: body.payment_type || 'pix',
       project_id: body.project_id || null,
     })
     .select()

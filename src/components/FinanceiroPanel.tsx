@@ -14,6 +14,7 @@ interface Payment {
   id: string; professional: string; installment_number: number; amount: number;
   due_date: string; paid_date: string | null; status: string; notes: string;
   quote_id?: string | null; contract_id?: string | null; source?: string;
+  payment_type?: string; // pix, cartao_parcelado, boleto, dinheiro, transferencia
 }
 interface BudgetItem {
   id: string; professional: string; category: string; service: string; location: string;
@@ -87,7 +88,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
   const [editDate, setEditDate] = useState('')
   const [editNotes, setEditNotes] = useState('')
   const [showAddPayment, setShowAddPayment] = useState<string | null>(null)
-  const [newPayment, setNewPayment] = useState({ amount: '', due_date: '', notes: '' })
+  const [newPayment, setNewPayment] = useState({ amount: '', due_date: '', notes: '', payment_type: 'pix' })
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [showAuditLog, setShowAuditLog] = useState(false)
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([])
@@ -225,12 +226,13 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
         contract_id: contractId || null,
         quote_id: quoteId || null,
         source: quoteId ? 'quote' : contractId ? 'contract' : 'manual',
+        payment_type: newPayment.payment_type || 'pix',
       }, projectId)),
     })
-    await logAction('create', 'payment', '', `Nova parcela ${maxInstall + 1} para ${professional}: ${fmt(parseFloat(newPayment.amount))}`)
+    await logAction('create', 'payment', '', `Nova parcela ${maxInstall + 1} para ${professional}: ${fmt(parseFloat(newPayment.amount))} (${newPayment.payment_type})`)
     showToast(`Parcela ${maxInstall + 1} adicionada!`)
     setShowAddPayment(null)
-    setNewPayment({ amount: '', due_date: '', notes: '' })
+    setNewPayment({ amount: '', due_date: '', notes: '', payment_type: 'pix' })
     await fetchData()
   }
 
@@ -303,8 +305,6 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
 
   const totalOriginal = unifiedContracts.reduce((s, c) => s + c.originalTotal, 0)
   const totalNegociado = unifiedContracts.reduce((s, c) => s + c.negotiatedTotal, 0)
-  const totalPagoServicos = payments.filter(p => p.status === 'pago').reduce((s, p) => s + p.amount, 0)
-  const totalPendente = payments.filter(p => p.status === 'pendente').reduce((s, p) => s + p.amount, 0)
   const economiaTotal = totalOriginal - totalNegociado
 
   // Materials totals
@@ -321,11 +321,6 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
     return acc
   }, {})
 
-  // Grand totals (services + materials)
-  const totalPago = totalPagoServicos + materiaisTotal
-  const totalGeral = totalNegociado + materiaisTotal
-  const percentPago = totalGeral > 0 ? Math.round((totalPago / totalGeral) * 100) : 0
-
   const upcomingPayments = payments.filter(p => p.status === 'pendente').sort((a, b) => a.due_date.localeCompare(b.due_date))
   const nextPayment = upcomingPayments[0]
   const daysUntilNext = nextPayment ? Math.ceil((new Date(nextPayment.due_date + 'T12:00:00').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null
@@ -335,16 +330,51 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
     const profContracts = unifiedContracts.filter(c => c.professional === prof)
     const profPayments = payments.filter(p => p.professional === prof)
     const negociado = profContracts.reduce((s, c) => s + c.negotiatedTotal, 0)
-    const pago = profPayments.filter(p => p.status === 'pago').reduce((s, p) => s + p.amount, 0)
-    const pendente = profPayments.filter(p => p.status === 'pendente').reduce((s, p) => s + p.amount, 0)
+    const isCartaoParcelado = profPayments.some(p => p.payment_type === 'cartao_parcelado')
+    // For cartão parcelado: professional is 100% paid (card company paid them)
+    // "pago" = what already left your pocket, "pendente" = card installments still coming
+    const pagoEfetivo = profPayments.filter(p => p.status === 'pago').reduce((s, p) => s + p.amount, 0)
+    const pendenteEfetivo = profPayments.filter(p => p.status === 'pendente').reduce((s, p) => s + p.amount, 0)
+    // For professional's perspective: if cartão parcelado, they're 100% paid
+    const pagoProfissional = isCartaoParcelado ? negociado : pagoEfetivo
+    const pendenteProfissional = isCartaoParcelado ? 0 : pendenteEfetivo
     const role = profContracts[0]?.role || ''
     const contractId = profContracts.find(c => c.source === 'contract')?.contractId
     const quoteId = profContracts.find(c => c.source === 'quote')?.quoteId
-    const totalScheduled = pago + pendente
-    const discrepancy = negociado > 0 ? totalScheduled - negociado : 0
+    const totalScheduled = pagoEfetivo + pendenteEfetivo
+    const discrepancy = negociado > 0 && !isCartaoParcelado ? totalScheduled - negociado : 0
     const pendingCount = profPayments.filter(p => p.status === 'pendente').length
-    return { professional: prof, role, negociado, pago, pendente, payments: profPayments, contractId, quoteId, percent: negociado > 0 ? Math.round((pago / negociado) * 100) : 0, discrepancy, pendingCount }
+    const percentProfissional = negociado > 0 ? Math.round((pagoProfissional / negociado) * 100) : 0
+    return {
+      professional: prof, role, negociado,
+      pago: pagoEfetivo, pendente: pendenteEfetivo,
+      pagoProfissional, pendenteProfissional,
+      isCartaoParcelado, payments: profPayments,
+      contractId, quoteId, percent: percentProfissional,
+      discrepancy, pendingCount,
+    }
   }).sort((a, b) => b.negociado - a.negociado)
+
+  // Cash flow: group ALL pending payments by month for fluxo de caixa
+  const cashFlowByMonth: Record<string, { total: number; items: { professional: string; amount: number; type: string }[] }> = {}
+  for (const p of payments.filter(p => p.status === 'pendente')) {
+    const month = p.due_date.substring(0, 7) // YYYY-MM
+    if (!cashFlowByMonth[month]) cashFlowByMonth[month] = { total: 0, items: [] }
+    cashFlowByMonth[month].total += p.amount
+    cashFlowByMonth[month].items.push({ professional: p.professional, amount: p.amount, type: p.payment_type || 'pix' })
+  }
+  const cashFlowMonths = Object.entries(cashFlowByMonth).sort(([a], [b]) => a.localeCompare(b))
+
+  // KPI totals — profissional perspective (cartão = 100% pago)
+  const totalPagoServicos = profBreakdown.reduce((s, p) => s + p.pagoProfissional, 0)
+  const totalPendente = profBreakdown.reduce((s, p) => s + p.pendenteProfissional, 0)
+  // Fluxo de caixa: o que ainda vai sair do bolso de fato
+  const totalAindaSaiDoBolso = payments.filter(p => p.status === 'pendente').reduce((s, p) => s + p.amount, 0)
+
+  // Grand totals (services + materials)
+  const totalPago = totalPagoServicos + materiaisTotal
+  const totalGeral = totalNegociado + materiaisTotal
+  const percentPago = totalGeral > 0 ? Math.round((totalPago / totalGeral) * 100) : 0
 
   // Gastos por Categoria
   const categorySpending: Record<string, { total: number; count: number }> = {}
@@ -547,15 +577,30 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                   <div style={{ background: '#F3F4F6', borderRadius: '6px', height: '6px', overflow: 'hidden' }}>
                     <div style={{ width: `${prof.percent}%`, height: '100%', background: color, borderRadius: '6px', transition: 'width 0.5s ease' }} />
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
-                    <span style={{ fontSize: '11px', color: '#6B7280' }}>
-                      <CheckCircle2 size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }} />
-                      Pago: {fmt(prof.pago)}
-                    </span>
-                    <span style={{ fontSize: '11px', color: '#6B7280' }}>
-                      <Clock size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }} />
-                      Pendente: {fmt(prof.pendente)}
-                    </span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '4px' }}>
+                    {prof.isCartaoParcelado ? (
+                      <>
+                        <span style={{ fontSize: '11px', color: '#059669', fontWeight: 600 }}>
+                          <CheckCircle2 size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }} />
+                          💳 Pago no cartão
+                        </span>
+                        <span style={{ fontSize: '11px', color: '#6B7280' }}>
+                          <Clock size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }} />
+                          Fatura restante: {fmt(prof.pendente)}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: '11px', color: '#6B7280' }}>
+                          <CheckCircle2 size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }} />
+                          Pago: {fmt(prof.pago)}
+                        </span>
+                        <span style={{ fontSize: '11px', color: '#6B7280' }}>
+                          <Clock size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }} />
+                          Pendente: {fmt(prof.pendente)}
+                        </span>
+                      </>
+                    )}
                     <span style={{ fontSize: '11px', color: color, fontWeight: 600 }}>
                       {profPaymentsSorted.length} parcela{profPaymentsSorted.length !== 1 ? 's' : ''}
                     </span>
@@ -731,7 +776,16 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                             onChange={e => setNewPayment({ ...newPayment, due_date: e.target.value })}
                             style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
                         </div>
-                        <input type="text" placeholder="Observação (opcional)" value={newPayment.notes}
+                        <select value={newPayment.payment_type}
+                          onChange={e => setNewPayment({ ...newPayment, payment_type: e.target.value })}
+                          style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box', marginBottom: '6px', background: 'white' }}>
+                          <option value="pix">⚡ PIX</option>
+                          <option value="cartao_parcelado">💳 Cartão Parcelado</option>
+                          <option value="boleto">📄 Boleto</option>
+                          <option value="dinheiro">💵 Dinheiro</option>
+                          <option value="transferencia">🏦 Transferência</option>
+                        </select>
+                    <input type="text" placeholder="Observação (opcional)" value={newPayment.notes}
                           onChange={e => setNewPayment({ ...newPayment, notes: e.target.value })}
                           style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', marginBottom: '8px', boxSizing: 'border-box' }} />
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
@@ -744,7 +798,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                             }}>
                             <Plus size={12} /> Adicionar
                           </button>
-                          <button onClick={() => { setShowAddPayment(null); setNewPayment({ amount: '', due_date: '', notes: '' }) }}
+                          <button onClick={() => { setShowAddPayment(null); setNewPayment({ amount: '', due_date: '', notes: '', payment_type: 'pix' }) }}
                             style={{ padding: '6px 14px', borderRadius: '6px', background: '#F3F4F6', color: '#6B7280', border: 'none', fontSize: '12px', cursor: 'pointer' }}>
                             Cancelar
                           </button>
@@ -810,6 +864,56 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* === FLUXO DE CAIXA MENSAL === */}
+      {cashFlowMonths.length > 0 && (
+        <div style={{ marginBottom: '20px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <TrendingDown size={16} /> Fluxo de Caixa — Próximos Meses
+          </h3>
+          <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '0 0 12px', paddingLeft: '24px' }}>
+            Quanto sai do bolso por mês (inclui faturas de cartão)
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {cashFlowMonths.slice(0, 6).map(([month, data]) => {
+              const [y, m] = month.split('-')
+              const monthName = new Date(Number(y), Number(m) - 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' })
+              const maxFlow = Math.max(...cashFlowMonths.map(([, d]) => d.total))
+              return (
+                <div key={month} style={{ padding: '12px 14px', borderRadius: '10px', background: 'white', border: '1px solid #E5E7EB' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ fontWeight: 600, fontSize: '13px', color: '#374151', textTransform: 'capitalize' }}>{monthName}</span>
+                    <span style={{ fontWeight: 700, fontSize: '15px', color: '#DC2626' }}>- {fmt(data.total)}</span>
+                  </div>
+                  <div style={{ background: '#F3F4F6', borderRadius: '4px', height: '5px', overflow: 'hidden', marginBottom: '6px' }}>
+                    <div style={{ width: `${(data.total / maxFlow) * 100}%`, height: '100%', background: '#EF4444', borderRadius: '4px' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {data.items.map((item, idx) => (
+                      <span key={idx} style={{
+                        fontSize: '10px', padding: '2px 8px', borderRadius: '20px',
+                        background: item.type === 'cartao_parcelado' ? '#EDE9FE' : '#DBEAFE',
+                        color: item.type === 'cartao_parcelado' ? '#6D28D9' : '#1D4ED8',
+                        fontWeight: 600,
+                      }}>
+                        {item.type === 'cartao_parcelado' ? '💳' : '⚡'} {item.professional.split(' ')[0]} {fmt(item.amount)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <div style={{
+            marginTop: '8px', padding: '10px 14px', borderRadius: '10px',
+            background: '#FEF2F2', border: '1px solid #FECACA',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#991B1B' }}>Total a sair do bolso</span>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: '#DC2626' }}>{fmt(totalAindaSaiDoBolso)}</span>
           </div>
         </div>
       )}
