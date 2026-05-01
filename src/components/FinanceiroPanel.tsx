@@ -234,6 +234,39 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
     await fetchData()
   }
 
+  const handleRecalculate = async (professional: string, negociado: number) => {
+    const profPayments = payments.filter(p => p.professional === professional)
+    const pago = profPayments.filter(p => p.status === 'pago').reduce((s, p) => s + p.amount, 0)
+    const pendingPayments = profPayments.filter(p => p.status === 'pendente').sort((a, b) => a.due_date.localeCompare(b.due_date))
+    if (pendingPayments.length === 0) {
+      showToast('Sem parcelas pendentes para recalcular', 'error')
+      return
+    }
+    const remaining = negociado - pago
+    if (remaining <= 0) {
+      showToast('Já foi pago o valor total (ou mais) do contrato', 'error')
+      return
+    }
+    const perInstallment = Math.floor((remaining / pendingPayments.length) * 100) / 100
+    const lastExtra = Math.round((remaining - perInstallment * pendingPayments.length) * 100) / 100
+    try {
+      await Promise.all(pendingPayments.map((p, idx) => {
+        const newAmount = idx === pendingPayments.length - 1 ? perInstallment + lastExtra : perInstallment
+        return fetch('/api/payments', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(withProjectId({ id: p.id, amount: newAmount }, projectId)),
+        })
+      }))
+      await logAction('edit', 'payment', '', `Recálculo automático: ${pendingPayments.length} parcelas de ${professional} redistribuídas — R$${remaining.toFixed(2)} restante ÷ ${pendingPayments.length} = R$${perInstallment.toFixed(2)}/parcela`)
+      showToast(`${pendingPayments.length} parcelas recalculadas! R$${perInstallment.toFixed(2)} cada`)
+      await fetchData()
+    } catch (err) {
+      console.error('recalculate error', err)
+      showToast('Erro ao recalcular parcelas', 'error')
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '60px 20px' }}>
@@ -307,7 +340,10 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
     const role = profContracts[0]?.role || ''
     const contractId = profContracts.find(c => c.source === 'contract')?.contractId
     const quoteId = profContracts.find(c => c.source === 'quote')?.quoteId
-    return { professional: prof, role, negociado, pago, pendente, payments: profPayments, contractId, quoteId, percent: negociado > 0 ? Math.round((pago / negociado) * 100) : 0 }
+    const totalScheduled = pago + pendente
+    const discrepancy = negociado > 0 ? totalScheduled - negociado : 0
+    const pendingCount = profPayments.filter(p => p.status === 'pendente').length
+    return { professional: prof, role, negociado, pago, pendente, payments: profPayments, contractId, quoteId, percent: negociado > 0 ? Math.round((pago / negociado) * 100) : 0, discrepancy, pendingCount }
   }).sort((a, b) => b.negociado - a.negociado)
 
   // Gastos por Categoria
@@ -529,6 +565,39 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                 {/* Expanded payments */}
                 {isExpanded && (
                   <div style={{ borderTop: `2px solid ${color}20`, padding: '12px 16px', background: '#FAFBFC' }}>
+                    {/* Discrepancy Alert */}
+                    {Math.abs(prof.discrepancy) > 0.01 && prof.negociado > 0 && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '10px', marginBottom: '10px',
+                        background: prof.discrepancy > 0 ? '#FEF2F2' : '#FFF7ED',
+                        border: `1px solid ${prof.discrepancy > 0 ? '#FECACA' : '#FED7AA'}`,
+                      }}>
+                        <AlertTriangle size={16} color={prof.discrepancy > 0 ? '#DC2626' : '#D97706'} style={{ flexShrink: 0 }} />
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontSize: '12px', fontWeight: 700, color: '#1F2937', margin: 0 }}>
+                            {prof.discrepancy > 0
+                              ? `Parcelas somam ${fmt(prof.discrepancy)} A MAIS que o contrato`
+                              : `Faltam ${fmt(Math.abs(prof.discrepancy))} nas parcelas vs contrato`}
+                          </p>
+                          <p style={{ fontSize: '11px', color: '#6B7280', margin: '2px 0 0' }}>
+                            Contrato: {fmt(prof.negociado)} · Pago: {fmt(prof.pago)} · Pendente: {fmt(prof.pendente)} · Falta pagar: {fmt(prof.negociado - prof.pago)}
+                          </p>
+                        </div>
+                        {prof.pendingCount > 0 && (
+                          <button
+                            onClick={() => handleRecalculate(prof.professional, prof.negociado)}
+                            style={{
+                              padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 700,
+                              background: '#2563EB', color: 'white', border: 'none', cursor: 'pointer',
+                              whiteSpace: 'nowrap', flexShrink: 0,
+                            }}
+                          >
+                            ⚡ Recalcular
+                          </button>
+                        )}
+                      </div>
+                    )}
+
                     {profPaymentsSorted.length === 0 && (
                       <div style={{ textAlign: 'center', padding: '16px', background: '#FFF7ED', borderRadius: '8px', border: '1px solid #FED7AA', marginBottom: '8px' }}>
                         <p style={{ fontSize: '13px', color: '#92400E', margin: 0, fontWeight: 600 }}>Nenhuma parcela cadastrada</p>
