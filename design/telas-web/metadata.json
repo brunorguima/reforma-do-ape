@@ -1,0 +1,9 @@
+{
+  "name": "Reformia",
+  "description": "Sua obra no bolso, com IA. Gerenciamento inteligente de reformas e construções.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": []
+}
