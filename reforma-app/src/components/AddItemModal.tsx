@@ -183,7 +183,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Search bar */}
           {!editingItem && (
-            <div className="bg-[#F0F9FF] rounded-radius-md p-3.5 border border-[#BAE6FD]">
+            <div className="bg-[#F0F9FF] rounded-md p-3.5 border border-[#BAE6FD]">
               <div className="flex items-center gap-1.5 mb-2">
                 <Search size={14} color="#0284C7" />
                 <span className="text-[13px] font-bold text-[#0284C7]">Buscar na internet</span>
@@ -200,7 +200,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
                   type="button"
                   onClick={() => handleSearch()}
                   disabled={searching || searchQuery.length < 2}
-                  className={`px-4 py-2 bg-[#0284C7] text-white border-none rounded-radius-sm text-[13px] font-bold cursor-pointer flex items-center gap-1 whitespace-nowrap ${searching ? 'opacity-60' : 'opacity-100'}`}>
+                  className={`px-4 py-2 bg-[#0284C7] text-white border-none rounded-sm text-[13px] font-bold cursor-pointer flex items-center gap-1 whitespace-nowrap ${searching ? 'opacity-60' : 'opacity-100'}`}>
                   {searching ? <Loader2 size={14} className="spin" /> : <Search size={14} />}
                   {searching ? 'Buscando...' : 'Buscar'}
                 </button>
@@ -208,7 +208,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
 
               {/* Search results */}
               {(searchResults.length > 0 || searching || searchLinks.length > 0) && (
-                <div className="mt-2.5 max-h-[280px] overflow-y-auto rounded-radius-sm">
+                <div className="mt-2.5 max-h-[280px] overflow-y-auto rounded-sm">
                   {searchStats && searchStats.total > 0 && (
                     <div className="flex gap-2 mb-2 text-[11px] flex-wrap">
                       <span className="px-2 py-[3px] bg-[#DBEAFE] rounded-[6px] text-[#1E40AF] font-semibold">
@@ -226,7 +226,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
                     <div
                       key={i}
                       onClick={() => selectProduct(product)}
-                      className="flex gap-2.5 p-2.5 mb-1 bg-white rounded-radius-sm cursor-pointer border border-[#E5E7EB] transition-all duration-150 relative hover:border-[#0284C7] hover:bg-[#F0F9FF]"
+                      className="flex gap-2.5 p-2.5 mb-1 bg-white rounded-sm cursor-pointer border border-[#E5E7EB] transition-all duration-150 relative hover:border-[#0284C7] hover:bg-[#F0F9FF]"
                     >
                       {product.image && (
                         <div className="relative shrink-0">
@@ -307,7 +307,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
                             href={link.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-[#D1D5DB] rounded-radius-sm text-xs font-semibold text-[#374151] no-underline transition-all duration-150"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-[#D1D5DB] rounded-sm text-xs font-semibold text-[#374151] no-underline transition-all duration-150"
                           >
                             <ExternalLink size={11} /> {link.store}
                           </a>
@@ -406,7 +406,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
                   placeholder="https://..."
                 />
                 {referenceLinks.length > 1 && (
-                  <button type="button" onClick={() => removeLink(i)} className="p-2 border-none cursor-pointer bg-[#fef2f2] rounded-radius-sm">
+                  <button type="button" onClick={() => removeLink(i)} className="p-2 border-none cursor-pointer bg-[#fef2f2] rounded-sm">
                     <Trash2 size={14} color="#ef4444" />
                   </button>
                 )}
@@ -430,7 +430,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
                   placeholder="https://imagem.com/foto.jpg"
                 />
                 {imageUrls.length > 1 && (
-                  <button type="button" onClick={() => removeImage(i)} className="p-2 border-none cursor-pointer bg-[#fef2f2] rounded-radius-sm">
+                  <button type="button" onClick={() => removeImage(i)} className="p-2 border-none cursor-pointer bg-[#fef2f2] rounded-sm">
                     <Trash2 size={14} color="#ef4444" />
                   </button>
                 )}

@@ -424,13 +424,13 @@ export default function HomePage() {
             </div>
             <button
               onClick={() => { localStorage.clear(); window.location.reload() }}
-              className="px-3.5 py-2 rounded-radius-sm border border-outline-variant bg-surface-lowest cursor-pointer text-[13px] text-on-surface-variant"
+              className="px-3.5 py-2 rounded-sm border border-outline-variant bg-surface-lowest cursor-pointer text-[13px] text-on-surface-variant"
             >
               Sair
             </button>
           </div>
           {greeting && (
-            <div className="mt-3 px-4 py-3 rounded-radius-md bg-gradient-to-br from-warning/10 to-warning/5 border-l-4 border-warning">
+            <div className="mt-3 px-4 py-3 rounded-md bg-gradient-to-br from-warning/10 to-warning/5 border-l-4 border-warning">
               <p className="text-base font-bold text-on-surface m-0 mb-0.5">
                 {greeting.greeting}
               </p>

@@ -415,9 +415,9 @@ export default function DocumentsPanel({
               <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">📅 Período</label>
               <div className="flex gap-1.5">
                 <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-                  className="flex-1 p-2 rounded-radius-sm border border-outline-variant text-xs box-border" />
+                  className="flex-1 p-2 rounded-sm border border-outline-variant text-xs box-border" />
                 <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-                  className="flex-1 p-2 rounded-radius-sm border border-outline-variant text-xs box-border" />
+                  className="flex-1 p-2 rounded-sm border border-outline-variant text-xs box-border" />
               </div>
             </div>
           </div>
@@ -426,25 +426,25 @@ export default function DocumentsPanel({
 
       {/* Bulk bar */}
       {selected.size > 0 && (
-        <div className="sticky top-2 z-20 mb-3 bg-[#1f2937] rounded-radius-md px-3.5 py-3 text-white flex justify-between items-center gap-3 flex-wrap shadow-[0_8px_20px_rgba(31,41,55,0.35)]">
+        <div className="sticky top-2 z-20 mb-3 bg-[#1f2937] rounded-md px-3.5 py-3 text-white flex justify-between items-center gap-3 flex-wrap shadow-[0_8px_20px_rgba(31,41,55,0.35)]">
           <div className="flex items-center gap-2.5 text-[13px] font-semibold">
             <Layers size={16} /> {selected.size} selecionado{selected.size !== 1 ? 's' : ''}
           </div>
           <div className="flex gap-1.5 flex-wrap">
             <button onClick={() => { setBulkMode('tag'); setBulkValue('') }}
-              className="px-3 py-1.5 rounded-radius-sm border-none bg-[#374151] text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1">
+              className="px-3 py-1.5 rounded-sm border-none bg-[#374151] text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1">
               <TagIcon size={12} /> Adicionar tag
             </button>
             <button onClick={() => { setBulkMode('move'); setBulkValue('') }}
-              className="px-3 py-1.5 rounded-radius-sm border-none bg-[#374151] text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1">
+              className="px-3 py-1.5 rounded-sm border-none bg-[#374151] text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1">
               <UserIcon size={12} /> Vincular profissional
             </button>
             <button onClick={runBulkDelete}
-              className="px-3 py-1.5 rounded-radius-sm border-none bg-danger text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1">
+              className="px-3 py-1.5 rounded-sm border-none bg-danger text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1">
               <Trash2 size={12} /> Excluir
             </button>
             <button onClick={() => setSelected(new Set())}
-              className="px-3 py-1.5 rounded-radius-sm border-none bg-[#4b5563] text-white text-xs font-semibold cursor-pointer">
+              className="px-3 py-1.5 rounded-sm border-none bg-[#4b5563] text-white text-xs font-semibold cursor-pointer">
               Limpar
             </button>
           </div>
@@ -660,18 +660,18 @@ export default function DocumentsPanel({
                     <div className="flex gap-1.5 shrink-0 flex-col">
                       {d.url && (
                         <a href={d.url} target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-radius-sm text-white no-underline text-[11px] font-bold"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-white no-underline text-[11px] font-bold"
                           style={{ background: meta.color }}>
                           <ExternalLink size={11} /> Abrir
                         </a>
                       )}
                       <button onClick={() => openEdit(d)}
-                        className="px-2.5 py-1.5 rounded-radius-sm border border-outline-variant bg-surface-lowest text-[#374151] cursor-pointer text-[11px] font-semibold inline-flex items-center gap-1">
+                        className="px-2.5 py-1.5 rounded-sm border border-outline-variant bg-surface-lowest text-[#374151] cursor-pointer text-[11px] font-semibold inline-flex items-center gap-1">
                         <Edit3 size={11} /> Editar
                       </button>
                       {(currentUser !== 'mari' || d.created_by === 'mari') && (
                         <button onClick={() => deleteDoc(d.id)}
-                          className="px-2.5 py-1.5 rounded-radius-sm border border-[#fecaca] bg-danger-light text-danger cursor-pointer text-[11px] font-semibold inline-flex items-center gap-1">
+                          className="px-2.5 py-1.5 rounded-sm border border-[#fecaca] bg-danger-light text-danger cursor-pointer text-[11px] font-semibold inline-flex items-center gap-1">
                           <Trash2 size={11} /> Excluir
                         </button>
                       )}
@@ -729,7 +729,7 @@ export default function DocumentsPanel({
                 onChange={e => setUploadForm({ ...uploadForm, tagsInput: e.target.value })}
                 className="py-2.5 px-3 rounded-[10px] border border-outline-variant text-[13px] box-border"
               />
-              <label className={`flex items-center gap-2.5 p-3.5 border-2 border-dashed rounded-radius-md cursor-pointer ${uploadForm.file ? 'bg-[#f0fdf4] border-success' : 'bg-[#fafafa] border-[#d1d5db]'}`}>
+              <label className={`flex items-center gap-2.5 p-3.5 border-2 border-dashed rounded-md cursor-pointer ${uploadForm.file ? 'bg-[#f0fdf4] border-success' : 'bg-[#fafafa] border-[#d1d5db]'}`}>
                 <Upload size={20} className={uploadForm.file ? 'text-success' : 'text-on-surface-variant'} />
                 <span className={`text-[13px] font-semibold flex-1 ${uploadForm.file ? 'text-[#065f46]' : 'text-on-surface-variant'}`}>
                   {uploadForm.file ? uploadForm.file.name : 'Selecionar arquivo (PDF, imagem, doc...)'}
@@ -769,7 +769,7 @@ export default function DocumentsPanel({
 
 function KpiTile({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="bg-surface-lowest rounded-radius-md px-3.5 py-3 border border-outline-variant flex flex-col gap-0.5">
+    <div className="bg-surface-lowest rounded-md px-3.5 py-3 border border-outline-variant flex flex-col gap-0.5">
       <span className="text-[11px] text-on-surface-variant font-semibold">{label}</span>
       <span className="text-[22px] font-extrabold leading-none" style={{ color }}>{value}</span>
     </div>
@@ -811,7 +811,7 @@ function FilterSelect({ label, value, onChange, options }: {
 function Badge({ color, icon, label }: { color: string; icon: React.ReactNode; label: string }) {
   return (
     <span
-      className="inline-flex items-center gap-[3px] px-2 py-[3px] rounded-radius-sm text-[10px] font-bold whitespace-nowrap"
+      className="inline-flex items-center gap-[3px] px-2 py-[3px] rounded-sm text-[10px] font-bold whitespace-nowrap"
       style={{ background: `${color}15`, color }}>
       {icon} {label}
     </span>

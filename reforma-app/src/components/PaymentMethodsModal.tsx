@@ -174,7 +174,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-radius-lg max-w-[680px] w-full max-h-[92vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-lg max-w-[680px] w-full max-h-[92vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -184,7 +184,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
           </h2>
           <button
             onClick={onClose}
-            className="bg-white/20 border-none rounded-radius-sm p-1.5 text-white cursor-pointer"
+            className="bg-white/20 border-none rounded-sm p-1.5 text-white cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -194,7 +194,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
           {loading && <div className="text-center text-[#6B7280]">Carregando…</div>}
 
           {!loading && !editing && methods.length === 0 && (
-            <div className="p-6 text-center bg-[#F9FAFB] rounded-radius-md text-[#6B7280]">
+            <div className="p-6 text-center bg-[#F9FAFB] rounded-md text-[#6B7280]">
               Nenhuma forma de pagamento cadastrada.
               <br />
               Adicione cartões, PIX, boleto consolidado etc.
@@ -208,7 +208,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                 return (
                   <div
                     key={m.id}
-                    className="p-3.5 rounded-radius-md bg-white border border-[#E5E7EB] flex gap-3 items-center"
+                    className="p-3.5 rounded-md bg-white border border-[#E5E7EB] flex gap-3 items-center"
                   >
                     <div className="w-11 h-11 rounded-[10px] bg-[#EEF2FF] flex items-center justify-center text-xl shrink-0">
                       {ki.emoji}
@@ -234,14 +234,14 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                     </div>
                     <button
                       onClick={() => { setEditing(m); setCreating(false) }}
-                      className="bg-[#F3F4F6] border-none rounded-radius-sm p-2 cursor-pointer"
+                      className="bg-[#F3F4F6] border-none rounded-sm p-2 cursor-pointer"
                       title="Editar"
                     >
                       <Pencil size={14} color="#374151" />
                     </button>
                     <button
                       onClick={() => remove(m.id)}
-                      className="bg-danger-light border-none rounded-radius-sm p-2 cursor-pointer"
+                      className="bg-danger-light border-none rounded-sm p-2 cursor-pointer"
                       title="Desativar"
                     >
                       <Trash2 size={14} color="#DC2626" />
@@ -280,7 +280,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
               <div>
                 <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Nome / Apelido</label>
                 <input
-                  className="w-full px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] text-sm bg-white box-border"
+                  className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                   value={editing.name}
                   onChange={(e) => setEditing({ ...editing, name: e.target.value })}
                   placeholder="Ex: Nubank Bruno, Leroy Merlin mensal"
@@ -297,7 +297,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                     <div>
                       <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Dia do fechamento</label>
                       <select
-                        className="w-full px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] text-sm bg-white box-border"
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.closing_day ?? ''}
                         onChange={(e) => setEditing({ ...editing, closing_day: e.target.value ? Number(e.target.value) : null })}
                       >
@@ -310,7 +310,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                     <div>
                       <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Dia do pagamento</label>
                       <select
-                        className="w-full px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] text-sm bg-white box-border"
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.due_day ?? ''}
                         onChange={(e) => setEditing({ ...editing, due_day: e.target.value ? Number(e.target.value) : null })}
                       >
@@ -325,7 +325,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                     <div>
                       <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Bandeira</label>
                       <select
-                        className="w-full px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] text-sm bg-white box-border"
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.brand || ''}
                         onChange={(e) => setEditing({ ...editing, brand: e.target.value || null })}
                       >
@@ -338,7 +338,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                     <div>
                       <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Banco emissor</label>
                       <select
-                        className="w-full px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] text-sm bg-white box-border"
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.issuer_bank || ''}
                         onChange={(e) => setEditing({ ...editing, issuer_bank: e.target.value || null })}
                       >
@@ -352,7 +352,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                   <div className="mt-2.5">
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Final do cartão</label>
                     <input
-                      className="w-full px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] text-sm bg-white box-border"
+                      className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                       maxLength={4}
                       value={editing.last4 || ''}
                       onChange={(e) => setEditing({ ...editing, last4: e.target.value.replace(/\D/g, '') || null })}
@@ -368,7 +368,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                     <div>
                       <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Bandeira</label>
                       <select
-                        className="w-full px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] text-sm bg-white box-border"
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.brand || ''}
                         onChange={(e) => setEditing({ ...editing, brand: e.target.value || null })}
                       >
@@ -381,7 +381,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                     <div>
                       <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Banco</label>
                       <select
-                        className="w-full px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] text-sm bg-white box-border"
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.issuer_bank || ''}
                         onChange={(e) => setEditing({ ...editing, issuer_bank: e.target.value || null })}
                       >
@@ -399,7 +399,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                 <div>
                   <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Banco</label>
                   <select
-                    className="w-full px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] text-sm bg-white box-border"
+                    className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                     value={editing.issuer_bank || ''}
                     onChange={(e) => setEditing({ ...editing, issuer_bank: e.target.value || null })}
                   >
@@ -418,7 +418,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                     type="number"
                     min={0}
                     max={120}
-                    className="w-full px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] text-sm bg-white box-border"
+                    className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                     value={editing.default_due_offset_days ?? ''}
                     onChange={(e) => setEditing({ ...editing, default_due_offset_days: e.target.value ? Number(e.target.value) : null })}
                   />
@@ -441,7 +441,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                     <div className="mt-2.5">
                       <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Dia de pagamento mensal</label>
                       <select
-                        className="w-full px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] text-sm bg-white box-border"
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.due_day ?? ''}
                         onChange={(e) => setEditing({ ...editing, due_day: e.target.value ? Number(e.target.value) : null })}
                       >
@@ -458,7 +458,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
               <div>
                 <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Titular</label>
                 <input
-                  className="w-full px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] text-sm bg-white box-border"
+                  className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                   value={editing.holder || ''}
                   onChange={(e) => setEditing({ ...editing, holder: e.target.value || null })}
                   placeholder="Bruno, Graziela…"
@@ -468,7 +468,7 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
               <div>
                 <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Notas (opcional)</label>
                 <input
-                  className="w-full px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] text-sm bg-white box-border"
+                  className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                   value={editing.notes || ''}
                   onChange={(e) => setEditing({ ...editing, notes: e.target.value || null })}
                 />

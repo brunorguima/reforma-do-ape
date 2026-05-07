@@ -428,7 +428,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
         </div>
         {isOwner && (
           <button onClick={() => { setShowAuditLog(!showAuditLog); if (!showAuditLog) fetchAuditLog() }}
-            className="bg-surface-container border border-outline-variant rounded-radius-sm px-2 py-1 cursor-pointer text-on-surface flex items-center"
+            className="bg-surface-container border border-outline-variant rounded-sm px-2 py-1 cursor-pointer text-on-surface flex items-center"
             title="Ver histórico de alterações">
             <History size={14} />
           </button>
@@ -460,13 +460,13 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
       </div>
 
       {/* Progress Bar */}
-      <div className="bg-[#F3F4F6] rounded-radius-sm h-2 overflow-hidden mb-4">
-        <div className="h-full bg-gradient-to-r from-[#3B82F6] to-[#60A5FA] rounded-radius-sm transition-all duration-500 ease-in-out" style={{ width: `${percentPago}%` }} />
+      <div className="bg-[#F3F4F6] rounded-sm h-2 overflow-hidden mb-4">
+        <div className="h-full bg-gradient-to-r from-[#3B82F6] to-[#60A5FA] rounded-sm transition-all duration-500 ease-in-out" style={{ width: `${percentPago}%` }} />
       </div>
 
       {/* === AUDIT LOG PANEL === */}
       {showAuditLog && (
-        <div className="mb-4 rounded-radius-md bg-[#F8FAFC] border border-[#E2E8F0] p-4 max-h-[300px] overflow-auto">
+        <div className="mb-4 rounded-md bg-[#F8FAFC] border border-[#E2E8F0] p-4 max-h-[300px] overflow-auto">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-sm font-bold text-[#374151] m-0 flex items-center gap-1.5">
               <History size={14} /> Histórico de Alterações
@@ -494,7 +494,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
 
       {/* === NEXT PAYMENT ALERT === */}
       {nextPayment && (
-        <div className={`flex items-center gap-3 py-3.5 px-4 rounded-radius-md mb-4 ${daysUntilNext !== null && daysUntilNext <= 3 ? 'bg-danger-light border border-[#FECACA]' : 'bg-[#FFFBEB] border border-[#FDE68A]'}`}>
+        <div className={`flex items-center gap-3 py-3.5 px-4 rounded-md mb-4 ${daysUntilNext !== null && daysUntilNext <= 3 ? 'bg-danger-light border border-[#FECACA]' : 'bg-[#FFFBEB] border border-[#FDE68A]'}`}>
           {daysUntilNext !== null && daysUntilNext <= 3 ? <AlertTriangle size={20} className="text-danger" /> : <Calendar size={20} className="text-warning" />}
           <div className="flex-1">
             <p className="text-sm font-semibold text-[#1F2937] m-0">
@@ -523,7 +523,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
             const color = PROF_COLORS[idx % PROF_COLORS.length]
 
             return (
-              <div key={prof.professional} className="rounded-radius-md bg-surface-lowest overflow-hidden transition-colors duration-200" style={{
+              <div key={prof.professional} className="rounded-md bg-surface-lowest overflow-hidden transition-colors duration-200" style={{
                 border: `1px solid ${isExpanded ? color + '40' : '#E5E7EB'}`,
                 boxShadow: isExpanded ? `0 2px 8px ${color}15` : 'none',
               }}>
@@ -549,7 +549,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                         <p className="text-[11px] text-[#10B981] font-semibold m-0">{prof.percent}% pago</p>
                       </div>
                       {/* Clear expand/collapse indicator */}
-                      <div className="w-7 h-7 rounded-radius-sm flex items-center justify-center transition-all duration-200" style={{
+                      <div className="w-7 h-7 rounded-sm flex items-center justify-center transition-all duration-200" style={{
                         background: isExpanded ? color : '#F3F4F6',
                         color: isExpanded ? 'white' : '#9CA3AF',
                       }}>
@@ -610,7 +610,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                         {prof.pendingCount > 0 && (
                           <button
                             onClick={() => handleRecalculate(prof.professional, prof.negociado)}
-                            className="py-1.5 px-3 rounded-radius-sm text-[11px] font-bold bg-[#2563EB] text-white border-none cursor-pointer whitespace-nowrap shrink-0"
+                            className="py-1.5 px-3 rounded-sm text-[11px] font-bold bg-[#2563EB] text-white border-none cursor-pointer whitespace-nowrap shrink-0"
                           >
                             ⚡ Recalcular
                           </button>
@@ -619,7 +619,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                     )}
 
                     {profPaymentsSorted.length === 0 && (
-                      <div className="text-center p-4 bg-[#FFF7ED] rounded-radius-sm border border-[#FED7AA] mb-2">
+                      <div className="text-center p-4 bg-[#FFF7ED] rounded-sm border border-[#FED7AA] mb-2">
                         <p className="text-[13px] text-[#92400E] m-0 font-semibold">Nenhuma parcela cadastrada</p>
                         <p className="text-xs text-[#B45309] mt-1 mb-0">Adicione parcelas para controlar os pagamentos</p>
                       </div>
@@ -632,7 +632,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                       const isConfirmingDelete = confirmDelete === p.id
 
                       return (
-                        <div key={p.id} className={`flex items-center gap-2 py-2.5 px-3 rounded-radius-sm mb-1.5 ${isPago ? 'bg-[#F0FDF4] border border-[#BBF7D0]' : days <= 3 && !isPago ? 'bg-danger-light border border-[#FECACA]' : 'bg-surface-lowest border border-[#E5E7EB]'}`}>
+                        <div key={p.id} className={`flex items-center gap-2 py-2.5 px-3 rounded-sm mb-1.5 ${isPago ? 'bg-[#F0FDF4] border border-[#BBF7D0]' : days <= 3 && !isPago ? 'bg-danger-light border border-[#FECACA]' : 'bg-surface-lowest border border-[#E5E7EB]'}`}>
                           <div className={`w-[26px] h-[26px] rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${isPago ? 'bg-[#10B981] text-white' : 'bg-[#E5E7EB] text-[#6B7280]'}`}>
                             {isPago ? '✓' : p.installment_number}
                           </div>
@@ -732,7 +732,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
 
                     {/* Add payment */}
                     {showAddPayment === prof.professional ? (
-                      <div className="p-3 rounded-radius-sm bg-[#EFF6FF] border border-[#BFDBFE] mt-1.5">
+                      <div className="p-3 rounded-sm bg-[#EFF6FF] border border-[#BFDBFE] mt-1.5">
                         <p className="text-xs font-semibold text-[#1D4ED8] mt-0 mb-2">Nova Parcela</p>
                         <div className="flex flex-col gap-1.5 mb-1.5">
                           <input type="number" placeholder="Valor (R$)" value={newPayment.amount}
@@ -768,7 +768,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                       </div>
                     ) : (
                       <button onClick={() => setShowAddPayment(prof.professional)}
-                        className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-radius-sm text-xs font-semibold cursor-pointer mt-1"
+                        className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-sm text-xs font-semibold cursor-pointer mt-1"
                         style={{
                           border: `1px dashed ${color}60`,
                           background: `${color}05`,
@@ -784,7 +784,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
           })}
 
           {profBreakdown.length === 0 && (
-            <div className="text-center py-[30px] px-5 text-[#9CA3AF] text-[13px] bg-[#F9FAFB] rounded-radius-md border border-dashed border-[#E5E7EB]">
+            <div className="text-center py-[30px] px-5 text-[#9CA3AF] text-[13px] bg-[#F9FAFB] rounded-md border border-dashed border-[#E5E7EB]">
               <p className="text-2xl mt-0 mb-2">📋</p>
               Nenhum contrato fechado ainda.<br />
               Feche orçamentos na aba Profissionais para vê-los aqui.
@@ -953,7 +953,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
             {Object.keys(materiaisPorComprador).length > 1 && (
               <div className="flex gap-2 mb-3">
                 {Object.entries(materiaisPorComprador).map(([buyer, total]) => (
-                  <div key={buyer} className="flex-1 py-2 px-3 rounded-radius-sm bg-surface-lowest border border-[#D1FAE5] text-center">
+                  <div key={buyer} className="flex-1 py-2 px-3 rounded-sm bg-surface-lowest border border-[#D1FAE5] text-center">
                     <div className="text-[11px] text-[#6B7280]">👤 {buyer}</div>
                     <div className="text-sm font-bold text-[#166534]">{fmt(total)}</div>
                   </div>

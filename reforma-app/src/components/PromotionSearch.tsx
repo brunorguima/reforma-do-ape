@@ -97,7 +97,7 @@ export default function PromotionSearch({ itemId, itemName, suggestions, onRefre
   const usedLinks = searchLinks.filter(l => l.isUsed)
 
   return (
-    <div className="mt-4 p-4 bg-[#fefce8] rounded-radius-md border border-[#fde68a]">
+    <div className="mt-4 p-4 bg-[#fefce8] rounded-md border border-[#fde68a]">
       <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
         <h4 className="text-sm font-bold text-[#92400e] flex items-center gap-1.5">
           <TrendingDown size={16} /> Precos e Promocoes
@@ -106,20 +106,20 @@ export default function PromotionSearch({ itemId, itemName, suggestions, onRefre
           <button
             onClick={handleSearch}
             disabled={searching}
-            className={`text-xs px-3 py-1 rounded-radius-sm border-none font-semibold flex items-center gap-1 bg-[#f59e0b] text-white ${searching ? 'cursor-not-allowed opacity-70' : 'cursor-pointer opacity-100'}`}
+            className={`text-xs px-3 py-1 rounded-sm border-none font-semibold flex items-center gap-1 bg-[#f59e0b] text-white ${searching ? 'cursor-not-allowed opacity-70' : 'cursor-pointer opacity-100'}`}
           >
             {searching ? <Loader2 size={12} /> : <Search size={12} />}
             {searching ? 'Buscando...' : 'Buscar precos'}
           </button>
           <button
             onClick={handleGetLinks}
-            className="text-xs px-3 py-1 rounded-radius-sm border-none cursor-pointer bg-[#e0e7ff] text-[#4338ca] font-semibold flex items-center gap-1"
+            className="text-xs px-3 py-1 rounded-sm border-none cursor-pointer bg-[#e0e7ff] text-[#4338ca] font-semibold flex items-center gap-1"
           >
             <Globe size={12} /> Links diretos
           </button>
           <button
             onClick={() => setShowManualAdd(!showManualAdd)}
-            className="text-xs px-3 py-1 rounded-radius-sm border-none cursor-pointer bg-[#fde68a] text-[#92400e] font-semibold flex items-center gap-1"
+            className="text-xs px-3 py-1 rounded-sm border-none cursor-pointer bg-[#fde68a] text-[#92400e] font-semibold flex items-center gap-1"
           >
             <Plus size={12} /> Manual
           </button>
@@ -143,7 +143,7 @@ export default function PromotionSearch({ itemId, itemName, suggestions, onRefre
 
       {/* Search links for manual browsing */}
       {showSearchLinks && searchLinks.length > 0 && (
-        <div className="mb-3 p-3 bg-white rounded-radius-sm">
+        <div className="mb-3 p-3 bg-white rounded-sm">
           <p className="text-xs text-[#6b7280] mb-2 font-semibold">
             Buscar manualmente nas lojas:
           </p>
@@ -192,7 +192,7 @@ export default function PromotionSearch({ itemId, itemName, suggestions, onRefre
 
       {/* Manual add form */}
       {showManualAdd && (
-        <form onSubmit={handleManualAdd} className="mb-3 p-3 bg-white rounded-radius-sm">
+        <form onSubmit={handleManualAdd} className="mb-3 p-3 bg-white rounded-sm">
           <div className="grid grid-cols-2 gap-2 mb-2">
             <input
               value={manualStore}
@@ -228,7 +228,7 @@ export default function PromotionSearch({ itemId, itemName, suggestions, onRefre
               />
               Em promocao
             </label>
-            <button type="submit" className="text-xs px-4 py-1.5 rounded-radius-sm border-none cursor-pointer bg-[#f59e0b] text-white font-semibold">
+            <button type="submit" className="text-xs px-4 py-1.5 rounded-sm border-none cursor-pointer bg-[#f59e0b] text-white font-semibold">
               Salvar
             </button>
           </div>
@@ -249,7 +249,7 @@ export default function PromotionSearch({ itemId, itemName, suggestions, onRefre
             return (
               <div
                 key={s.id}
-                className={`flex justify-between items-center px-3 py-2 bg-white rounded-radius-sm ${s.price === bestPrice ? 'border-2 border-[#10b981]' : 'border border-[#e5e7eb]'}`}
+                className={`flex justify-between items-center px-3 py-2 bg-white rounded-sm ${s.price === bestPrice ? 'border-2 border-[#10b981]' : 'border border-[#e5e7eb]'}`}
               >
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {s.price === bestPrice && (

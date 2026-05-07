@@ -119,7 +119,7 @@ export default function MeasurementApprovalPanel({ projectId }: { projectId?: st
       <div className="grid grid-cols-3 gap-2.5 mb-5">
         <div
           onClick={() => setFilter(filter === 'enviada' ? 'all' : 'enviada')}
-          className="rounded-radius-md p-3.5 text-center cursor-pointer transition-all duration-200"
+          className="rounded-md p-3.5 text-center cursor-pointer transition-all duration-200"
           style={{
             background: filter === 'enviada' ? '#F59E0B' : '#FEF3C7',
             border: filter === 'enviada' ? '2px solid #D97706' : '2px solid transparent',
@@ -134,7 +134,7 @@ export default function MeasurementApprovalPanel({ projectId }: { projectId?: st
         </div>
         <div
           onClick={() => setFilter(filter === 'aprovada' ? 'all' : 'aprovada')}
-          className="rounded-radius-md p-3.5 text-center cursor-pointer transition-all duration-200"
+          className="rounded-md p-3.5 text-center cursor-pointer transition-all duration-200"
           style={{
             background: filter === 'aprovada' ? '#059669' : '#D1FAE5',
             border: filter === 'aprovada' ? '2px solid #047857' : '2px solid transparent',
@@ -149,7 +149,7 @@ export default function MeasurementApprovalPanel({ projectId }: { projectId?: st
         </div>
         <div
           onClick={() => setFilter(filter === 'paga' ? 'all' : 'paga')}
-          className="rounded-radius-md p-3.5 text-center cursor-pointer transition-all duration-200"
+          className="rounded-md p-3.5 text-center cursor-pointer transition-all duration-200"
           style={{
             background: filter === 'paga' ? '#2563EB' : '#DBEAFE',
             border: filter === 'paga' ? '2px solid #1D4ED8' : '2px solid transparent',
@@ -256,7 +256,7 @@ export default function MeasurementApprovalPanel({ projectId }: { projectId?: st
                     ))}
 
                     {/* Totals */}
-                    <div className="bg-[#F0FDF4] rounded-radius-sm px-3 py-2.5 mt-3">
+                    <div className="bg-[#F0FDF4] rounded-sm px-3 py-2.5 mt-3">
                       <div className="flex justify-between text-[13px]">
                         <span>Serviços: {formatCurrency(Number(m.total_amount))}</span>
                         {Number(m.extras_amount) > 0 && <span className="text-warning">+Extras: {formatCurrency(Number(m.extras_amount))}</span>}
@@ -270,7 +270,7 @@ export default function MeasurementApprovalPanel({ projectId }: { projectId?: st
 
                     {/* Professional notes */}
                     {m.notes && (
-                      <div className="mt-2.5 px-3 py-2 bg-warning-light rounded-radius-sm text-[13px] text-[#92400E]">
+                      <div className="mt-2.5 px-3 py-2 bg-warning-light rounded-sm text-[13px] text-[#92400E]">
                         <strong>Notas do profissional:</strong> {m.notes}
                       </div>
                     )}
@@ -283,7 +283,7 @@ export default function MeasurementApprovalPanel({ projectId }: { projectId?: st
                           onChange={e => setOwnerNotes(prev => ({ ...prev, [m.id]: e.target.value }))}
                           placeholder="Observações (opcional)..."
                           rows={2}
-                          className="w-full mb-2.5 text-sm px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB] resize-y"
+                          className="w-full mb-2.5 text-sm px-3 py-2.5 rounded-sm border border-[#D1D5DB] resize-y"
                         />
                         <div className="flex gap-2">
                           <button
@@ -304,7 +304,7 @@ export default function MeasurementApprovalPanel({ projectId }: { projectId?: st
 
                     {m.status === 'aprovada' && (
                       <div className="mt-4">
-                        <div className="mb-2.5 px-3 py-2.5 bg-success-light rounded-radius-sm text-[13px] text-[#065F46] flex items-center gap-1.5">
+                        <div className="mb-2.5 px-3 py-2.5 bg-success-light rounded-sm text-[13px] text-[#065F46] flex items-center gap-1.5">
                           <CheckCircle2 size={14} /> Medição aprovada! Registre o pagamento abaixo.
                         </div>
                         <input
@@ -312,7 +312,7 @@ export default function MeasurementApprovalPanel({ projectId }: { projectId?: st
                           value={receiptUrl[m.id] || ''}
                           onChange={e => setReceiptUrl(prev => ({ ...prev, [m.id]: e.target.value }))}
                           placeholder="URL do comprovante PIX (opcional)..."
-                          className="w-full mb-2.5 text-sm px-3 py-2.5 rounded-radius-sm border border-[#D1D5DB]"
+                          className="w-full mb-2.5 text-sm px-3 py-2.5 rounded-sm border border-[#D1D5DB]"
                         />
                         <button
                           onClick={() => handleAction(m.id, 'paga')}
@@ -330,14 +330,14 @@ export default function MeasurementApprovalPanel({ projectId }: { projectId?: st
                     )}
 
                     {m.status === 'paga' && (
-                      <div className="mt-3 px-3 py-2.5 bg-[#DBEAFE] rounded-radius-sm text-[13px] text-[#1E40AF] flex items-center gap-1.5">
+                      <div className="mt-3 px-3 py-2.5 bg-[#DBEAFE] rounded-sm text-[13px] text-[#1E40AF] flex items-center gap-1.5">
                         <DollarSign size={14} /> Pago em {m.paid_at ? new Date(m.paid_at).toLocaleDateString('pt-BR') : '—'}
                         {m.receipt_url && <span> — Comprovante anexado</span>}
                       </div>
                     )}
 
                     {m.owner_notes && (
-                      <div className="mt-1.5 px-3 py-2 bg-[#DBEAFE] rounded-radius-sm text-[13px] text-[#1E40AF]">
+                      <div className="mt-1.5 px-3 py-2 bg-[#DBEAFE] rounded-sm text-[13px] text-[#1E40AF]">
                         <strong>Suas notas:</strong> {m.owner_notes}
                       </div>
                     )}

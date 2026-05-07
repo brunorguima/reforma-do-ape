@@ -110,7 +110,7 @@ export default function RoomManager({ rooms, projectId, onRoomsChange, onClose }
           {rooms.map((room) => (
             <div
               key={room.id}
-              className={`flex items-center gap-2.5 py-2.5 px-3 rounded-radius-md transition-all ${
+              className={`flex items-center gap-2.5 py-2.5 px-3 rounded-md transition-all ${
                 editingId === room.id
                   ? 'bg-secondary-container border-[1.5px] border-secondary'
                   : 'bg-surface-container-low border-[1.5px] border-transparent'
@@ -123,7 +123,7 @@ export default function RoomManager({ rooms, projectId, onRoomsChange, onClose }
                   {/* Icon picker button */}
                   <button
                     onClick={() => setShowIconPicker(showIconPicker === room.id ? null : room.id)}
-                    className="text-[22px] bg-surface-lowest border-[1.5px] border-outline-variant rounded-radius-sm px-2 py-1 cursor-pointer shrink-0"
+                    className="text-[22px] bg-surface-lowest border-[1.5px] border-outline-variant rounded-sm px-2 py-1 cursor-pointer shrink-0"
                   >
                     {editIcon}
                   </button>
@@ -170,12 +170,12 @@ export default function RoomManager({ rooms, projectId, onRoomsChange, onClose }
 
           {/* Inline icon picker dropdown */}
           {showIconPicker && editingId && (
-            <div className="flex flex-wrap gap-1.5 p-2.5 bg-surface-lowest rounded-radius-md border border-outline-variant shadow-md">
+            <div className="flex flex-wrap gap-1.5 p-2.5 bg-surface-lowest rounded-md border border-outline-variant shadow-md">
               {ROOM_ICONS.map(icon => (
                 <button
                   key={icon}
                   onClick={() => { setEditIcon(icon); setShowIconPicker(null) }}
-                  className={`text-xl py-1.5 px-2 rounded-radius-sm cursor-pointer transition-all ${
+                  className={`text-xl py-1.5 px-2 rounded-sm cursor-pointer transition-all ${
                     editIcon === icon
                       ? 'bg-secondary-container border-[1.5px] border-secondary'
                       : 'bg-transparent border-[1.5px] border-transparent'
@@ -195,22 +195,22 @@ export default function RoomManager({ rooms, projectId, onRoomsChange, onClose }
         </div>
 
         {/* Add new room */}
-        <div className="flex gap-2 items-center p-3 bg-surface-container-low rounded-radius-md border-[1.5px] border-dashed border-outline-variant">
+        <div className="flex gap-2 items-center p-3 bg-surface-container-low rounded-md border-[1.5px] border-dashed border-outline-variant">
           {/* New room icon picker */}
           <div className="relative">
             <button
               onClick={() => setShowIconPicker(showIconPicker === 'new' ? null : 'new')}
-              className="text-[22px] bg-surface-lowest border-[1.5px] border-outline-variant rounded-radius-sm px-2 py-1 cursor-pointer"
+              className="text-[22px] bg-surface-lowest border-[1.5px] border-outline-variant rounded-sm px-2 py-1 cursor-pointer"
             >
               {newIcon}
             </button>
             {showIconPicker === 'new' && (
-              <div className="absolute bottom-full left-0 mb-1.5 flex flex-wrap gap-1 p-2 bg-surface-lowest rounded-radius-md border border-outline-variant shadow-lg w-[220px] z-10">
+              <div className="absolute bottom-full left-0 mb-1.5 flex flex-wrap gap-1 p-2 bg-surface-lowest rounded-md border border-outline-variant shadow-lg w-[220px] z-10">
                 {ROOM_ICONS.map(icon => (
                   <button
                     key={icon}
                     onClick={() => { setNewIcon(icon); setShowIconPicker(null) }}
-                    className={`text-lg py-1 px-1.5 rounded-radius-sm cursor-pointer ${
+                    className={`text-lg py-1 px-1.5 rounded-sm cursor-pointer ${
                       newIcon === icon
                         ? 'bg-secondary-container border-[1.5px] border-secondary'
                         : 'bg-transparent border-[1.5px] border-transparent'
