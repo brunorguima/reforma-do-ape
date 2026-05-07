@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import type { Room, Category, Item } from '@/lib/supabase'
 import type { UserID } from '@/lib/constants'
-import { USERS, USER_GREETINGS, APP_NAME, APP_SUBTITLE, ACCESS_KEY_USER_MAP } from '@/lib/constants'
+import { USERS, USER_GREETINGS, APP_NAME, APP_SUBTITLE } from '@/lib/constants'
 import { apiUrl, withProjectId } from '@/lib/project-client'
 import { useAuth } from '@/lib/auth-context'
 import UserSelector from '@/components/UserSelector'
@@ -54,23 +54,14 @@ export default function HomePage() {
   const auth = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('home')
 
-  // Auth gate: redirect to /login if not authenticated
+  // Auth gate: redirect to /login if not authenticated via Supabase
   useEffect(() => {
     if (auth.loading) return
-    // Check if user has access key in URL (allowing access key login flow)
-    const params = new URLSearchParams(window.location.search)
-    const hasKeyParam = params.has('key')
-    if (hasKeyParam) return // Let the access key flow handle it
-
-    // If no Supabase session AND no saved access key → redirect to login
-    if (auth.authMode !== 'supabase' && !auth.session) {
-      const savedKey = localStorage.getItem('reforma-access-key')
-      if (!savedKey) {
-        window.location.href = '/login'
-        return
-      }
+    if (!auth.session) {
+      window.location.href = '/login'
+      return
     }
-  }, [auth.loading, auth.authMode, auth.session])
+  }, [auth.loading, auth.session])
 
   // When Supabase auth is active, populate project state from auth context
   useEffect(() => {
@@ -179,145 +170,11 @@ export default function HomePage() {
     sessionStorage.setItem('quickProduct', JSON.stringify(product))
   }
 
-  // Load saved user or validate access key from URL
+  // Legacy: restore saved user from localStorage (will be removed eventually)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const key = params.get('key')
-
-    if (key) {
-      // Validate access key
-      fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_key: key }),
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.user_id) {
-            const keyConfig = ACCESS_KEY_USER_MAP[data.user_id]
-            if (keyConfig) {
-              setAllowedUsers(keyConfig.users)
-              setCurrentUser(keyConfig.users[0])
-              setUserRole(keyConfig.role)
-              // Show welcome screen for designers on first visit
-              if (keyConfig.role === 'designer' && !localStorage.getItem('reforma-welcome-seen')) {
-                setShowWelcome(true)
-              }
-              localStorage.setItem('reforma-current-user', keyConfig.users[0])
-              localStorage.setItem('reforma-allowed-users', JSON.stringify(keyConfig.users))
-            } else {
-              // Direct user_id match (e.g. 'mari')
-              const uid = data.user_id as UserID
-              setCurrentUser(uid)
-              setAllowedUsers([uid])
-              setUserRole(data.role)
-              // Show welcome screen for designers on first visit
-              if (data.role === 'designer' && !localStorage.getItem('reforma-welcome-seen')) {
-                setShowWelcome(true)
-              }
-              localStorage.setItem('reforma-current-user', uid)
-              localStorage.setItem('reforma-allowed-users', JSON.stringify([uid]))
-            }
-            // Save professional context
-            if (data.professional_id) {
-              setProfessionalId(data.professional_id)
-              localStorage.setItem('reforma-professional-id', data.professional_id)
-            }
-            if (data.project_ids && data.project_ids.length > 0) {
-              const pIds: string[] = data.project_ids
-              setProjectIds(pIds)
-              localStorage.setItem('reforma-project-ids', JSON.stringify(pIds))
-              const savedProjId = localStorage.getItem('reforma-active-project')
-              if (savedProjId && pIds.includes(savedProjId)) {
-                setActiveProjectId(savedProjId)
-              } else {
-                setActiveProjectId(pIds[0])
-              }
-              fetch(`/api/projects?ids=${pIds.join(',')}`)
-                .then(r => r.json())
-                .then(p => setProjects(Array.isArray(p) ? p : []))
-                .catch(() => {})
-            }
-            localStorage.setItem('reforma-access-key', key)
-            localStorage.setItem('reforma-user-role', data.role)
-            // Clean URL
-            window.history.replaceState({}, '', window.location.pathname)
-          }
-        })
-        .catch(() => {})
-    } else {
-      const saved = localStorage.getItem('reforma-current-user') as UserID
-      const savedRole = localStorage.getItem('reforma-user-role')
-      const savedAllowed = localStorage.getItem('reforma-allowed-users')
-      if (savedAllowed) {
-        try {
-          const parsed = JSON.parse(savedAllowed) as UserID[]
-          setAllowedUsers(parsed)
-          // Only restore saved user if they're in the allowed list
-          if (saved && parsed.includes(saved)) {
-            setCurrentUser(saved)
-          } else {
-            // Default to first allowed user (owners default to bruno)
-            setCurrentUser(parsed[0] || 'bruno')
-          }
-        } catch {
-          // Corrupt data — reset to owner defaults
-          setCurrentUser('bruno')
-          setAllowedUsers(['bruno', 'graziela', 'mari'])
-        }
-      } else if (saved && USERS.some(u => u.id === saved)) {
-        setCurrentUser(saved)
-      } else {
-        // No saved state at all — default to bruno (owner)
-        setCurrentUser('bruno')
-        setAllowedUsers(['bruno', 'graziela', 'mari'])
-      }
-      if (savedRole) {
-        setUserRole(savedRole)
-      }
-      const savedProfId = localStorage.getItem('reforma-professional-id')
-      if (savedProfId) setProfessionalId(savedProfId)
-      const savedProjIds = localStorage.getItem('reforma-project-ids')
-      if (savedProjIds) {
-        try {
-          const pIds = JSON.parse(savedProjIds) as string[]
-          setProjectIds(pIds)
-          const savedActiveProjId = localStorage.getItem('reforma-active-project')
-          if (savedActiveProjId && pIds.includes(savedActiveProjId)) {
-            setActiveProjectId(savedActiveProjId)
-          } else {
-            setActiveProjectId(pIds[0])
-          }
-          fetch(`/api/projects?ids=${pIds.join(',')}`)
-            .then(r => r.json())
-            .then(p => setProjects(Array.isArray(p) ? p : []))
-            .catch(() => {})
-        } catch { /* ignore */ }
-      } else {
-        // No project_ids in localStorage — re-auth with saved key to fetch them
-        const savedKey = localStorage.getItem('reforma-access-key')
-        if (savedKey) {
-          fetch('/api/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ access_key: savedKey }),
-          })
-            .then(r => r.json())
-            .then(data => {
-              if (data.project_ids && data.project_ids.length > 0) {
-                const pIds: string[] = data.project_ids
-                setProjectIds(pIds)
-                setActiveProjectId(pIds[0])
-                localStorage.setItem('reforma-project-ids', JSON.stringify(pIds))
-                fetch(`/api/projects?ids=${pIds.join(',')}`)
-                  .then(r => r.json())
-                  .then(p => setProjects(Array.isArray(p) ? p : []))
-                  .catch(() => {})
-              }
-            })
-            .catch(() => {})
-        }
-      }
+    const saved = localStorage.getItem('reforma-current-user') as UserID
+    if (saved && USERS.some(u => u.id === saved)) {
+      setCurrentUser(saved)
     }
   }, [])
 
