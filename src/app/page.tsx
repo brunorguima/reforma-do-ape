@@ -634,6 +634,156 @@ export default function HomePage() {
             <FinanceiroPanel currentUser={currentUser} projectId={activeProjectId} />
           ) : (
             <>
+              {/* Header com ações */}
+              <div className="flex justify-between items-center mb-5">
+                <div>
+                  <h2 className="text-xl font-black text-primary">Mobília & Eletrodomésticos</h2>
+                  <p className="text-xs text-on-surface-variant mt-0.5">Gerencie tudo que vai no apartamento</p>
+                </div>
+                <button
+                  onClick={() => { setEditingItem(null); setIsModalOpen(true); setQuickExpanded(false) }}
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-br from-secondary to-primary-light text-white border-none rounded-xl text-sm font-bold cursor-pointer shadow-md hover:shadow-lg transition-all"
+                >
+                  <Plus size={16} /> Adicionar Item
+                </button>
+              </div>
+
+              {/* Comparar preços na internet — seção integrada */}
+              <div className="mb-6 bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="flex-1 flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
+                    <ShoppingBag size={18} className="text-on-surface-variant" />
+                    <input
+                      value={quickSearch}
+                      onChange={e => setQuickSearch(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleQuickSearch() } }}
+                      onFocus={() => { if (quickResults.length > 0 || quickSearchLinks.length > 0) setQuickExpanded(true) }}
+                      placeholder="Comparar preço na internet (Amazon, Zoom, Buscapé...)"
+                      className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
+                    />
+                    {quickSearch && (
+                      <button onClick={() => { setQuickSearch(''); setQuickResults([]); setQuickStats(null); setQuickExpanded(false); setQuickSearchLinks([]) }}
+                        className="bg-transparent border-none cursor-pointer p-0.5 text-outline">
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleQuickSearch}
+                    disabled={quickSearching || quickSearch.length < 2}
+                    className={`px-4 py-2.5 text-white border-none rounded-xl text-sm font-bold cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-md ${
+                      quickSearching ? 'bg-secondary-container' : 'bg-gradient-to-br from-secondary to-primary-light'
+                    }`}
+                  >
+                    {quickSearching ? <Loader2 size={16} className="spin" /> : <Search size={16} />}
+                    Buscar
+                  </button>
+                </div>
+
+                {/* Expanded results */}
+                {quickExpanded && (
+                  <div className="border-t border-outline-variant">
+                    <div className="max-h-[50vh] overflow-y-auto px-4 pt-3 pb-3 bg-surface-container-low/50">
+                      {/* Stats badges */}
+                      {quickStats && quickStats.total > 0 && (
+                        <div className="flex gap-2 mb-2.5 flex-wrap items-center">
+                          <span className="px-2.5 py-1 bg-secondary-container/20 rounded-lg text-secondary font-bold text-xs">
+                            {quickStats.total} resultado{quickStats.total !== 1 ? 's' : ''}
+                          </span>
+                          <span className="px-2.5 py-1 bg-success-light rounded-lg text-success font-bold text-xs">
+                            Média: R$ {quickStats.avgPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
+                          <span className="px-2.5 py-1 bg-warning-light rounded-lg text-warning font-bold text-xs">
+                            Min: R$ {quickStats.minPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
+                          <button
+                            onClick={() => setQuickExpanded(false)}
+                            className="ml-auto bg-transparent border-none cursor-pointer text-on-surface-variant text-xs font-semibold hover:text-on-surface"
+                          >
+                            Fechar ▲
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Loading */}
+                      {quickSearching && (
+                        <div className="text-center py-6 text-on-surface-variant">
+                          <Loader2 size={22} className="spin inline-block" />
+                          <p className="text-[13px] mt-2">Buscando em Amazon, Zoom e Buscapé...</p>
+                        </div>
+                      )}
+
+                      {/* Results grid */}
+                      {!quickSearching && quickResults.length > 0 && (
+                        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-2">
+                          {quickResults.map((product, i) => (
+                            <div
+                              key={i}
+                              onClick={() => handleQuickSelect(product)}
+                              className="flex gap-2.5 p-2.5 bg-white rounded-xl cursor-pointer border border-outline-variant hover:border-secondary hover:bg-secondary/5 transition-all"
+                            >
+                              {product.image && (
+                                <div className="relative shrink-0">
+                                  <img
+                                    src={product.image}
+                                    alt=""
+                                    className="w-[52px] h-[52px] object-contain rounded-lg bg-surface-container-low"
+                                    onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                  />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p title={product.title} className="text-[13px] font-semibold text-on-surface m-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                                  {product.title}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-[15px] font-extrabold text-success">
+                                    R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  </span>
+                                  <span className="text-[10px] text-on-surface-variant bg-surface-container-low px-1.5 py-0.5 rounded">
+                                    {product.store}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {product.url && (
+                                  <a
+                                    href={product.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={e => e.stopPropagation()}
+                                    title="Ver na loja"
+                                    className="flex items-center justify-center w-7 h-7 rounded-md bg-surface-container-low hover:bg-secondary-container/20 transition-colors"
+                                  >
+                                    <ExternalLink size={14} className="text-secondary" />
+                                  </a>
+                                )}
+                                <Plus size={18} className="text-secondary" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* No results - show manual links */}
+                      {!quickSearching && quickResults.length === 0 && quickSearchLinks.length > 0 && (
+                        <div className="p-4 text-center">
+                          <p className="text-on-surface-variant text-[13px] mb-2.5">Nenhum resultado automático. Busque manualmente:</p>
+                          <div className="flex flex-wrap gap-1.5 justify-center">
+                            {quickSearchLinks.map((link, i) => (
+                              <a key={i} href={link.url} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-outline-variant rounded-lg text-xs font-semibold text-on-surface no-underline hover:bg-surface-container-low transition-colors">
+                                <ExternalLink size={11} /> {link.store}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Cost Summary */}
               <div className="mb-6">
                 <CostSummary items={items} />
@@ -641,7 +791,7 @@ export default function HomePage() {
 
               {/* Room Selector */}
               <div className="mb-6">
-                <h2 className="text-base font-bold text-slate-700 mb-3">Cômodos</h2>
+                <h3 className="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-3">Cômodos</h3>
                 <RoomSelector
                   rooms={rooms}
                   selectedRoom={selectedRoom}
@@ -652,13 +802,13 @@ export default function HomePage() {
               </div>
 
               {/* Search and Filter Bar */}
-              <div className="flex gap-3 mb-5 flex-wrap">
+              <div className="flex gap-3 mb-4 flex-wrap items-center">
                 <div className="flex-1 min-w-[200px] relative">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
                   <input
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    placeholder="Buscar itens..."
+                    placeholder="Filtrar itens por nome..."
                     className="pl-9"
                   />
                 </div>
@@ -670,22 +820,18 @@ export default function HomePage() {
                     className="w-auto min-w-[140px]"
                   >
                     <option value="">Todos os status</option>
-                    <option value="ja_temos">🟣 Já Temos</option>
-                    <option value="desejado">🟡 Desejado</option>
-                    <option value="aprovado">🟢 Aprovado</option>
-                    <option value="comprado">🔵 Comprado</option>
+                    <option value="ja_temos">Já Temos</option>
+                    <option value="desejado">Desejado</option>
+                    <option value="aprovado">Aprovado</option>
+                    <option value="comprado">Comprado</option>
                   </select>
                 </div>
-              </div>
-
-              {/* Items count */}
-              <div className="flex justify-between items-center mb-4">
-                <p className="text-sm text-on-surface-variant">
+                <span className="text-xs text-on-surface-variant font-medium">
                   {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'itens'}
                   {selectedRoom && rooms.find(r => r.id === selectedRoom) && (
-                    <span> em <strong>{rooms.find(r => r.id === selectedRoom)?.name}</strong></span>
+                    <> em <strong>{rooms.find(r => r.id === selectedRoom)?.name}</strong></>
                   )}
-                </p>
+                </span>
               </div>
 
               {/* Items Grid */}
@@ -714,169 +860,6 @@ export default function HomePage() {
                   ))}
                 </div>
               )}
-
-              {/* Floating Quick Search Bar */}
-              <div className={`fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-outline-variant shadow-[0_-4px_20px_rgba(0,0,0,0.1)] transition-all duration-300 ${quickExpanded ? 'p-0' : 'px-4 py-3'}`}>
-                {/* Expanded results panel */}
-                {quickExpanded && (
-                  <div className="max-h-[60vh] overflow-y-auto px-4 pt-3 bg-surface-container-low">
-                    {/* Stats badges */}
-                    {quickStats && quickStats.total > 0 && (
-                      <div className="flex gap-2 mb-2.5 flex-wrap items-center">
-                        <span className="px-2.5 py-1 bg-secondary-container/20 rounded-lg text-secondary font-bold text-xs">
-                          {quickStats.total} resultado{quickStats.total !== 1 ? 's' : ''}
-                        </span>
-                        <span className="px-2.5 py-1 bg-success-light rounded-lg text-success font-bold text-xs">
-                          Média: R$ {quickStats.avgPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
-                        <span className="px-2.5 py-1 bg-warning-light rounded-lg text-warning font-bold text-xs">
-                          Min: R$ {quickStats.minPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
-                        <button
-                          onClick={() => setQuickExpanded(false)}
-                          className="ml-auto bg-transparent border-none cursor-pointer text-on-surface-variant text-xs font-semibold"
-                        >
-                          Fechar ▼
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Loading */}
-                    {quickSearching && (
-                      <div className="text-center py-6 text-on-surface-variant">
-                        <Loader2 size={22} className="spin inline-block" />
-                        <p className="text-[13px] mt-2">Buscando em Amazon, Zoom e Buscapé...</p>
-                      </div>
-                    )}
-
-                    {/* Results grid */}
-                    {!quickSearching && quickResults.length > 0 && (
-                      <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-2 pb-2">
-                        {quickResults.map((product, i) => (
-                          <div
-                            key={i}
-                            onClick={() => handleQuickSelect(product)}
-                            className="flex gap-2.5 p-2.5 bg-white rounded-[10px] cursor-pointer border border-outline-variant hover:border-secondary hover:bg-secondary/5 transition-all relative"
-                          >
-                            {product.image && (
-                              <div className="relative shrink-0">
-                                <img
-                                  src={product.image}
-                                  alt=""
-                                  className="w-[52px] h-[52px] object-contain rounded-lg bg-surface-container-low cursor-zoom-in transition-transform duration-200"
-                                  onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                                  onMouseEnter={e => {
-                                    const img = e.target as HTMLImageElement
-                                    const zoom = document.createElement('div')
-                                    zoom.id = `zoom-${i}`
-                                    zoom.style.cssText = `position:fixed;z-index:9999;pointer-events:none;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.25);background:white;padding:8px;`
-                                    const rect = img.getBoundingClientRect()
-                                    zoom.style.left = `${rect.left - 160}px`
-                                    zoom.style.bottom = `${window.innerHeight - rect.top + 8}px`
-                                    const zoomImg = document.createElement('img')
-                                    zoomImg.src = product.image
-                                    zoomImg.style.cssText = 'width:200px;height:200px;object-fit:contain;border-radius:8px;'
-                                    zoom.appendChild(zoomImg)
-                                    document.body.appendChild(zoom)
-                                  }}
-                                  onMouseLeave={() => {
-                                    const zoom = document.getElementById(`zoom-${i}`)
-                                    if (zoom) zoom.remove()
-                                  }}
-                                />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p title={product.title} className="text-[13px] font-semibold text-on-surface m-0 overflow-hidden text-ellipsis whitespace-nowrap">
-                                {product.title}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[15px] font-extrabold text-success">
-                                  R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </span>
-                                <span className="text-[10px] text-on-surface-variant bg-surface-container-low px-1.5 py-0.5 rounded">
-                                  {product.store}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {product.url && (
-                                <a
-                                  href={product.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={e => e.stopPropagation()}
-                                  title="Ver na loja"
-                                  className="flex items-center justify-center w-7 h-7 rounded-md bg-surface-container-low hover:bg-secondary-container/20 transition-colors"
-                                >
-                                  <ExternalLink size={14} className="text-secondary" />
-                                </a>
-                              )}
-                              <Plus size={18} className="text-secondary" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* No results - show manual links */}
-                    {!quickSearching && quickResults.length === 0 && quickSearchLinks.length > 0 && (
-                      <div className="p-4 text-center">
-                        <p className="text-on-surface-variant text-[13px] mb-2.5">Nenhum resultado automático. Busque manualmente:</p>
-                        <div className="flex flex-wrap gap-1.5 justify-center pb-2">
-                          {quickSearchLinks.map((link, i) => (
-                            <a key={i} href={link.url} target="_blank" rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-outline-variant rounded-lg text-xs font-semibold text-on-surface no-underline hover:bg-surface-container-low transition-colors">
-                              <ExternalLink size={11} /> {link.store}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Bottom search input bar */}
-                <div className={`flex gap-2 items-center bg-white ${quickExpanded ? 'px-4 py-2.5' : ''}`}>
-                  <div className="flex-1 flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
-                    <ShoppingBag size={18} className="text-on-surface-variant" />
-                    <input
-                      value={quickSearch}
-                      onChange={e => setQuickSearch(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleQuickSearch() } }}
-                      onFocus={() => { if (quickResults.length > 0 || quickSearchLinks.length > 0) setQuickExpanded(true) }}
-                      placeholder="Buscar produto na internet e adicionar..."
-                      className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
-                    />
-                    {quickSearch && (
-                      <button onClick={() => { setQuickSearch(''); setQuickResults([]); setQuickStats(null); setQuickExpanded(false); setQuickSearchLinks([]) }}
-                        className="bg-transparent border-none cursor-pointer p-0.5 text-outline">
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    onClick={handleQuickSearch}
-                    disabled={quickSearching || quickSearch.length < 2}
-                    className={`px-4 py-2.5 text-white border-none rounded-xl text-sm font-bold cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-md ${
-                      quickSearching ? 'bg-secondary-container' : 'bg-gradient-to-br from-secondary to-primary-light'
-                    }`}
-                  >
-                    {quickSearching ? <Loader2 size={16} className="spin" /> : <Search size={16} />}
-                    Buscar
-                  </button>
-                  <button
-                    onClick={() => { setEditingItem(null); setIsModalOpen(true); setQuickExpanded(false) }}
-                    className="p-2.5 bg-surface-container-low text-on-surface border border-outline-variant rounded-xl cursor-pointer flex items-center hover:bg-surface-container-high transition-colors"
-                    title="Adicionar manualmente"
-                  >
-                    <Plus size={20} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Spacer for fixed bottom bar */}
-              <div className="h-20" />
 
               {/* Add/Edit Modal */}
               <AddItemModal
