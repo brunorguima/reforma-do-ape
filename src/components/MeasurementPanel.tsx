@@ -1,6 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { formatCurrency } from '@/lib/constants'
+import { KpiCard, KpiGrid } from '@/components/ui'
+import { StatusBadge, getStatusVariant } from '@/components/ui'
+import { EmptyState } from '@/components/ui'
+import { Button } from '@/components/ui'
 import {
   ClipboardCheck, Plus, Send, Trash2, CheckCircle2, Clock,
   ChevronDown, ChevronUp, Percent, DollarSign, FileText,
@@ -46,13 +50,6 @@ interface Measurement {
 interface Props {
   professionalId: string
   projectId: string
-}
-
-const STATUS_MAP = {
-  rascunho: { label: 'Rascunho', color: '#6B7280', bg: '#F3F4F6', icon: FileText },
-  enviada: { label: 'Enviada', color: '#D97706', bg: '#FEF3C7', icon: Send },
-  aprovada: { label: 'Aprovada', color: '#059669', bg: '#D1FAE5', icon: CheckCircle2 },
-  paga: { label: 'Paga', color: '#2563EB', bg: '#DBEAFE', icon: DollarSign },
 }
 
 export default function MeasurementPanel({ professionalId, projectId }: Props) {
@@ -181,9 +178,9 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
     }
   }
 
-  // Submit measurement (rascunho → enviada)
+  // Submit measurement (rascunho -> enviada)
   const handleSubmit = async (id: string) => {
-    if (!confirm('Enviar esta medição para o dono aprovar?')) return
+    if (!confirm('Enviar esta medicao para o dono aprovar?')) return
     setSubmitting(id)
     try {
       await fetch(`/api/measurements/${id}`, {
@@ -213,8 +210,8 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
   if (loading) {
     return (
       <div className="text-center py-15 px-5">
-        <Loader2 size={32} className="animate-spin text-warning" />
-        <p className="text-[#6B7280] mt-3">Carregando medições...</p>
+        <Loader2 size={32} className="animate-spin text-warning mx-auto" />
+        <p className="text-on-surface-variant mt-3">Carregando medicoes...</p>
       </div>
     )
   }
@@ -222,60 +219,59 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
   return (
     <div>
       {/* Header Stats */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-warning-light rounded-md p-4 text-center">
-          <p className="text-2xl font-[800] text-warning">
-            {measurements.filter(m => m.status === 'enviada').length}
-          </p>
-          <p className="text-xs text-[#92400E] font-semibold">Aguardando Aprovação</p>
-        </div>
-        <div className="bg-success-light rounded-md p-4 text-center">
-          <p className="text-2xl font-[800] text-success">
-            {formatCurrency(
-              measurements.filter(m => m.status === 'paga').reduce((s, m) => s + Number(m.net_amount), 0)
-            )}
-          </p>
-          <p className="text-xs text-[#065F46] font-semibold">Total Recebido</p>
-        </div>
-      </div>
+      <KpiGrid cols={2}>
+        <KpiCard
+          label="Aguardando Aprovacao"
+          value={measurements.filter(m => m.status === 'enviada').length}
+          icon={<Clock size={20} />}
+          accent="warning"
+        />
+        <KpiCard
+          label="Total Recebido"
+          value={formatCurrency(
+            measurements.filter(m => m.status === 'paga').reduce((s, m) => s + Number(m.net_amount), 0)
+          )}
+          icon={<DollarSign size={20} />}
+          accent="success"
+        />
+      </KpiGrid>
+
+      <div className="mt-6" />
 
       {/* New Measurement Button */}
       {!showNewForm && (
         <button
           onClick={() => { setShowNewForm(true); addNewItem('original') }}
-          className="w-full p-3.5 mb-5 bg-gradient-to-br from-[#D97706] to-[#F59E0B] text-white border-none rounded-md text-[15px] font-bold cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(217,119,6,0.3)]"
+          className="w-full p-3.5 mb-5 bg-secondary text-white border-none rounded-xl text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.97] transition-transform"
         >
-          <Plus size={20} /> Nova Medição
+          <Plus size={20} /> Nova Medicao
         </button>
       )}
 
       {/* New Measurement Form */}
       {showNewForm && (
-        <div className="bg-white rounded-2xl p-5 border-2 border-[#F59E0B] mb-5 shadow-[0_4px_20px_rgba(245,158,11,0.15)]">
-          <h3 className="text-base font-bold text-[#1F2937] mb-4 flex items-center gap-2">
-            <ClipboardCheck size={20} color="#D97706" /> Nova Medição
+        <div className="bg-surface-lowest rounded-2xl p-5 border-2 border-secondary mb-5 shadow-sm">
+          <h3 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
+            <ClipboardCheck size={20} className="text-secondary" /> Nova Medicao
           </h3>
 
           {/* Items */}
           {newItems.map((item, idx) => (
-            <div key={idx} className={`rounded-[10px] p-3 mb-2 border ${
+            <div key={idx} className={`rounded-xl p-3 mb-2 border ${
               item.type === 'extra'
-                ? 'bg-warning-light border-[#FCD34D]'
+                ? 'bg-orange-50 border-orange-200'
                 : item.type === 'discount'
-                  ? 'bg-danger-light border-[#FCA5A5]'
-                  : 'bg-[#F9FAFB] border-[#E5E7EB]'
+                  ? 'bg-red-50 border-red-200'
+                  : 'bg-surface-container-low border-outline-variant'
             }`}>
               <div className="flex gap-2 items-center mb-2">
-                <span className={`text-[10px] font-bold py-0.5 px-2 rounded ${
-                  item.type === 'extra'
-                    ? 'bg-[#D97706] text-white'
-                    : item.type === 'discount'
-                      ? 'bg-danger text-white'
-                      : 'bg-[#6B7280] text-white'
-                }`}>
-                  {item.type === 'extra' ? 'EXTRA' : item.type === 'discount' ? 'DESCONTO' : 'ORIGINAL'}
-                </span>
-                <button onClick={() => removeNewItem(idx)} className="ml-auto bg-none border-none cursor-pointer text-[#EF4444]">
+                <StatusBadge
+                  label={item.type === 'extra' ? 'Extra' : item.type === 'discount' ? 'Desconto' : 'Original'}
+                  variant={item.type === 'extra' ? 'warning' : item.type === 'discount' ? 'danger' : 'neutral'}
+                  dot={false}
+                  size="sm"
+                />
+                <button onClick={() => removeNewItem(idx)} className="ml-auto bg-transparent border-none cursor-pointer text-red-500 p-1 rounded-lg hover:bg-red-50 transition-colors">
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -283,35 +279,35 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
               <input
                 value={item.description}
                 onChange={e => updateNewItem(idx, 'description', e.target.value)}
-                placeholder="Descrição do serviço..."
-                className="w-full mb-2 text-sm py-2 px-3 rounded-sm border border-[#D1D5DB]"
+                placeholder="Descricao do servico..."
+                className="w-full mb-2 text-sm py-2.5 px-3 rounded-xl border border-outline-variant bg-surface-lowest focus:outline-none focus:border-primary"
               />
 
               <div className={`grid gap-2 ${item.type === 'original' ? 'grid-cols-3' : 'grid-cols-2'}`}>
                 <div>
-                  <label className="text-[11px] text-[#6B7280] font-semibold">Valor Original (R$)</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Valor Original (R$)</label>
                   <input
                     type="number"
                     value={item.original_amount || ''}
                     onChange={e => updateNewItem(idx, 'original_amount', Number(e.target.value))}
                     placeholder="0,00"
-                    className="w-full text-sm py-2 px-3 rounded-sm border border-[#D1D5DB]"
+                    className="w-full text-sm py-2 px-3 rounded-xl border border-outline-variant bg-surface-lowest focus:outline-none focus:border-primary"
                   />
                 </div>
                 {item.type === 'original' && (
                   <div>
-                    <label className="text-[11px] text-[#6B7280] font-semibold">Concluído (%)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Concluido (%)</label>
                     <input
                       type="number"
                       min={0} max={100}
                       value={item.completion_pct}
                       onChange={e => updateNewItem(idx, 'completion_pct', Math.min(100, Math.max(0, Number(e.target.value))))}
-                      className="w-full text-sm py-2 px-3 rounded-sm border border-[#D1D5DB]"
+                      className="w-full text-sm py-2 px-3 rounded-xl border border-outline-variant bg-surface-lowest focus:outline-none focus:border-primary"
                     />
                   </div>
                 )}
                 <div>
-                  <label className="text-[11px] text-[#6B7280] font-semibold">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                     {item.type === 'original' ? 'Valor Proporcional' : 'Valor'}
                   </label>
                   <input
@@ -319,8 +315,8 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
                     value={item.amount || ''}
                     onChange={e => updateNewItem(idx, 'amount', Number(e.target.value))}
                     readOnly={item.type === 'original'}
-                    className={`w-full text-sm py-2 px-3 rounded-sm border border-[#D1D5DB] font-bold text-success ${
-                      item.type === 'original' ? 'bg-[#F3F4F6]' : 'bg-white'
+                    className={`w-full text-sm py-2 px-3 rounded-xl border border-outline-variant font-bold text-emerald-600 focus:outline-none focus:border-primary ${
+                      item.type === 'original' ? 'bg-surface-container-low' : 'bg-surface-lowest'
                     }`}
                   />
                 </div>
@@ -333,20 +329,20 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
                     <img
                       src={item.photo_url}
                       alt="Foto do item"
-                      className="w-20 h-20 object-cover rounded-lg border border-[#D1D5DB]"
+                      className="w-20 h-20 object-cover rounded-xl border border-outline-variant shadow-sm"
                     />
                     <button
                       onClick={() => updateNewItem(idx, 'photo_url', '')}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#EF4444] text-white rounded-full flex items-center justify-center"
-                      style={{ fontSize: 10, border: 'none', cursor: 'pointer', padding: 0 }}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center border-none cursor-pointer p-0"
+                      style={{ fontSize: 10 }}
                     >
                       <X size={10} />
                     </button>
                   </div>
                 ) : (
-                  <label className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed border-[#9CA3AF] cursor-pointer text-[12px] text-[#6B7280] hover:border-[#6366F1] hover:text-[#6366F1] transition-colors">
+                  <label className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl border border-dashed border-outline cursor-pointer text-[12px] text-on-surface-variant hover:border-primary hover:text-primary transition-colors">
                     {uploadingIdx === idx ? (
-                      <><Loader2 size={12} className="spin" /> Enviando...</>
+                      <><Loader2 size={12} className="animate-spin" /> Enviando...</>
                     ) : (
                       <><Camera size={12} /> Adicionar foto</>
                     )}
@@ -369,13 +365,13 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
 
           {/* Add item buttons */}
           <div className="flex gap-2 mb-4 flex-wrap">
-            <button onClick={() => addNewItem('original')} className="py-2 px-3.5 rounded-sm border border-[#D1D5DB] bg-white cursor-pointer text-[13px] font-semibold flex items-center gap-1 text-[#374151]">
-              <Plus size={14} /> Item do Orçamento
+            <button onClick={() => addNewItem('original')} className="py-2 px-3.5 rounded-xl border border-outline-variant bg-surface-lowest cursor-pointer text-[13px] font-semibold flex items-center gap-1 text-on-surface hover:bg-surface-container-low transition-colors active:scale-[0.97]">
+              <Plus size={14} /> Item do Orcamento
             </button>
-            <button onClick={() => addNewItem('extra')} className="py-2 px-3.5 rounded-sm border border-[#FCD34D] bg-warning-light cursor-pointer text-[13px] font-semibold flex items-center gap-1 text-[#92400E]">
+            <button onClick={() => addNewItem('extra')} className="py-2 px-3.5 rounded-xl border border-orange-200 bg-orange-50 cursor-pointer text-[13px] font-semibold flex items-center gap-1 text-orange-800 hover:bg-orange-100 transition-colors active:scale-[0.97]">
               <Plus size={14} /> Extra
             </button>
-            <button onClick={() => addNewItem('discount')} className="py-2 px-3.5 rounded-sm border border-[#FCA5A5] bg-danger-light cursor-pointer text-[13px] font-semibold flex items-center gap-1 text-[#991B1B]">
+            <button onClick={() => addNewItem('discount')} className="py-2 px-3.5 rounded-xl border border-red-200 bg-red-50 cursor-pointer text-[13px] font-semibold flex items-center gap-1 text-red-800 hover:bg-red-100 transition-colors active:scale-[0.97]">
               <Percent size={14} /> Desconto
             </button>
           </div>
@@ -384,35 +380,35 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
           <textarea
             value={newNotes}
             onChange={e => setNewNotes(e.target.value)}
-            placeholder="Observações (opcional)..."
+            placeholder="Observacoes (opcional)..."
             rows={2}
-            className="w-full mb-4 text-sm py-2.5 px-3 rounded-sm border border-[#D1D5DB] resize-y"
+            className="w-full mb-4 text-sm py-2.5 px-3 rounded-xl border border-outline-variant bg-surface-lowest resize-y focus:outline-none focus:border-primary"
           />
 
           {/* Totals */}
           {newItems.length > 0 && (() => {
             const t = calcTotals(newItems)
             return (
-              <div className="bg-[#F0FDF4] rounded-[10px] py-3 px-4 mb-4">
+              <div className="bg-emerald-50 rounded-xl py-3 px-4 mb-4 border border-emerald-100">
                 <div className="flex justify-between text-[13px] mb-1">
-                  <span className="text-[#374151]">Serviços originais:</span>
+                  <span className="text-on-surface">Servicos originais:</span>
                   <span className="font-semibold">{formatCurrency(t.total)}</span>
                 </div>
                 {t.extras > 0 && (
                   <div className="flex justify-between text-[13px] mb-1">
-                    <span className="text-warning">+ Extras:</span>
-                    <span className="font-semibold text-warning">+{formatCurrency(t.extras)}</span>
+                    <span className="text-orange-600">+ Extras:</span>
+                    <span className="font-semibold text-orange-600">+{formatCurrency(t.extras)}</span>
                   </div>
                 )}
                 {t.discounts > 0 && (
                   <div className="flex justify-between text-[13px] mb-1">
-                    <span className="text-danger">- Descontos:</span>
-                    <span className="font-semibold text-danger">-{formatCurrency(t.discounts)}</span>
+                    <span className="text-red-600">- Descontos:</span>
+                    <span className="font-semibold text-red-600">-{formatCurrency(t.discounts)}</span>
                   </div>
                 )}
-                <div className="border-t border-[#BBF7D0] pt-2 mt-2 flex justify-between">
-                  <span className="font-bold text-[#1F2937] text-[15px]">Total a receber:</span>
-                  <span className="font-[800] text-success text-lg">{formatCurrency(t.net)}</span>
+                <div className="border-t border-emerald-200 pt-2 mt-2 flex justify-between">
+                  <span className="font-bold text-on-surface text-[15px]">Total a receber:</span>
+                  <span className="font-black text-emerald-600 text-lg">{formatCurrency(t.net)}</span>
                 </div>
               </div>
             )
@@ -422,15 +418,15 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
           <div className="flex gap-2">
             <button
               onClick={() => { setShowNewForm(false); setNewItems([]); setNewNotes('') }}
-              className="flex-1 p-3 rounded-[10px] border border-[#D1D5DB] bg-white cursor-pointer text-sm font-semibold text-[#374151]"
+              className="flex-1 p-3 rounded-xl border border-outline-variant bg-surface-lowest cursor-pointer text-sm font-semibold text-on-surface hover:bg-surface-container-low transition-colors active:scale-[0.97]"
             >
               Cancelar
             </button>
             <button
               onClick={handleCreate}
               disabled={creating || newItems.length === 0 || newItems.some(i => !i.description.trim())}
-              className={`flex-[2] p-3 rounded-[10px] border-none text-white text-sm font-bold flex items-center justify-center gap-1.5 ${
-                creating ? 'bg-[#9CA3AF] cursor-default' : 'bg-gradient-to-br from-[#D97706] to-[#F59E0B] cursor-pointer'
+              className={`flex-[2] p-3 rounded-xl border-none text-white text-sm font-semibold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-all ${
+                creating ? 'bg-outline cursor-default' : 'bg-secondary cursor-pointer shadow-sm'
               }`}
             >
               {creating ? <Loader2 size={16} className="animate-spin" /> : <ClipboardCheck size={16} />}
@@ -442,101 +438,94 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
 
       {/* Measurements List */}
       {measurements.length === 0 && !showNewForm ? (
-        <div className="text-center py-10 px-5">
-          <ClipboardCheck size={48} color="#D1D5DB" />
-          <h3 className="text-base text-[#6B7280] mt-3">Nenhuma medição ainda</h3>
-          <p className="text-[13px] text-[#9CA3AF]">Crie sua primeira medição para registrar o trabalho feito</p>
-        </div>
+        <EmptyState
+          icon={<ClipboardCheck size={28} />}
+          title="Nenhuma medicao ainda"
+          description="Crie sua primeira medicao para registrar o trabalho feito"
+        />
       ) : (
         <div className="flex flex-col gap-3">
           {measurements.map(m => {
-            const statusConfig = STATUS_MAP[m.status]
-            const StatusIcon = statusConfig.icon
             const isExpanded = expandedId === m.id
             const items = m.items || []
 
             return (
-              <div key={m.id} className="bg-white rounded-[14px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-                style={{ border: `1px solid ${m.status === 'rascunho' ? '#E5E7EB' : statusConfig.bg}` }}
-              >
+              <div key={m.id} className="bg-surface-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden">
                 {/* Header */}
                 <div
                   onClick={() => setExpandedId(isExpanded ? null : m.id)}
-                  className={`py-3.5 px-4 cursor-pointer flex items-center gap-3 ${isExpanded ? 'bg-[#FAFAFA]' : 'bg-white'}`}
+                  className={`py-3.5 px-4 cursor-pointer flex items-center gap-3 transition-colors ${isExpanded ? 'bg-surface-container-low' : 'bg-surface-lowest'}`}
                 >
-                  <div className="w-9 h-9 rounded-[10px] flex items-center justify-center"
-                    style={{ background: statusConfig.bg }}
-                  >
-                    <StatusIcon size={18} style={{ color: statusConfig.color }} />
+                  <div className="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-on-surface-variant">
+                    {m.status === 'rascunho' && <FileText size={18} />}
+                    {m.status === 'enviada' && <Send size={18} />}
+                    {m.status === 'aprovada' && <CheckCircle2 size={18} />}
+                    {m.status === 'paga' && <DollarSign size={18} />}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-[15px] text-[#1F2937]">
-                        Medição #{m.measurement_number}
+                      <span className="font-bold text-[15px] text-on-surface">
+                        Medicao #{m.measurement_number}
                       </span>
-                      <span className="text-[11px] font-semibold py-0.5 px-2 rounded-[6px]"
-                        style={{ background: statusConfig.bg, color: statusConfig.color }}
-                      >
-                        {statusConfig.label}
-                      </span>
+                      <StatusBadge
+                        label={m.status === 'rascunho' ? 'Rascunho' : m.status === 'enviada' ? 'Enviada' : m.status === 'aprovada' ? 'Aprovada' : 'Paga'}
+                        variant={getStatusVariant(m.status)}
+                      />
                     </div>
-                    <p className="text-xs text-[#6B7280] mt-0.5">
+                    <p className="text-xs text-on-surface-variant mt-0.5">
                       {new Date(m.created_at).toLocaleDateString('pt-BR')} — {items.length} ite{items.length === 1 ? 'm' : 'ns'}
                     </p>
                   </div>
-                  <span className="font-[800] text-base text-success">
+                  <span className="font-black text-base text-emerald-600">
                     {formatCurrency(Number(m.net_amount))}
                   </span>
-                  {isExpanded ? <ChevronUp size={18} color="#9CA3AF" /> : <ChevronDown size={18} color="#9CA3AF" />}
+                  {isExpanded ? <ChevronUp size={18} className="text-outline" /> : <ChevronDown size={18} className="text-outline" />}
                 </div>
 
                 {/* Expanded content */}
                 {isExpanded && (
-                  <div className="px-4 pb-4 border-t border-[#F3F4F6]">
+                  <div className="px-4 pb-4 border-t border-outline-variant">
                     {/* Items */}
                     {items.map((item, idx) => (
                       <div key={item.id || idx} className={`flex items-center gap-2.5 py-2.5 ${
-                        idx < items.length - 1 ? 'border-b border-[#F3F4F6]' : ''
+                        idx < items.length - 1 ? 'border-b border-surface-container' : ''
                       }`}>
-                        <span className={`text-[10px] font-bold py-0.5 px-1.5 rounded ${
-                          item.type === 'extra'
-                            ? 'bg-warning-light text-[#92400E]'
-                            : item.type === 'discount'
-                              ? 'bg-danger-light text-[#991B1B]'
-                              : 'bg-[#F3F4F6] text-[#374151]'
-                        }`}>
-                          {item.type === 'extra' ? 'EXT' : item.type === 'discount' ? 'DESC' : `${item.completion_pct}%`}
-                        </span>
+                        <StatusBadge
+                          label={item.type === 'extra' ? 'EXT' : item.type === 'discount' ? 'DESC' : `${item.completion_pct}%`}
+                          variant={item.type === 'extra' ? 'warning' : item.type === 'discount' ? 'danger' : 'neutral'}
+                          dot={false}
+                          size="sm"
+                        />
                         <div className="flex-1 min-w-0">
-                          <span className="text-[13px] text-[#374151]">{item.description}</span>
+                          <span className="text-[13px] text-on-surface">{item.description}</span>
                           {item.photo_url && (
                             <div className="mt-1">
                               <a href={item.photo_url} target="_blank" rel="noopener noreferrer">
                                 <img
                                   src={item.photo_url}
                                   alt="Foto"
-                                  className="w-14 h-14 object-cover rounded-lg border border-[#E5E7EB] hover:opacity-80 transition-opacity"
+                                  className="w-14 h-14 object-cover rounded-xl border border-outline-variant shadow-sm hover:opacity-80 transition-opacity"
                                 />
                               </a>
                             </div>
                           )}
                         </div>
-                        <span className={`font-semibold text-[13px] flex-shrink-0 ${item.type === 'discount' ? 'text-danger' : 'text-success'}`}>
+                        <span className={`font-semibold text-[13px] flex-shrink-0 ${item.type === 'discount' ? 'text-red-600' : 'text-emerald-600'}`}>
                           {item.type === 'discount' ? '-' : ''}{formatCurrency(Number(item.amount))}
                         </span>
                       </div>
                     ))}
 
                     {/* Totals */}
-                    <div className="bg-[#F0FDF4] rounded-sm py-2.5 px-3 mt-3">
+                    <div className="bg-emerald-50 rounded-xl py-2.5 px-3 mt-3 border border-emerald-100">
                       <div className="flex justify-between text-[13px]">
-                        <span>Serviços: {formatCurrency(Number(m.total_amount))}</span>
-                        {Number(m.extras_amount) > 0 && <span className="text-warning">+Extras: {formatCurrency(Number(m.extras_amount))}</span>}
-                        {Number(m.discounts_amount) > 0 && <span className="text-danger">-Desc: {formatCurrency(Number(m.discounts_amount))}</span>}
+                        <span>Servicos: {formatCurrency(Number(m.total_amount))}</span>
+                        {Number(m.extras_amount) > 0 && <span className="text-orange-600">+Extras: {formatCurrency(Number(m.extras_amount))}</span>}
+                        {Number(m.discounts_amount) > 0 && <span className="text-red-600">-Desc: {formatCurrency(Number(m.discounts_amount))}</span>}
                       </div>
-                      <div className="flex justify-between mt-1.5 pt-1.5 border-t border-[#BBF7D0]">
-                        <span className="font-bold text-sm">Líquido:</span>
-                        <span className="font-[800] text-base text-success">{formatCurrency(Number(m.net_amount))}</span>
+                      <div className="flex justify-between mt-1.5 pt-1.5 border-t border-emerald-200">
+                        <span className="font-bold text-sm">Liquido:</span>
+                        <span className="font-black text-base text-emerald-600">{formatCurrency(Number(m.net_amount))}</span>
                       </div>
                     </div>
 
@@ -546,8 +535,7 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
                         href={`/api/measurements/${m.id}/pdf`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 py-2 px-3.5 rounded-lg text-[13px] font-semibold transition-colors"
-                        style={{ background: '#EEF2FF', color: '#4F46E5', textDecoration: 'none' }}
+                        className="inline-flex items-center gap-1.5 py-2 px-3.5 rounded-xl text-[13px] font-semibold transition-colors bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 no-underline active:scale-[0.97]"
                       >
                         <FileText size={14} /> Ver PDF
                       </a>
@@ -555,19 +543,19 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
 
                     {/* Notes */}
                     {m.notes && (
-                      <div className="mt-2.5 py-2 px-3 bg-warning-light rounded-sm text-[13px] text-[#92400E]">
+                      <div className="mt-2.5 py-2 px-3 bg-orange-50 rounded-xl text-[13px] text-orange-800 border border-orange-100">
                         <strong>Suas notas:</strong> {m.notes}
                       </div>
                     )}
                     {m.owner_notes && (
-                      <div className="mt-1.5 py-2 px-3 bg-[#DBEAFE] rounded-sm text-[13px] text-[#1E40AF]">
+                      <div className="mt-1.5 py-2 px-3 bg-blue-50 rounded-xl text-[13px] text-blue-700 border border-blue-100">
                         <strong>Notas do dono:</strong> {m.owner_notes}
                       </div>
                     )}
 
                     {/* Receipt */}
                     {m.receipt_url && (
-                      <div className="mt-2 py-2 px-3 bg-success-light rounded-sm text-[13px] text-[#065F46] flex items-center gap-1.5">
+                      <div className="mt-2 py-2 px-3 bg-emerald-50 rounded-xl text-[13px] text-emerald-700 flex items-center gap-1.5 border border-emerald-100">
                         <CheckCircle2 size={14} /> Comprovante anexado
                       </div>
                     )}
@@ -577,29 +565,29 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
                       <div className="flex gap-2 mt-3">
                         <button
                           onClick={() => handleDelete(m.id)}
-                          className="flex-1 p-2.5 rounded-sm border border-[#FCA5A5] bg-[#FEF2F2] cursor-pointer text-[13px] font-semibold text-danger flex items-center justify-center gap-1"
+                          className="flex-1 p-2.5 rounded-xl border border-red-200 bg-red-50 cursor-pointer text-[13px] font-semibold text-red-600 flex items-center justify-center gap-1 hover:bg-red-100 transition-colors active:scale-[0.97]"
                         >
                           <Trash2 size={14} /> Excluir
                         </button>
                         <button
                           onClick={() => handleSubmit(m.id)}
                           disabled={submitting === m.id}
-                          className="flex-[2] p-2.5 rounded-sm border-none bg-gradient-to-br from-[#D97706] to-[#F59E0B] text-white cursor-pointer text-[13px] font-bold flex items-center justify-center gap-1"
+                          className="flex-[2] p-2.5 rounded-xl border-none bg-secondary text-white cursor-pointer text-[13px] font-semibold flex items-center justify-center gap-1 shadow-sm active:scale-[0.97] transition-all"
                         >
                           {submitting === m.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                          Enviar para Aprovação
+                          Enviar para Aprovacao
                         </button>
                       </div>
                     )}
 
                     {m.status === 'enviada' && (
-                      <div className="mt-3 py-2.5 px-3 bg-warning-light rounded-sm text-[13px] text-[#92400E] flex items-center gap-1.5">
-                        <Clock size={14} /> Aguardando aprovação do proprietário...
+                      <div className="mt-3 py-2.5 px-3 bg-orange-50 rounded-xl text-[13px] text-orange-800 flex items-center gap-1.5 border border-orange-100">
+                        <Clock size={14} /> Aguardando aprovacao do proprietario...
                       </div>
                     )}
 
                     {m.status === 'aprovada' && (
-                      <div className="mt-3 py-2.5 px-3 bg-success-light rounded-sm text-[13px] text-[#065F46] flex items-center gap-1.5">
+                      <div className="mt-3 py-2.5 px-3 bg-emerald-50 rounded-xl text-[13px] text-emerald-700 flex items-center gap-1.5 border border-emerald-100">
                         <CheckCircle2 size={14} /> Aprovada! Aguardando pagamento...
                       </div>
                     )}

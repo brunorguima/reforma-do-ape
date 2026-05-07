@@ -2,6 +2,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { formatCurrency } from '@/lib/constants'
 import { useToast } from '@/components/Toast'
+import { KpiCard, KpiGrid } from '@/components/ui'
+import { StatusBadge, getStatusVariant, getStatusLabel } from '@/components/ui'
+import { EmptyState } from '@/components/ui'
+import { Modal, FormField, Button } from '@/components/ui'
 import {
   ShoppingCart, Package, Clock, CheckCircle2, XCircle,
   ChevronDown, ChevronUp, Plus, Trash2, Loader2,
@@ -42,20 +46,6 @@ interface Professional {
   id: string
   name: string
   specialty?: string
-}
-
-const STATUS_MAP = {
-  pendente: { label: 'Pendente', color: '#D97706', bg: '#FEF3C7', icon: Clock },
-  aprovado: { label: 'Aprovado', color: '#059669', bg: '#D1FAE5', icon: CheckCircle2 },
-  comprado: { label: 'Comprado', color: '#2563EB', bg: '#DBEAFE', icon: ShoppingCart },
-  recusado: { label: 'Recusado', color: '#DC2626', bg: '#FEE2E2', icon: XCircle },
-  cancelado: { label: 'Cancelado', color: '#6B7280', bg: '#F3F4F6', icon: XCircle },
-}
-
-const URGENCY_MAP = {
-  baixa: { label: 'Baixa', color: '#6B7280', bg: '#F3F4F6' },
-  normal: { label: 'Normal', color: '#2563EB', bg: '#DBEAFE' },
-  urgente: { label: 'Urgente', color: '#DC2626', bg: '#FEE2E2' },
 }
 
 export default function MaterialRequestPanel({ projectId }: { projectId?: string | null }) {
@@ -127,7 +117,7 @@ export default function MaterialRequestPanel({ projectId }: { projectId?: string
       const res = await fetch(`/api/material-requests/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Erro ao excluir')
       await fetchRequests()
-      toast('Pedido excluído', 'success')
+      toast('Pedido excluido', 'success')
     } catch {
       toast('Erro ao excluir pedido', 'error')
     } finally {
@@ -152,7 +142,7 @@ export default function MaterialRequestPanel({ projectId }: { projectId?: string
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 size={32} className="spin text-secondary" />
+        <Loader2 size={32} className="animate-spin text-secondary" />
       </div>
     )
   }
@@ -160,122 +150,110 @@ export default function MaterialRequestPanel({ projectId }: { projectId?: string
   return (
     <div>
       {/* KPIs */}
-      <div className="kpi-grid">
-        <div className="kpi-card" data-accent="amber">
-          <p className="kpi-label">Pendentes</p>
-          <p className="kpi-value">{pendentes}</p>
-          {urgentes > 0 && <p className="kpi-sub" style={{ color: '#DC2626' }}>{urgentes} urgente{urgentes > 1 ? 's' : ''}</p>}
-        </div>
-        <div className="kpi-card" data-accent="green">
-          <p className="kpi-label">Aprovados</p>
-          <p className="kpi-value">{aprovados}</p>
-        </div>
-        <div className="kpi-card" data-accent="blue">
-          <p className="kpi-label">Comprados</p>
-          <p className="kpi-value">{comprados}</p>
-        </div>
-        <div className="kpi-card" data-accent="indigo">
-          <p className="kpi-label">Custo Pendente</p>
-          <p className="kpi-value">{formatCurrency(totalEstimado)}</p>
-          <p className="kpi-sub">a aprovar + aprovado</p>
-        </div>
-      </div>
+      <KpiGrid cols={4}>
+        <KpiCard
+          label="Pendentes"
+          value={pendentes}
+          icon={<Clock size={20} />}
+          accent="warning"
+          sub={urgentes > 0 ? `${urgentes} urgente${urgentes > 1 ? 's' : ''}` : undefined}
+        />
+        <KpiCard
+          label="Aprovados"
+          value={aprovados}
+          icon={<CheckCircle2 size={20} />}
+          accent="success"
+        />
+        <KpiCard
+          label="Comprados"
+          value={comprados}
+          icon={<ShoppingCart size={20} />}
+          accent="info"
+        />
+        <KpiCard
+          label="Custo Pendente"
+          value={formatCurrency(totalEstimado)}
+          icon={<Package size={20} />}
+          accent="primary"
+          sub="a aprovar + aprovado"
+        />
+      </KpiGrid>
 
       {/* Header with filter + add button */}
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <div className="flex items-center justify-between mt-5 mb-4 flex-wrap gap-3">
         <div className="flex gap-2 flex-wrap">
           {['all', 'pendente', 'aprovado', 'comprado', 'recusado'].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className="user-chip"
-              style={{
-                background: filter === f ? 'var(--color-primary)' : 'var(--color-surface-container)',
-                color: filter === f ? 'white' : 'var(--color-on-surface)',
-              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all active:scale-[0.97] ${
+                filter === f
+                  ? 'bg-secondary text-white shadow-sm'
+                  : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+              }`}
             >
-              {f === 'all' ? 'Todos' : STATUS_MAP[f as keyof typeof STATUS_MAP].label}
+              {f === 'all' ? 'Todos' : getStatusLabel(f)}
               {f !== 'all' && (
-                <span style={{ marginLeft: 4, opacity: 0.7 }}>
+                <span className="ml-1 opacity-70">
                   ({requests.filter(r => r.status === f).length})
                 </span>
               )}
             </button>
           ))}
         </div>
-        <button
+        <Button
           onClick={() => setShowCreateModal(true)}
-          className="btn-primary"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'var(--color-secondary)', width: 'auto',
-          }}
+          variant="primary"
+          size="md"
+          icon={<Plus size={16} />}
         >
-          <Plus size={16} /> Novo Pedido
-        </button>
+          Novo Pedido
+        </Button>
       </div>
 
       {/* Requests List */}
       {filtered.length === 0 ? (
-        <div className="card" style={{ padding: 40, textAlign: 'center' }}>
-          <Package size={48} style={{ margin: '0 auto 12px', color: 'var(--color-outline)' }} />
-          <p style={{ color: 'var(--color-on-surface-variant)', fontSize: 15 }}>
-            {filter === 'all' ? 'Nenhum pedido de material ainda' : `Nenhum pedido ${STATUS_MAP[filter as keyof typeof STATUS_MAP]?.label.toLowerCase()}`}
-          </p>
-        </div>
+        <EmptyState
+          icon={<Package size={28} />}
+          title={filter === 'all' ? 'Nenhum pedido de material ainda' : `Nenhum pedido ${getStatusLabel(filter).toLowerCase()}`}
+        />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="flex flex-col gap-3">
           {filtered.map(req => {
-            const statusInfo = STATUS_MAP[req.status]
-            const urgencyInfo = URGENCY_MAP[req.urgency]
-            const StatusIcon = statusInfo.icon
             const isExpanded = expandedId === req.id
             const isLoading = actionLoading === req.id
 
             return (
-              <div key={req.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div key={req.id} className="bg-surface-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden">
                 {/* Header */}
                 <div
-                  style={{
-                    padding: '14px 16px',
-                    cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: 12,
-                  }}
+                  className={`py-3.5 px-4 cursor-pointer flex items-center gap-3 transition-colors ${
+                    isExpanded ? 'bg-surface-container-low' : 'bg-surface-lowest'
+                  }`}
                   onClick={() => setExpandedId(isExpanded ? null : req.id)}
                 >
-                  <div style={{
-                    width: 40, height: 40, borderRadius: 10,
-                    background: statusInfo.bg, color: statusInfo.color,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  }}>
-                    <StatusIcon size={20} />
+                  <div className="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-on-surface-variant shrink-0">
+                    {req.status === 'pendente' && <Clock size={20} />}
+                    {req.status === 'aprovado' && <CheckCircle2 size={20} />}
+                    {req.status === 'comprado' && <ShoppingCart size={20} />}
+                    {req.status === 'recusado' && <XCircle size={20} />}
+                    {req.status === 'cancelado' && <XCircle size={20} />}
                   </div>
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-on-surface)' }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-[15px] text-on-surface">
                         #{req.request_number} — {req.title}
                       </span>
                       {req.urgency === 'urgente' && (
-                        <span style={{
-                          fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12,
-                          background: urgencyInfo.bg, color: urgencyInfo.color,
-                          display: 'inline-flex', alignItems: 'center', gap: 3,
-                        }}>
-                          <AlertTriangle size={10} /> URGENTE
-                        </span>
+                        <StatusBadge label="Urgente" variant="danger" dot={false} size="sm" />
                       )}
                       {req.urgency === 'baixa' && (
-                        <span style={{
-                          fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 12,
-                          background: urgencyInfo.bg, color: urgencyInfo.color,
-                        }}>
-                          Baixa
-                        </span>
+                        <StatusBadge label="Baixa" variant="neutral" dot={false} size="sm" />
                       )}
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--color-on-surface-variant)', marginTop: 2, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <div className="text-xs text-on-surface-variant mt-0.5 flex gap-3 flex-wrap">
+                      <span className="inline-flex items-center gap-1">
                         <User size={11} /> {req.professional?.name || 'Profissional'}
                       </span>
                       <span>{new Date(req.created_at).toLocaleDateString('pt-BR')}</span>
@@ -283,48 +261,47 @@ export default function MaterialRequestPanel({ projectId }: { projectId?: string
                     </div>
                   </div>
 
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-on-surface)' }}>
+                  <div className="text-right shrink-0">
+                    <div className="font-bold text-[15px] text-on-surface">
                       {formatCurrency(Number(req.total_estimated || 0))}
                     </div>
-                    <span className="status-badge" style={{
-                      background: statusInfo.bg, color: statusInfo.color, fontSize: 11,
-                    }}>
-                      {statusInfo.label}
-                    </span>
+                    <StatusBadge
+                      label={getStatusLabel(req.status)}
+                      variant={getStatusVariant(req.status)}
+                    />
                   </div>
 
-                  {isExpanded ? <ChevronUp size={18} style={{ color: 'var(--color-outline)' }} /> : <ChevronDown size={18} style={{ color: 'var(--color-outline)' }} />}
+                  {isExpanded ? <ChevronUp size={18} className="text-outline" /> : <ChevronDown size={18} className="text-outline" />}
                 </div>
 
                 {/* Expanded content */}
                 {isExpanded && (
-                  <div style={{ padding: '0 16px 16px', borderTop: '1px solid var(--color-outline-variant)' }}>
+                  <div className="px-4 pb-4 border-t border-outline-variant">
                     {/* Items table */}
-                    <div style={{ marginTop: 12 }}>
-                      <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-on-surface-variant)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <div className="mt-3">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">
                         Itens do Pedido
                       </p>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse text-sm">
                           <thead>
-                            <tr style={{ borderBottom: '2px solid var(--color-outline-variant)' }}>
-                              <th style={{ textAlign: 'left', padding: '8px 8px 8px 0', color: 'var(--color-on-surface-variant)', fontWeight: 600, fontSize: 12 }}>Material</th>
-                              <th style={{ textAlign: 'center', padding: 8, color: 'var(--color-on-surface-variant)', fontWeight: 600, fontSize: 12 }}>Qtd</th>
-                              <th style={{ textAlign: 'right', padding: '8px 0 8px 8px', color: 'var(--color-on-surface-variant)', fontWeight: 600, fontSize: 12 }}>Estimado</th>
+                            <tr className="border-b-2 border-outline-variant">
+                              <th className="text-left py-2 pr-2 text-on-surface-variant font-semibold text-xs">Material</th>
+                              <th className="text-center py-2 px-2 text-on-surface-variant font-semibold text-xs">Qtd</th>
+                              <th className="text-right py-2 pl-2 text-on-surface-variant font-semibold text-xs">Estimado</th>
                             </tr>
                           </thead>
                           <tbody>
                             {(req.items || []).map((item, idx) => (
-                              <tr key={idx} style={{ borderBottom: '1px solid var(--color-surface-container)' }}>
-                                <td style={{ padding: '10px 8px 10px 0' }}>
-                                  <div style={{ fontWeight: 600, color: 'var(--color-on-surface)' }}>{item.name}</div>
-                                  {item.notes && <div style={{ fontSize: 12, color: 'var(--color-outline)', marginTop: 2 }}>{item.notes}</div>}
+                              <tr key={idx} className="border-b border-surface-container">
+                                <td className="py-2.5 pr-2">
+                                  <div className="font-semibold text-on-surface">{item.name}</div>
+                                  {item.notes && <div className="text-xs text-outline mt-0.5">{item.notes}</div>}
                                 </td>
-                                <td style={{ textAlign: 'center', padding: 8, whiteSpace: 'nowrap' }}>
+                                <td className="text-center py-2.5 px-2 whitespace-nowrap text-on-surface-variant">
                                   {item.quantity} {item.unit}
                                 </td>
-                                <td style={{ textAlign: 'right', padding: '10px 0 10px 8px', fontWeight: 600 }}>
+                                <td className="text-right py-2.5 pl-2 font-semibold text-on-surface">
                                   {item.estimated_price ? formatCurrency(Number(item.estimated_price)) : '—'}
                                 </td>
                               </tr>
@@ -336,57 +313,60 @@ export default function MaterialRequestPanel({ projectId }: { projectId?: string
 
                     {/* Notes */}
                     {req.notes && (
-                      <div style={{ marginTop: 12, padding: 12, background: 'var(--color-surface-container-low)', borderRadius: 10, fontSize: 13 }}>
+                      <div className="mt-3 p-3 bg-surface-container-low rounded-xl text-[13px] text-on-surface border border-outline-variant">
                         <strong>Obs do profissional:</strong> {req.notes}
                       </div>
                     )}
                     {req.owner_notes && (
-                      <div style={{ marginTop: 8, padding: 12, background: 'var(--color-surface-container)', borderRadius: 10, fontSize: 13 }}>
+                      <div className="mt-2 p-3 bg-surface-container rounded-xl text-[13px] text-on-surface">
                         <strong>Obs do dono:</strong> {req.owner_notes}
                       </div>
                     )}
 
                     {/* Actions */}
-                    <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <div className="mt-4 flex gap-2 flex-wrap">
                       {req.status === 'pendente' && (
                         <>
-                          <button
+                          <Button
                             onClick={() => handleStatusChange(req.id, 'aprovado')}
                             disabled={isLoading}
-                            className="btn-primary"
-                            style={{ background: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 6, width: 'auto' }}
+                            variant="primary"
+                            size="md"
+                            icon={isLoading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                            className="bg-emerald-600 hover:bg-emerald-700"
                           >
-                            {isLoading ? <Loader2 size={14} className="spin" /> : <CheckCircle2 size={14} />}
                             Aprovar
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => handleStatusChange(req.id, 'recusado')}
                             disabled={isLoading}
-                            className="btn-secondary"
-                            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                            variant="secondary"
+                            size="md"
+                            icon={<XCircle size={14} />}
                           >
-                            <XCircle size={14} /> Recusar
-                          </button>
-                          <button
+                            Recusar
+                          </Button>
+                          <Button
                             onClick={() => handleDelete(req.id)}
                             disabled={isLoading}
-                            className="btn-ghost"
-                            style={{ color: 'var(--color-danger)', padding: '8px 12px' }}
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
                           >
                             <Trash2 size={14} />
-                          </button>
+                          </Button>
                         </>
                       )}
                       {req.status === 'aprovado' && (
-                        <button
+                        <Button
                           onClick={() => handleStatusChange(req.id, 'comprado')}
                           disabled={isLoading}
-                          className="btn-primary"
-                          style={{ background: 'var(--color-secondary)', display: 'flex', alignItems: 'center', gap: 6, width: 'auto' }}
+                          variant="primary"
+                          size="md"
+                          icon={isLoading ? <Loader2 size={14} className="animate-spin" /> : <ShoppingCart size={14} />}
                         >
-                          {isLoading ? <Loader2 size={14} className="spin" /> : <ShoppingCart size={14} />}
                           Marcar como Comprado
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -488,173 +468,144 @@ function CreateMaterialRequestModal({
     }
   }
 
+  const canSubmit = title.trim() && professionalId && items[0]?.name.trim() && !saving
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 640 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-on-surface)', margin: 0 }}>
-            Novo Pedido de Material
-          </h2>
-          <button className="btn-ghost" onClick={onClose} style={{ padding: 6 }}>
-            <X size={20} />
-          </button>
+    <Modal isOpen={true} onClose={onClose} title="Novo Pedido de Material" size="lg" footer={
+      <div className="flex items-center justify-between w-full">
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Total estimado</span>
+          <p className="text-lg font-black text-primary">{formatCurrency(totalEstimated)}</p>
         </div>
-
-        {/* Professional + Urgency */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-on-surface-variant)', display: 'block', marginBottom: 4 }}>
-              Profissional
-            </label>
-            <select
-              value={professionalId}
-              onChange={e => setProfessionalId(e.target.value)}
-            >
-              {professionals.map(p => (
-                <option key={p.id} value={p.id}>{p.name}{p.specialty ? ` (${p.specialty})` : ''}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-on-surface-variant)', display: 'block', marginBottom: 4 }}>
-              Urgência
-            </label>
-            <select value={urgency} onChange={e => setUrgency(e.target.value as 'baixa' | 'normal' | 'urgente')}>
-              <option value="baixa">Baixa</option>
-              <option value="normal">Normal</option>
-              <option value="urgente">Urgente</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Title */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-on-surface-variant)', display: 'block', marginBottom: 4 }}>
-            Título do Pedido
-          </label>
-          <input
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            placeholder="Ex: Material hidráulico para cozinha"
-          />
-        </div>
-
-        {/* Items */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-on-surface-variant)' }}>
-              Itens ({items.length})
-            </label>
-            <button onClick={addItem} className="btn-ghost" style={{ padding: '4px 10px', fontSize: 13, color: 'var(--color-secondary)', fontWeight: 600 }}>
-              <Plus size={14} /> Adicionar
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {items.map((item, idx) => (
-              <div key={idx} style={{
-                padding: 12, background: 'var(--color-surface-container-low)',
-                borderRadius: 10, position: 'relative',
-              }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 60px', gap: 8, marginBottom: 8 }}>
-                  <input
-                    value={item.name}
-                    onChange={e => updateItem(idx, 'name', e.target.value)}
-                    placeholder="Nome do material"
-                    style={{ fontSize: 14, padding: '8px 10px' }}
-                  />
-                  <input
-                    type="number"
-                    value={item.quantity}
-                    onChange={e => updateItem(idx, 'quantity', parseFloat(e.target.value) || 0)}
-                    placeholder="Qtd"
-                    style={{ fontSize: 14, padding: '8px 10px', textAlign: 'center' }}
-                  />
-                  <select
-                    value={item.unit}
-                    onChange={e => updateItem(idx, 'unit', e.target.value)}
-                    style={{ fontSize: 13, padding: '8px 6px' }}
-                  >
-                    <option value="un">un</option>
-                    <option value="m">m</option>
-                    <option value="m²">m²</option>
-                    <option value="kg">kg</option>
-                    <option value="L">L</option>
-                    <option value="pç">pç</option>
-                    <option value="cx">cx</option>
-                    <option value="sc">sc</option>
-                    <option value="rl">rl</option>
-                  </select>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 32px', gap: 8, alignItems: 'center' }}>
-                  <input
-                    type="number"
-                    value={item.estimated_price}
-                    onChange={e => updateItem(idx, 'estimated_price', e.target.value)}
-                    placeholder="R$ preço"
-                    style={{ fontSize: 14, padding: '8px 10px' }}
-                  />
-                  <input
-                    value={item.notes}
-                    onChange={e => updateItem(idx, 'notes', e.target.value)}
-                    placeholder="Obs (opcional)"
-                    style={{ fontSize: 13, padding: '8px 10px' }}
-                  />
-                  {items.length > 1 && (
-                    <button
-                      onClick={() => removeItem(idx)}
-                      className="btn-ghost"
-                      style={{ padding: 4, color: 'var(--color-danger)' }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Notes */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-on-surface-variant)', display: 'block', marginBottom: 4 }}>
-            Observações (opcional)
-          </label>
-          <textarea
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            placeholder="Detalhes adicionais sobre o pedido..."
-            rows={2}
-            style={{ resize: 'vertical' }}
-          />
-        </div>
-
-        {/* Total + Submit */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '16px 0 0', borderTop: '1px solid var(--color-outline-variant)',
-        }}>
-          <div>
-            <span style={{ fontSize: 13, color: 'var(--color-on-surface-variant)' }}>Total estimado: </span>
-            <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-on-surface)' }}>
-              {formatCurrency(totalEstimated)}
-            </span>
-          </div>
-          <button
-            onClick={handleSubmit}
-            disabled={saving || !title.trim() || !professionalId || !items[0]?.name.trim()}
-            className="btn-primary"
-            style={{
-              background: 'var(--color-secondary)', width: 'auto',
-              display: 'flex', alignItems: 'center', gap: 6,
-              opacity: saving || !title.trim() || !professionalId || !items[0]?.name.trim() ? 0.5 : 1,
-            }}
+        <Button
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+          variant="primary"
+          size="lg"
+          icon={saving ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+        >
+          Criar Pedido
+        </Button>
+      </div>
+    }>
+      {/* Professional + Urgency */}
+      <div className="grid grid-cols-2 gap-3">
+        <FormField label="Profissional" required>
+          <select
+            value={professionalId}
+            onChange={e => setProfessionalId(e.target.value)}
+            className="w-full py-2.5 px-3 rounded-xl border border-outline-variant bg-surface-lowest text-sm focus:outline-none focus:border-primary"
           >
-            {saving ? <Loader2 size={16} className="spin" /> : <Send size={16} />}
-            Criar Pedido
-          </button>
+            {professionals.map(p => (
+              <option key={p.id} value={p.id}>{p.name}{p.specialty ? ` (${p.specialty})` : ''}</option>
+            ))}
+          </select>
+        </FormField>
+        <FormField label="Urgencia" required>
+          <select
+            value={urgency}
+            onChange={e => setUrgency(e.target.value as 'baixa' | 'normal' | 'urgente')}
+            className="w-full py-2.5 px-3 rounded-xl border border-outline-variant bg-surface-lowest text-sm focus:outline-none focus:border-primary"
+          >
+            <option value="baixa">Baixa</option>
+            <option value="normal">Normal</option>
+            <option value="urgente">Urgente</option>
+          </select>
+        </FormField>
+      </div>
+
+      {/* Title */}
+      <FormField label="Titulo do Pedido" required>
+        <input
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          placeholder="Ex: Material hidraulico para cozinha"
+          className="w-full py-2.5 px-3 rounded-xl border border-outline-variant bg-surface-lowest text-sm focus:outline-none focus:border-primary"
+        />
+      </FormField>
+
+      {/* Items */}
+      <div>
+        <div className="flex justify-between items-center mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+            Itens ({items.length})
+          </p>
+          <Button onClick={addItem} variant="ghost" size="sm" icon={<Plus size={14} />} className="text-secondary">
+            Adicionar
+          </Button>
+        </div>
+
+        <div className="flex flex-col gap-2.5">
+          {items.map((item, idx) => (
+            <div key={idx} className="p-3 bg-surface-container-low rounded-xl border border-outline-variant relative">
+              <div className="grid grid-cols-[1fr_80px_60px] gap-2 mb-2">
+                <input
+                  value={item.name}
+                  onChange={e => updateItem(idx, 'name', e.target.value)}
+                  placeholder="Nome do material"
+                  className="py-2 px-3 rounded-xl border border-outline-variant bg-surface-lowest text-sm focus:outline-none focus:border-primary"
+                />
+                <input
+                  type="number"
+                  value={item.quantity}
+                  onChange={e => updateItem(idx, 'quantity', parseFloat(e.target.value) || 0)}
+                  placeholder="Qtd"
+                  className="py-2 px-3 rounded-xl border border-outline-variant bg-surface-lowest text-sm text-center focus:outline-none focus:border-primary"
+                />
+                <select
+                  value={item.unit}
+                  onChange={e => updateItem(idx, 'unit', e.target.value)}
+                  className="py-2 px-1.5 rounded-xl border border-outline-variant bg-surface-lowest text-xs focus:outline-none focus:border-primary"
+                >
+                  <option value="un">un</option>
+                  <option value="m">m</option>
+                  <option value="m2">m2</option>
+                  <option value="kg">kg</option>
+                  <option value="L">L</option>
+                  <option value="pc">pc</option>
+                  <option value="cx">cx</option>
+                  <option value="sc">sc</option>
+                  <option value="rl">rl</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-[120px_1fr_32px] gap-2 items-center">
+                <input
+                  type="number"
+                  value={item.estimated_price}
+                  onChange={e => updateItem(idx, 'estimated_price', e.target.value)}
+                  placeholder="R$ preco"
+                  className="py-2 px-3 rounded-xl border border-outline-variant bg-surface-lowest text-sm focus:outline-none focus:border-primary"
+                />
+                <input
+                  value={item.notes}
+                  onChange={e => updateItem(idx, 'notes', e.target.value)}
+                  placeholder="Obs (opcional)"
+                  className="py-2 px-3 rounded-xl border border-outline-variant bg-surface-lowest text-xs focus:outline-none focus:border-primary"
+                />
+                {items.length > 1 && (
+                  <button
+                    onClick={() => removeItem(idx)}
+                    className="p-1 bg-transparent border-none cursor-pointer text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-    </div>
+
+      {/* Notes */}
+      <FormField label="Observacoes" hint="Opcional">
+        <textarea
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          placeholder="Detalhes adicionais sobre o pedido..."
+          rows={2}
+          className="w-full py-2.5 px-3 rounded-xl border border-outline-variant bg-surface-lowest text-sm resize-y focus:outline-none focus:border-primary"
+        />
+      </FormField>
+    </Modal>
   )
 }

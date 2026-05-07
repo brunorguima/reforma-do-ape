@@ -2,7 +2,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { UserID } from '@/lib/constants'
 import { apiUrl, withProjectId } from '@/lib/project-client'
-import { DollarSign, TrendingDown, CheckCircle2, Clock, AlertTriangle, Calendar, CreditCard, PieChart, Users, Plus, Pencil, Trash2, Save, X, ChevronDown, ChevronUp, History, ShoppingCart, FileText } from 'lucide-react'
+import { DollarSign, TrendingDown, CheckCircle2, Clock, AlertTriangle, Calendar, CreditCard, Users, Plus, Pencil, Trash2, Save, X, ChevronDown, ChevronUp, History, ShoppingCart, FileText } from 'lucide-react'
+import { PieChart as PieChartIcon } from 'lucide-react'
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from 'recharts'
+import { KpiCard, KpiGrid } from '@/components/ui'
 import NFeImportModal from './NFeImportModal'
 import PaymentMethodsModal from './PaymentMethodsModal'
 
@@ -39,13 +42,13 @@ interface Material {
 }
 
 const MATERIAL_CATEGORIES: Record<string, { label: string; emoji: string }> = {
-  eletrica: { label: 'Elétrica', emoji: '⚡' },
-  hidraulica: { label: 'Hidráulica', emoji: '🚿' },
+  eletrica: { label: 'Eletrica', emoji: '⚡' },
+  hidraulica: { label: 'Hidraulica', emoji: '🚿' },
   acabamento: { label: 'Acabamento', emoji: '✨' },
   pintura: { label: 'Pintura', emoji: '🎨' },
   alvenaria: { label: 'Alvenaria', emoji: '🧱' },
   piso: { label: 'Piso/Revestimento', emoji: '🏗️' },
-  iluminacao: { label: 'Iluminação', emoji: '💡' },
+  iluminacao: { label: 'Iluminacao', emoji: '💡' },
   marcenaria: { label: 'Marcenaria', emoji: '🪚' },
   ferragem: { label: 'Ferragem', emoji: '🔩' },
   limpeza: { label: 'Limpeza', emoji: '🧹' },
@@ -56,10 +59,10 @@ const MATERIAL_CATEGORIES: Record<string, { label: string; emoji: string }> = {
 const PAYMENT_METHOD_LABELS: Record<string, { label: string; emoji: string }> = {
   pix: { label: 'PIX', emoji: '⚡' },
   boleto: { label: 'Boleto', emoji: '📄' },
-  cartao_credito: { label: 'Cartão Crédito', emoji: '💳' },
-  cartao_debito: { label: 'Cartão Débito', emoji: '💳' },
+  cartao_credito: { label: 'Cartao Credito', emoji: '💳' },
+  cartao_debito: { label: 'Cartao Debito', emoji: '💳' },
   dinheiro: { label: 'Dinheiro', emoji: '💵' },
-  transferencia: { label: 'Transferência', emoji: '🏦' },
+  transferencia: { label: 'Transferencia', emoji: '🏦' },
   parcelado: { label: 'Parcelado', emoji: '📊' },
 }
 
@@ -69,6 +72,8 @@ const fmt = (v: number | null | undefined) => {
 }
 const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 const fmtDateTime = (d: string) => new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+
+const PIE_COLORS = ['#022448', '#0051d5', '#adc8f5', '#059669', '#d97706', '#dc2626']
 
 interface Props {
   currentUser: UserID
@@ -195,7 +200,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
       // Check if this payment is associated with Mariana
       const isHers = payment.professional.toLowerCase().includes('mariana') || payment.professional.toLowerCase().includes('mari')
       if (!isHers) {
-        showToast('Sem permissão para deletar parcelas de outros profissionais', 'error')
+        showToast('Sem permissao para deletar parcelas de outros profissionais', 'error')
         setConfirmDelete(null)
         return
       }
@@ -246,7 +251,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
     }
     const remaining = negociado - pago
     if (remaining <= 0) {
-      showToast('Já foi pago o valor total (ou mais) do contrato', 'error')
+      showToast('Ja foi pago o valor total (ou mais) do contrato', 'error')
       return
     }
     const perInstallment = Math.floor((remaining / pendingPayments.length) * 100) / 100
@@ -260,7 +265,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
           body: JSON.stringify(withProjectId({ id: p.id, amount: newAmount }, projectId)),
         })
       }))
-      await logAction('edit', 'payment', '', `Recálculo automático: ${pendingPayments.length} parcelas de ${professional} redistribuídas — R$${remaining.toFixed(2)} restante ÷ ${pendingPayments.length} = R$${perInstallment.toFixed(2)}/parcela`)
+      await logAction('edit', 'payment', '', `Recalculo automatico: ${pendingPayments.length} parcelas de ${professional} redistribuidas — R$${remaining.toFixed(2)} restante / ${pendingPayments.length} = R$${perInstallment.toFixed(2)}/parcela`)
       showToast(`${pendingPayments.length} parcelas recalculadas! R$${perInstallment.toFixed(2)} cada`)
       await fetchData()
     } catch (err) {
@@ -273,7 +278,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
     return (
       <div className="text-center py-15 px-5">
         <div className="text-5xl mb-4">💰</div>
-        <p className="text-[#6b7280]">Carregando financeiro...</p>
+        <p className="text-on-surface-variant">Carregando financeiro...</p>
       </div>
     )
   }
@@ -331,11 +336,11 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
     const profPayments = payments.filter(p => p.professional === prof)
     const negociado = profContracts.reduce((s, c) => s + c.negotiatedTotal, 0)
     const isCartaoParcelado = profPayments.some(p => p.payment_type === 'cartao_parcelado')
-    // For cartão parcelado: professional is 100% paid (card company paid them)
+    // For cartao parcelado: professional is 100% paid (card company paid them)
     // "pago" = what already left your pocket, "pendente" = card installments still coming
     const pagoEfetivo = profPayments.filter(p => p.status === 'pago').reduce((s, p) => s + p.amount, 0)
     const pendenteEfetivo = profPayments.filter(p => p.status === 'pendente').reduce((s, p) => s + p.amount, 0)
-    // For professional's perspective: if cartão parcelado, they're 100% paid
+    // For professional's perspective: if cartao parcelado, they're 100% paid
     const pagoProfissional = isCartaoParcelado ? negociado : pagoEfetivo
     const pendenteProfissional = isCartaoParcelado ? 0 : pendenteEfetivo
     const role = profContracts[0]?.role || ''
@@ -365,7 +370,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
   }
   const cashFlowMonths = Object.entries(cashFlowByMonth).sort(([a], [b]) => a.localeCompare(b))
 
-  // KPI totals — profissional perspective (cartão = 100% pago)
+  // KPI totals — profissional perspective (cartao = 100% pago)
   const totalPagoServicos = profBreakdown.reduce((s, p) => s + p.pagoProfissional, 0)
   const totalPendente = profBreakdown.reduce((s, p) => s + p.pendenteProfissional, 0)
   // Fluxo de caixa: o que ainda vai sair do bolso de fato
@@ -406,8 +411,21 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
     .map(([name, data]) => ({ name, total: Math.max(0, data.total), count: data.count }))
     .filter(c => c.total > 0)
     .sort((a, b) => b.total - a.total)
-  const maxCategoryTotal = categoryTotals.length > 0 ? categoryTotals[0].total : 1
   const categoryGrandTotal = categoryTotals.reduce((s, c) => s + c.total, 0)
+
+  // Recharts data for PieChart
+  const pieData = categoryTotals.map((cat, idx) => ({
+    name: cat.name,
+    value: cat.total,
+    fill: PIE_COLORS[idx % PIE_COLORS.length],
+  }))
+
+  // Recharts data for BarChart
+  const barData = cashFlowMonths.slice(0, 6).map(([month, data]) => {
+    const [y, m] = month.split('-')
+    const monthName = new Date(Number(y), Number(m) - 1).toLocaleString('pt-BR', { month: 'short' })
+    return { name: monthName, value: data.total }
+  })
 
   const PROF_COLORS = ['#3B82F6', '#8B5CF6', '#F59E0B', '#EC4899', '#10B981', '#EF4444']
 
@@ -415,7 +433,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
     <div className="relative">
       {/* TOAST */}
       {toast && (
-        <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[9999] px-5 py-2.5 rounded-[10px] text-sm font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.15)] animate-[fadeIn_0.3s_ease] ${toast.type === 'success' ? 'bg-success' : 'bg-danger'}`}>
+        <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[9999] px-5 py-2.5 rounded-2xl text-sm font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.15)] animate-[fadeIn_0.3s_ease] ${toast.type === 'success' ? 'bg-success' : 'bg-danger'}`}>
           {toast.type === 'success' ? '✓' : '✕'} {toast.msg}
         </div>
       )}
@@ -424,68 +442,76 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
       <div className="flex justify-between items-center mb-3">
         <div className="flex items-center gap-2">
           <DollarSign size={20} className="text-on-surface" />
-          <h2 className="text-[17px] font-bold m-0">Visão Geral</h2>
+          <h2 className="text-[17px] font-bold m-0">Visao Geral</h2>
         </div>
         {isOwner && (
           <button onClick={() => { setShowAuditLog(!showAuditLog); if (!showAuditLog) fetchAuditLog() }}
-            className="bg-surface-container border border-outline-variant rounded-sm px-2 py-1 cursor-pointer text-on-surface flex items-center"
-            title="Ver histórico de alterações">
+            className="bg-surface-container border border-outline-variant rounded-xl px-2 py-1 cursor-pointer text-on-surface flex items-center"
+            title="Ver historico de alteracoes">
             <History size={14} />
           </button>
         )}
       </div>
 
       {/* KPI Cards */}
-      <div className="kpi-grid">
-        <div className="kpi-card" data-accent="green">
-          <p className="kpi-label">Total Pago</p>
-          <p className="kpi-value">{fmt(totalPago)}</p>
-          <p className="kpi-sub">{percentPago}% do total</p>
-        </div>
-        <div className="kpi-card" data-accent="indigo">
-          <p className="kpi-label">Serviços</p>
-          <p className="kpi-value">{fmt(totalNegociado)}</p>
-          <p className="kpi-sub">{unifiedContracts.length} contratos</p>
-        </div>
-        <div className="kpi-card" data-accent="amber">
-          <p className="kpi-label">Materiais</p>
-          <p className="kpi-value">{fmt(materiaisTotal)}</p>
-          <p className="kpi-sub">{materials.length} itens</p>
-        </div>
-        <div className="kpi-card" data-accent="blue">
-          <p className="kpi-label">Total Geral</p>
-          <p className="kpi-value">{fmt(totalGeral)}</p>
-          {economiaTotal > 0 && <p className="kpi-sub text-success">{`Economia: ${fmt(economiaTotal)}`}</p>}
-        </div>
-      </div>
+      <KpiGrid cols={2}>
+        <KpiCard
+          label="Total Pago"
+          value={fmt(totalPago)}
+          sub={`${percentPago}% do total`}
+          icon={<CheckCircle2 size={20} />}
+          accent="success"
+        />
+        <KpiCard
+          label="Servicos"
+          value={fmt(totalNegociado)}
+          sub={`${unifiedContracts.length} contratos`}
+          icon={<Users size={20} />}
+          accent="primary"
+        />
+        <KpiCard
+          label="Materiais"
+          value={fmt(materiaisTotal)}
+          sub={`${materials.length} itens`}
+          icon={<ShoppingCart size={20} />}
+          accent="warning"
+        />
+        <KpiCard
+          label="Total Geral"
+          value={fmt(totalGeral)}
+          sub={economiaTotal > 0 ? `Economia: ${fmt(economiaTotal)}` : undefined}
+          icon={<DollarSign size={20} />}
+          accent="info"
+        />
+      </KpiGrid>
 
-      {/* Progress Bar */}
-      <div className="bg-[#F3F4F6] rounded-sm h-2 overflow-hidden mb-4">
-        <div className="h-full bg-gradient-to-r from-[#3B82F6] to-[#60A5FA] rounded-sm transition-all duration-500 ease-in-out" style={{ width: `${percentPago}%` }} />
+      {/* Progress Bar — M3 style */}
+      <div className="bg-surface-container-highest rounded-full h-2 overflow-hidden my-4">
+        <div className="h-full bg-secondary rounded-full transition-all duration-500 ease-in-out" style={{ width: `${percentPago}%` }} />
       </div>
 
       {/* === AUDIT LOG PANEL === */}
       {showAuditLog && (
-        <div className="mb-4 rounded-md bg-[#F8FAFC] border border-[#E2E8F0] p-4 max-h-[300px] overflow-auto">
+        <div className="mb-4 rounded-2xl bg-surface-container border border-outline-variant p-4 max-h-[300px] overflow-auto">
           <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-bold text-[#374151] m-0 flex items-center gap-1.5">
-              <History size={14} /> Histórico de Alterações
+            <h3 className="text-sm font-bold text-on-surface m-0 flex items-center gap-1.5">
+              <History size={14} /> Historico de Alteracoes
             </h3>
-            <button onClick={() => setShowAuditLog(false)} className="bg-transparent border-none cursor-pointer text-[#6B7280]"><X size={16} /></button>
+            <button onClick={() => setShowAuditLog(false)} className="bg-transparent border-none cursor-pointer text-on-surface-variant"><X size={16} /></button>
           </div>
           {auditLog.length === 0 ? (
-            <p className="text-xs text-[#9CA3AF] text-center">Nenhuma alteração registrada ainda</p>
+            <p className="text-xs text-outline text-center">Nenhuma alteracao registrada ainda</p>
           ) : (
             auditLog.slice(0, 20).map(log => (
-              <div key={log.id} className="py-2 border-b border-[#E5E7EB] text-xs">
+              <div key={log.id} className="py-2 border-b border-outline-variant text-xs">
                 <div className="flex justify-between items-center">
                   <span className={`font-semibold ${log.action === 'delete' ? 'text-danger' : log.action === 'edit' ? 'text-warning' : 'text-success'}`}>
                     {log.action === 'delete' ? '🗑️ Deletou' : log.action === 'edit' ? '✏️ Editou' : log.action === 'create' ? '➕ Criou' : '🔄 Alterou'}
                   </span>
-                  <span className="text-[#9CA3AF]">{fmtDateTime(log.performed_at)}</span>
+                  <span className="text-outline">{fmtDateTime(log.performed_at)}</span>
                 </div>
-                <p className="mt-0.5 mb-0 text-[#6B7280]">{log.entity_description}</p>
-                <p className="mt-0.5 mb-0 text-[#9CA3AF] italic">por {log.performed_by}</p>
+                <p className="mt-0.5 mb-0 text-on-surface-variant">{log.entity_description}</p>
+                <p className="mt-0.5 mb-0 text-outline italic">por {log.performed_by}</p>
               </div>
             ))
           )}
@@ -494,15 +520,15 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
 
       {/* === NEXT PAYMENT ALERT === */}
       {nextPayment && (
-        <div className={`flex items-center gap-3 py-3.5 px-4 rounded-md mb-4 ${daysUntilNext !== null && daysUntilNext <= 3 ? 'bg-danger-light border border-[#FECACA]' : 'bg-[#FFFBEB] border border-[#FDE68A]'}`}>
+        <div className={`flex items-center gap-3 py-3.5 px-4 rounded-2xl mb-4 ${daysUntilNext !== null && daysUntilNext <= 3 ? 'bg-danger-light border border-[#FECACA]' : 'bg-[#FFFBEB] border border-[#FDE68A]'}`}>
           {daysUntilNext !== null && daysUntilNext <= 3 ? <AlertTriangle size={20} className="text-danger" /> : <Calendar size={20} className="text-warning" />}
           <div className="flex-1">
-            <p className="text-sm font-semibold text-[#1F2937] m-0">
-              Próximo: {fmt(nextPayment.amount)} — {nextPayment.professional}
+            <p className="text-sm font-semibold text-on-surface m-0">
+              Proximo: {fmt(nextPayment.amount)} — {nextPayment.professional}
             </p>
-            <p className="text-xs text-[#6B7280] mt-0.5 mb-0">
+            <p className="text-xs text-on-surface-variant mt-0.5 mb-0">
               {fmtDate(nextPayment.due_date)} · {daysUntilNext !== null && daysUntilNext > 0
-                ? `Faltam ${daysUntilNext} dias` : daysUntilNext === 0 ? 'Vence HOJE!' : `Vencida há ${Math.abs(daysUntilNext!)} dias`}
+                ? `Faltam ${daysUntilNext} dias` : daysUntilNext === 0 ? 'Vence HOJE!' : `Vencida ha ${Math.abs(daysUntilNext!)} dias`}
             </p>
           </div>
         </div>
@@ -510,10 +536,10 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
 
       {/* === CONTRATOS & PAGAMENTOS === */}
       <div className="mb-5">
-        <h3 className="text-[15px] font-bold text-[#374151] mb-1 flex items-center gap-2">
+        <h3 className="text-[15px] font-bold text-on-surface mb-1 flex items-center gap-2">
           <Users size={16} /> Contratos & Pagamentos
         </h3>
-        <p className="text-[11px] text-[#9CA3AF] mt-0 mb-3 pl-6">
+        <p className="text-[11px] text-outline mt-0 mb-3 pl-6">
           Toque em um profissional para ver e gerenciar parcelas
         </p>
         <div className="flex flex-col gap-2.5">
@@ -523,8 +549,8 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
             const color = PROF_COLORS[idx % PROF_COLORS.length]
 
             return (
-              <div key={prof.professional} className="rounded-md bg-surface-lowest overflow-hidden transition-colors duration-200" style={{
-                border: `1px solid ${isExpanded ? color + '40' : '#E5E7EB'}`,
+              <div key={prof.professional} className="rounded-2xl bg-surface-lowest overflow-hidden transition-colors duration-200" style={{
+                border: `1px solid ${isExpanded ? color + '40' : 'var(--outline-variant, #E5E7EB)'}`,
                 boxShadow: isExpanded ? `0 2px 8px ${color}15` : 'none',
               }}>
                 {/* Header */}
@@ -535,50 +561,50 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-sm font-extrabold" style={{ background: `${color}15`, color }}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-extrabold" style={{ background: `${color}15`, color }}>
                         {prof.professional.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-[#1F2937] m-0">{prof.professional}</p>
-                        <p className="text-[11px] text-[#6B7280] m-0">{prof.role}</p>
+                        <p className="text-sm font-bold text-on-surface m-0">{prof.professional}</p>
+                        <p className="text-[11px] text-on-surface-variant m-0">{prof.role}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2.5">
                       <div className="text-right">
-                        <p className="text-[15px] font-extrabold text-[#1F2937] m-0">{fmt(prof.negociado)}</p>
-                        <p className="text-[11px] text-[#10B981] font-semibold m-0">{prof.percent}% pago</p>
+                        <p className="text-[15px] font-extrabold text-on-surface m-0">{fmt(prof.negociado)}</p>
+                        <p className="text-[11px] text-success font-semibold m-0">{prof.percent}% pago</p>
                       </div>
                       {/* Clear expand/collapse indicator */}
-                      <div className="w-7 h-7 rounded-sm flex items-center justify-center transition-all duration-200" style={{
-                        background: isExpanded ? color : '#F3F4F6',
-                        color: isExpanded ? 'white' : '#9CA3AF',
+                      <div className="w-7 h-7 rounded-xl flex items-center justify-center transition-all duration-200" style={{
+                        background: isExpanded ? color : 'var(--surface-container, #F3F4F6)',
+                        color: isExpanded ? 'white' : 'var(--outline, #9CA3AF)',
                       }}>
                         {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </div>
                     </div>
                   </div>
-                  <div className="bg-[#F3F4F6] rounded-[6px] h-1.5 overflow-hidden">
-                    <div className="h-full rounded-[6px] transition-all duration-500 ease-in-out" style={{ width: `${prof.percent}%`, background: color }} />
+                  <div className="bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-500 ease-in-out" style={{ width: `${prof.percent}%`, background: color }} />
                   </div>
                   <div className="flex justify-between mt-1.5 flex-wrap gap-1">
                     {prof.isCartaoParcelado ? (
                       <>
                         <span className="text-[11px] text-success font-semibold">
                           <CheckCircle2 size={11} className="inline align-middle mr-[3px]" />
-                          💳 Pago no cartão
+                          💳 Pago no cartao
                         </span>
-                        <span className="text-[11px] text-[#6B7280]">
+                        <span className="text-[11px] text-on-surface-variant">
                           <Clock size={11} className="inline align-middle mr-[3px]" />
                           Fatura restante: {fmt(prof.pendente)}
                         </span>
                       </>
                     ) : (
                       <>
-                        <span className="text-[11px] text-[#6B7280]">
+                        <span className="text-[11px] text-on-surface-variant">
                           <CheckCircle2 size={11} className="inline align-middle mr-[3px]" />
                           Pago: {fmt(prof.pago)}
                         </span>
-                        <span className="text-[11px] text-[#6B7280]">
+                        <span className="text-[11px] text-on-surface-variant">
                           <Clock size={11} className="inline align-middle mr-[3px]" />
                           Pendente: {fmt(prof.pendente)}
                         </span>
@@ -592,25 +618,25 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
 
                 {/* Expanded payments */}
                 {isExpanded && (
-                  <div className="py-3 px-4 bg-[#FAFBFC]" style={{ borderTop: `2px solid ${color}20` }}>
+                  <div className="py-3 px-4 bg-surface-container" style={{ borderTop: `2px solid ${color}20` }}>
                     {/* Discrepancy Alert */}
                     {Math.abs(prof.discrepancy) > 0.01 && prof.negociado > 0 && (
-                      <div className={`flex items-center gap-2.5 py-2.5 px-3.5 rounded-[10px] mb-2.5 ${prof.discrepancy > 0 ? 'bg-danger-light border border-[#FECACA]' : 'bg-[#FFF7ED] border border-[#FED7AA]'}`}>
+                      <div className={`flex items-center gap-2.5 py-2.5 px-3.5 rounded-2xl mb-2.5 ${prof.discrepancy > 0 ? 'bg-danger-light border border-[#FECACA]' : 'bg-[#FFF7ED] border border-[#FED7AA]'}`}>
                         <AlertTriangle size={16} className={`shrink-0 ${prof.discrepancy > 0 ? 'text-danger' : 'text-warning'}`} />
                         <div className="flex-1">
-                          <p className="text-xs font-bold text-[#1F2937] m-0">
+                          <p className="text-xs font-bold text-on-surface m-0">
                             {prof.discrepancy > 0
                               ? `Parcelas somam ${fmt(prof.discrepancy)} A MAIS que o contrato`
                               : `Faltam ${fmt(Math.abs(prof.discrepancy))} nas parcelas vs contrato`}
                           </p>
-                          <p className="text-[11px] text-[#6B7280] mt-0.5 mb-0">
+                          <p className="text-[11px] text-on-surface-variant mt-0.5 mb-0">
                             Contrato: {fmt(prof.negociado)} · Pago: {fmt(prof.pago)} · Pendente: {fmt(prof.pendente)} · Falta pagar: {fmt(prof.negociado - prof.pago)}
                           </p>
                         </div>
                         {prof.pendingCount > 0 && (
                           <button
                             onClick={() => handleRecalculate(prof.professional, prof.negociado)}
-                            className="py-1.5 px-3 rounded-sm text-[11px] font-bold bg-[#2563EB] text-white border-none cursor-pointer whitespace-nowrap shrink-0"
+                            className="py-1.5 px-3 rounded-xl text-[11px] font-bold bg-secondary text-white border-none cursor-pointer whitespace-nowrap shrink-0"
                           >
                             ⚡ Recalcular
                           </button>
@@ -619,7 +645,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                     )}
 
                     {profPaymentsSorted.length === 0 && (
-                      <div className="text-center p-4 bg-[#FFF7ED] rounded-sm border border-[#FED7AA] mb-2">
+                      <div className="text-center p-4 bg-[#FFF7ED] rounded-2xl border border-[#FED7AA] mb-2">
                         <p className="text-[13px] text-[#92400E] m-0 font-semibold">Nenhuma parcela cadastrada</p>
                         <p className="text-xs text-[#B45309] mt-1 mb-0">Adicione parcelas para controlar os pagamentos</p>
                       </div>
@@ -632,14 +658,14 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                       const isConfirmingDelete = confirmDelete === p.id
 
                       return (
-                        <div key={p.id} className={`flex items-center gap-2 py-2.5 px-3 rounded-sm mb-1.5 ${isPago ? 'bg-[#F0FDF4] border border-[#BBF7D0]' : days <= 3 && !isPago ? 'bg-danger-light border border-[#FECACA]' : 'bg-surface-lowest border border-[#E5E7EB]'}`}>
-                          <div className={`w-[26px] h-[26px] rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${isPago ? 'bg-[#10B981] text-white' : 'bg-[#E5E7EB] text-[#6B7280]'}`}>
+                        <div key={p.id} className={`flex items-center gap-2 py-2.5 px-3 rounded-2xl mb-1.5 ${isPago ? 'bg-[#F0FDF4] border border-[#BBF7D0]' : days <= 3 && !isPago ? 'bg-danger-light border border-[#FECACA]' : 'bg-surface-lowest border border-outline-variant'}`}>
+                          <div className={`w-[26px] h-[26px] rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${isPago ? 'bg-success text-white' : 'bg-surface-container-highest text-on-surface-variant'}`}>
                             {isPago ? '✓' : p.installment_number}
                           </div>
 
                           {isEditing ? (
                             <div className="flex-1 flex flex-col gap-2.5">
-                              <label className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">Valor pago (R$)</label>
+                              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Valor pago (R$)</label>
                               <input
                                 type="number"
                                 inputMode="decimal"
@@ -648,43 +674,43 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                                 onChange={e => setEditAmount(e.target.value)}
                                 placeholder="0,00"
                                 autoFocus
-                                className="w-full py-3.5 px-4 rounded-[10px] border-2 border-[#BFDBFE] text-[22px] font-bold text-[#1E3A8A] bg-surface-lowest box-border"
+                                className="w-full py-3.5 px-4 rounded-2xl border-2 border-secondary/30 text-[22px] font-bold text-primary bg-surface-lowest box-border"
                               />
-                              <label className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">Data</label>
+                              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Data</label>
                               <input
                                 type="date"
                                 value={editDate}
                                 onChange={e => setEditDate(e.target.value)}
-                                className="w-full py-3 px-3.5 rounded-[10px] border border-[#D1D5DB] text-[15px] box-border"
+                                className="w-full py-3 px-3.5 rounded-2xl border border-outline-variant text-[15px] box-border"
                               />
                               <input
                                 type="text"
                                 value={editNotes}
                                 onChange={e => setEditNotes(e.target.value)}
-                                placeholder="Observação (opcional)"
-                                className="w-full py-3 px-3.5 rounded-[10px] border border-[#D1D5DB] text-sm box-border"
+                                placeholder="Observacao (opcional)"
+                                className="w-full py-3 px-3.5 rounded-2xl border border-outline-variant text-sm box-border"
                               />
                               <div className="flex gap-2 justify-end">
                                 <button onClick={() => handleSaveEdit(p)}
-                                  className="flex items-center gap-1.5 py-2.5 px-[18px] rounded-[10px] bg-[#10B981] text-white border-none text-sm cursor-pointer font-bold">
+                                  className="flex items-center gap-1.5 py-2.5 px-[18px] rounded-2xl bg-success text-white border-none text-sm cursor-pointer font-bold">
                                   <Save size={14} /> Salvar
                                 </button>
                                 <button onClick={() => setEditingPayment(null)}
-                                  className="flex items-center gap-1.5 py-2.5 px-[18px] rounded-[10px] bg-[#F3F4F6] text-[#374151] border border-[#D1D5DB] text-sm cursor-pointer font-semibold">
+                                  className="flex items-center gap-1.5 py-2.5 px-[18px] rounded-2xl bg-surface-container text-on-surface border border-outline-variant text-sm cursor-pointer font-semibold">
                                   <X size={14} /> Cancelar
                                 </button>
                               </div>
                             </div>
                           ) : isConfirmingDelete ? (
                             <div className="flex-1 flex items-center justify-between">
-                              <span className="text-[13px] text-danger font-semibold">Confirmar exclusão?</span>
+                              <span className="text-[13px] text-danger font-semibold">Confirmar exclusao?</span>
                               <div className="flex gap-1.5">
                                 <button onClick={() => handleDeletePayment(p)}
-                                  className="py-1 px-2.5 rounded-[6px] bg-danger text-white border-none text-xs cursor-pointer font-semibold">
+                                  className="py-1 px-2.5 rounded-xl bg-danger text-white border-none text-xs cursor-pointer font-semibold">
                                   Sim, deletar
                                 </button>
                                 <button onClick={() => setConfirmDelete(null)}
-                                  className="py-1 px-2.5 rounded-[6px] bg-[#F3F4F6] text-[#6B7280] border-none text-xs cursor-pointer">
+                                  className="py-1 px-2.5 rounded-xl bg-surface-container text-on-surface-variant border-none text-xs cursor-pointer">
                                   Cancelar
                                 </button>
                               </div>
@@ -692,35 +718,35 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                           ) : (
                             <>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-semibold text-[#1F2937] m-0">
+                                <p className="text-[13px] font-semibold text-on-surface m-0">
                                   {fmt(p.amount)}
-                                  <span className="font-normal text-[#6B7280] ml-1.5 text-xs">
+                                  <span className="font-normal text-on-surface-variant ml-1.5 text-xs">
                                     {fmtDate(p.due_date)}
                                     {!isPago && days <= 3 && days >= 0 && ' ⚠️'}
                                     {!isPago && days < 0 && ' 🔴'}
                                   </span>
                                 </p>
-                                {p.notes && <p className="text-[11px] text-[#9CA3AF] mt-0.5 mb-0 whitespace-nowrap overflow-hidden text-ellipsis">{p.notes}</p>}
+                                {p.notes && <p className="text-[11px] text-outline mt-0.5 mb-0 whitespace-nowrap overflow-hidden text-ellipsis">{p.notes}</p>}
                               </div>
                               <div className="flex gap-1 shrink-0">
                                 {isPago ? (
                                   <button onClick={() => handleUnmarkPaid(p)} title="Desfazer pagamento"
-                                    className="py-1 px-2 rounded-[6px] bg-warning-light text-[#92400E] border-none text-[11px] font-semibold cursor-pointer">
+                                    className="py-1 px-2 rounded-xl bg-warning-light text-[#92400E] border-none text-[11px] font-semibold cursor-pointer">
                                     Desfazer
                                   </button>
                                 ) : (
                                   <button onClick={() => handleMarkPaid(p)} title="Marcar como pago"
-                                    className="py-1 px-2 rounded-[6px] bg-success-light text-[#065F46] border-none text-[11px] font-semibold cursor-pointer">
+                                    className="py-1 px-2 rounded-xl bg-success-light text-[#065F46] border-none text-[11px] font-semibold cursor-pointer">
                                     ✓ Pagar
                                   </button>
                                 )}
                                 <button onClick={() => { setEditingPayment(p.id); setEditAmount(String(p.amount)); setEditDate(p.due_date); setEditNotes(p.notes || '') }}
                                   title="Editar parcela"
-                                  className="py-1 px-1.5 rounded-[6px] bg-[#DBEAFE] text-[#1D4ED8] border-none cursor-pointer">
+                                  className="py-1 px-1.5 rounded-xl bg-[#DBEAFE] text-[#1D4ED8] border-none cursor-pointer">
                                   <Pencil size={12} />
                                 </button>
                                 <button onClick={() => setConfirmDelete(p.id)} title="Excluir parcela"
-                                  className="py-1 px-1.5 rounded-[6px] bg-danger-light text-danger border-none cursor-pointer">
+                                  className="py-1 px-1.5 rounded-xl bg-danger-light text-danger border-none cursor-pointer">
                                   <Trash2 size={12} />
                                 </button>
                               </div>
@@ -732,43 +758,43 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
 
                     {/* Add payment */}
                     {showAddPayment === prof.professional ? (
-                      <div className="p-3 rounded-sm bg-[#EFF6FF] border border-[#BFDBFE] mt-1.5">
-                        <p className="text-xs font-semibold text-[#1D4ED8] mt-0 mb-2">Nova Parcela</p>
+                      <div className="p-3 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] mt-1.5">
+                        <p className="text-xs font-semibold text-secondary mt-0 mb-2">Nova Parcela</p>
                         <div className="flex flex-col gap-1.5 mb-1.5">
                           <input type="number" placeholder="Valor (R$)" value={newPayment.amount}
                             onChange={e => setNewPayment({ ...newPayment, amount: e.target.value })}
-                            className="w-full py-2.5 px-3 rounded-[6px] border border-[#D1D5DB] text-sm box-border" />
+                            className="w-full py-2.5 px-3 rounded-xl border border-outline-variant text-sm box-border" />
                           <input type="date" value={newPayment.due_date}
                             onChange={e => setNewPayment({ ...newPayment, due_date: e.target.value })}
-                            className="w-full py-2.5 px-3 rounded-[6px] border border-[#D1D5DB] text-sm box-border" />
+                            className="w-full py-2.5 px-3 rounded-xl border border-outline-variant text-sm box-border" />
                         </div>
                         <select value={newPayment.payment_type}
                           onChange={e => setNewPayment({ ...newPayment, payment_type: e.target.value })}
-                          className="w-full py-2.5 px-3 rounded-[6px] border border-[#D1D5DB] text-sm box-border mb-1.5 bg-surface-lowest">
+                          className="w-full py-2.5 px-3 rounded-xl border border-outline-variant text-sm box-border mb-1.5 bg-surface-lowest">
                           <option value="pix">⚡ PIX</option>
-                          <option value="cartao_parcelado">💳 Cartão Parcelado</option>
+                          <option value="cartao_parcelado">💳 Cartao Parcelado</option>
                           <option value="boleto">📄 Boleto</option>
                           <option value="dinheiro">💵 Dinheiro</option>
-                          <option value="transferencia">🏦 Transferência</option>
+                          <option value="transferencia">🏦 Transferencia</option>
                         </select>
-                        <input type="text" placeholder="Observação (opcional)" value={newPayment.notes}
+                        <input type="text" placeholder="Observacao (opcional)" value={newPayment.notes}
                           onChange={e => setNewPayment({ ...newPayment, notes: e.target.value })}
-                          className="w-full py-2 px-2.5 rounded-[6px] border border-[#D1D5DB] text-[13px] mb-2 box-border" />
+                          className="w-full py-2 px-2.5 rounded-xl border border-outline-variant text-[13px] mb-2 box-border" />
                         <div className="flex gap-1.5 justify-end">
                           <button onClick={() => handleAddPayment(prof.professional, prof.contractId, prof.quoteId)}
                             disabled={!newPayment.amount || !newPayment.due_date}
-                            className={`flex items-center gap-1 py-1.5 px-3.5 rounded-[6px] text-white border-none text-xs font-semibold ${newPayment.amount && newPayment.due_date ? 'bg-[#2563EB] cursor-pointer' : 'bg-[#D1D5DB] cursor-default'}`}>
+                            className={`flex items-center gap-1 py-1.5 px-3.5 rounded-xl text-white border-none text-xs font-semibold ${newPayment.amount && newPayment.due_date ? 'bg-secondary cursor-pointer' : 'bg-outline cursor-default'}`}>
                             <Plus size={12} /> Adicionar
                           </button>
                           <button onClick={() => { setShowAddPayment(null); setNewPayment({ amount: '', due_date: '', notes: '', payment_type: 'pix' }) }}
-                            className="py-1.5 px-3.5 rounded-[6px] bg-[#F3F4F6] text-[#6B7280] border-none text-xs cursor-pointer">
+                            className="py-1.5 px-3.5 rounded-xl bg-surface-container text-on-surface-variant border-none text-xs cursor-pointer">
                             Cancelar
                           </button>
                         </div>
                       </div>
                     ) : (
                       <button onClick={() => setShowAddPayment(prof.professional)}
-                        className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-sm text-xs font-semibold cursor-pointer mt-1"
+                        className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-2xl text-xs font-semibold cursor-pointer mt-1"
                         style={{
                           border: `1px dashed ${color}60`,
                           background: `${color}05`,
@@ -784,10 +810,10 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
           })}
 
           {profBreakdown.length === 0 && (
-            <div className="text-center py-[30px] px-5 text-[#9CA3AF] text-[13px] bg-[#F9FAFB] rounded-md border border-dashed border-[#E5E7EB]">
+            <div className="text-center py-[30px] px-5 text-outline text-[13px] bg-surface-container rounded-2xl border border-dashed border-outline-variant">
               <p className="text-2xl mt-0 mb-2">📋</p>
               Nenhum contrato fechado ainda.<br />
-              Feche orçamentos na aba Profissionais para vê-los aqui.
+              Feche orcamentos na aba Profissionais para ve-los aqui.
             </div>
           )}
         </div>
@@ -796,24 +822,24 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
       {/* === UPCOMING PAYMENTS TIMELINE === */}
       {upcomingPayments.length > 0 && (
         <div className="mb-5">
-          <h3 className="text-[15px] font-bold text-[#374151] mb-3 flex items-center gap-2">
-            <CreditCard size={16} /> Próximos Pagamentos
+          <h3 className="text-[15px] font-bold text-on-surface mb-3 flex items-center gap-2">
+            <CreditCard size={16} /> Proximos Pagamentos
           </h3>
           <div className="flex flex-col gap-1.5">
             {upcomingPayments.slice(0, 6).map((p, idx) => {
               const days = Math.ceil((new Date(p.due_date + 'T12:00:00').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
               const isUrgent = days <= 3
               return (
-                <div key={p.id} className={`flex items-center gap-3 py-2.5 px-3.5 rounded-[10px] ${isUrgent ? 'bg-danger-light border border-[#FECACA]' : idx === 0 ? 'bg-[#FFFBEB] border border-[#FDE68A]' : 'bg-[#F9FAFB] border border-[#F3F4F6]'}`}>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isUrgent ? 'bg-[#EF4444] text-white' : idx === 0 ? 'bg-[#F59E0B] text-white' : 'bg-[#E5E7EB] text-[#9CA3AF]'}`}>
+                <div key={p.id} className={`flex items-center gap-3 py-2.5 px-3.5 rounded-2xl ${isUrgent ? 'bg-danger-light border border-[#FECACA]' : idx === 0 ? 'bg-[#FFFBEB] border border-[#FDE68A]' : 'bg-surface-container border border-outline-variant'}`}>
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isUrgent ? 'bg-[#EF4444] text-white' : idx === 0 ? 'bg-[#F59E0B] text-white' : 'bg-surface-container-highest text-outline'}`}>
                     {p.installment_number}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-[#1F2937] m-0">
+                    <p className="text-[13px] font-semibold text-on-surface m-0">
                       {fmt(p.amount)} — {p.professional}
                     </p>
-                    <p className="text-[11px] text-[#6B7280] mt-0.5 mb-0">
-                      {fmtDate(p.due_date)} · {days > 0 ? `${days}d` : days === 0 ? 'HOJE' : `${Math.abs(days)}d atrás`}
+                    <p className="text-[11px] text-on-surface-variant mt-0.5 mb-0">
+                      {fmtDate(p.due_date)} · {days > 0 ? `${days}d` : days === 0 ? 'HOJE' : `${Math.abs(days)}d atras`}
                     </p>
                   </div>
                 </div>
@@ -823,28 +849,44 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
         </div>
       )}
 
-      {/* === FLUXO DE CAIXA MENSAL === */}
+      {/* === FLUXO DE CAIXA MENSAL — BarChart === */}
       {cashFlowMonths.length > 0 && (
         <div className="mb-5">
-          <h3 className="text-[15px] font-bold text-[#374151] mb-1 flex items-center gap-2">
-            <TrendingDown size={16} /> Fluxo de Caixa — Próximos Meses
+          <h3 className="text-[15px] font-bold text-on-surface mb-1 flex items-center gap-2">
+            <TrendingDown size={16} /> Fluxo de Caixa — Proximos Meses
           </h3>
-          <p className="text-[11px] text-[#9CA3AF] mt-0 mb-3 pl-6">
-            Quanto sai do bolso por mês (inclui faturas de cartão)
+          <p className="text-[11px] text-outline mt-0 mb-3 pl-6">
+            Quanto sai do bolso por mes (inclui faturas de cartao)
           </p>
+
+          {/* BarChart Card */}
+          <div className="bg-surface-lowest border border-outline-variant rounded-2xl shadow-sm p-6 mb-3">
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={barData}>
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                <Tooltip
+                  formatter={(value) => [fmt(Number(value)), 'Total']}
+                  contentStyle={{ borderRadius: 12, border: '1px solid #E5E7EB', fontSize: 13 }}
+                />
+                <Bar dataKey="value" fill="#022448" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Detail cards per month */}
           <div className="flex flex-col gap-2">
             {cashFlowMonths.slice(0, 6).map(([month, data]) => {
               const [y, m] = month.split('-')
               const monthName = new Date(Number(y), Number(m) - 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' })
               const maxFlow = Math.max(...cashFlowMonths.map(([, d]) => d.total))
               return (
-                <div key={month} className="py-3 px-3.5 rounded-[10px] bg-surface-lowest border border-[#E5E7EB]">
+                <div key={month} className="py-3 px-3.5 rounded-2xl bg-surface-lowest border border-outline-variant">
                   <div className="flex justify-between items-center mb-1.5">
-                    <span className="font-semibold text-[13px] text-[#374151] capitalize">{monthName}</span>
+                    <span className="font-semibold text-[13px] text-on-surface capitalize">{monthName}</span>
                     <span className="font-bold text-[15px] text-danger">- {fmt(data.total)}</span>
                   </div>
-                  <div className="bg-[#F3F4F6] rounded h-[5px] overflow-hidden mb-1.5">
-                    <div className="h-full bg-[#EF4444] rounded" style={{ width: `${(data.total / maxFlow) * 100}%` }} />
+                  <div className="bg-surface-container-highest rounded-full h-[5px] overflow-hidden mb-1.5">
+                    <div className="h-full bg-danger rounded-full" style={{ width: `${(data.total / maxFlow) * 100}%` }} />
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {data.items.map((item, idx) => (
@@ -857,46 +899,72 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
               )
             })}
           </div>
-          <div className="mt-2 py-2.5 px-3.5 rounded-[10px] bg-danger-light border border-[#FECACA] flex justify-between items-center">
+          <div className="mt-2 py-2.5 px-3.5 rounded-2xl bg-danger-light border border-[#FECACA] flex justify-between items-center">
             <span className="text-xs font-semibold text-[#991B1B]">Total a sair do bolso</span>
             <span className="text-[15px] font-extrabold text-danger">{fmt(totalAindaSaiDoBolso)}</span>
           </div>
         </div>
       )}
 
-      {/* === GASTOS POR CATEGORIA === */}
+      {/* === DIVISAO DE CUSTOS POR CATEGORIA — PieChart === */}
       {categoryTotals.length > 0 && (
-        <div>
-          <h3 className="text-[15px] font-bold text-[#374151] mb-1 flex items-center gap-2">
-            <PieChart size={16} /> Gastos por Categoria
+        <div className="mb-5">
+          <h3 className="text-[15px] font-bold text-on-surface mb-1 flex items-center gap-2">
+            <PieChartIcon size={16} /> Divisao de Custos por Categoria
           </h3>
-          <p className="text-[11px] text-[#9CA3AF] mt-0 mb-3 pl-6">
-            Valores finais negociados (descontos diluídos)
+          <p className="text-[11px] text-outline mt-0 mb-3 pl-6">
+            Valores finais negociados (descontos diluidos)
           </p>
-          <div className="flex flex-col gap-2">
-            {categoryTotals.map(cat => (
-              <div key={cat.name} className="py-3 px-3.5 rounded-[10px] bg-surface-lowest border border-[#E5E7EB]">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="font-semibold text-[13px] text-[#374151]">{cat.name}</span>
-                  <span className="font-bold text-sm text-[#1F2937]">{fmt(cat.total)}</span>
-                </div>
-                <div className="bg-[#F3F4F6] rounded h-1 overflow-hidden">
-                  <div className="h-full bg-[#3B82F6] rounded" style={{ width: `${(cat.total / maxCategoryTotal) * 100}%` }} />
-                </div>
-                <p className="text-[11px] text-[#9CA3AF] mt-1 mb-0">{cat.count} ite{cat.count !== 1 ? 'ns' : 'm'}</p>
-              </div>
-            ))}
-          </div>
 
-          <div className="mt-3 py-3 px-4 rounded-[10px] bg-[#F0F9FF] border border-[#BAE6FD] flex justify-between items-center">
-            <span className="text-[13px] font-semibold text-[#0369A1]">Total Estimado</span>
-            <span className="text-base font-extrabold text-[#0C4A6E]">{fmt(categoryGrandTotal)}</span>
+          {/* PieChart Card */}
+          <div className="bg-surface-lowest border border-outline-variant rounded-2xl shadow-sm p-6 mb-3">
+            <div className="flex items-center gap-6">
+              <div className="relative w-[180px] h-[180px] shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => [fmt(Number(value)), '']}
+                      contentStyle={{ borderRadius: 12, border: '1px solid #E5E7EB', fontSize: 13 }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center text */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[10px] text-outline uppercase tracking-wider">Total</span>
+                  <span className="text-sm font-bold text-primary">{fmt(categoryGrandTotal)}</span>
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                {categoryTotals.map((cat, idx) => (
+                  <div key={cat.name} className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-sm shrink-0" style={{ background: PIE_COLORS[idx % PIE_COLORS.length] }} />
+                    <span className="text-xs text-on-surface-variant truncate flex-1">{cat.name}</span>
+                    <span className="text-xs font-semibold text-on-surface whitespace-nowrap">{fmt(cat.total)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* === MATERIAIS SECTION === */}
-      <div className="mt-5 rounded-[14px] bg-[#F0FDF4] border border-[#BBF7D0] p-4">
+      <div className="mt-5 rounded-2xl bg-[#F0FDF4] border border-[#BBF7D0] p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h3 className="text-[15px] font-bold text-[#166534] m-0 flex items-center gap-1.5">
             <ShoppingCart size={16} /> Materiais de Obra
@@ -907,22 +975,22 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
           <div className="flex gap-2">
             <button
               onClick={() => setShowPaymentMethods(true)}
-              className="flex items-center gap-1.5 py-2 px-3.5 rounded-[10px] bg-surface-lowest text-[#4338CA] border border-[#C7D2FE] cursor-pointer text-[13px] font-semibold"
-              title="Gerenciar formas de pagamento (cartões, PIX, boletos)"
+              className="flex items-center gap-1.5 py-2 px-3.5 rounded-2xl bg-surface-lowest text-[#4338CA] border border-[#C7D2FE] cursor-pointer text-[13px] font-semibold"
+              title="Gerenciar formas de pagamento (cartoes, PIX, boletos)"
             >
-              <CreditCard size={14} /> Cartões
+              <CreditCard size={14} /> Cartoes
             </button>
             <button
               onClick={() => setShowNfeImport(true)}
-              className="flex items-center gap-1.5 py-2 px-3.5 rounded-[10px] bg-success text-white border-none cursor-pointer text-[13px] font-semibold"
+              className="flex items-center gap-1.5 py-2 px-3.5 rounded-2xl bg-success text-white border-none cursor-pointer text-[13px] font-semibold"
             >
               <FileText size={14} /> Importar NF-e
             </button>
           </div>
         </div>
         {materials.length === 0 && (
-          <div className="p-4 text-center text-[#6B7280] text-[13px] bg-surface-lowest rounded-[10px] border border-dashed border-[#BBF7D0]">
-            Nenhum material ainda. Clique em &quot;Importar NF-e&quot; para começar.
+          <div className="p-4 text-center text-on-surface-variant text-[13px] bg-surface-lowest rounded-2xl border border-dashed border-[#BBF7D0]">
+            Nenhum material ainda. Clique em &quot;Importar NF-e&quot; para comecar.
           </div>
         )}
         {materials.length > 0 && (
@@ -935,15 +1003,15 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                   const catInfo = MATERIAL_CATEGORIES[cat] || { label: cat, emoji: '📦' }
                   const maxMatCat = Math.max(...Object.values(materiaisPorCategoria).map(d => d.total))
                   return (
-                    <div key={cat} className="py-2.5 px-3 rounded-[10px] bg-surface-lowest border border-[#D1FAE5]">
+                    <div key={cat} className="py-2.5 px-3 rounded-2xl bg-surface-lowest border border-[#D1FAE5]">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="font-semibold text-[13px] text-[#374151]">{catInfo.emoji} {catInfo.label}</span>
+                        <span className="font-semibold text-[13px] text-on-surface">{catInfo.emoji} {catInfo.label}</span>
                         <span className="font-bold text-[13px] text-[#166534]">{fmt(data.total)}</span>
                       </div>
-                      <div className="bg-[#ECFDF5] rounded h-1 overflow-hidden">
-                        <div className="h-full bg-success rounded" style={{ width: `${(data.total / maxMatCat) * 100}%` }} />
+                      <div className="bg-surface-container-highest rounded-full h-1 overflow-hidden">
+                        <div className="h-full bg-success rounded-full" style={{ width: `${(data.total / maxMatCat) * 100}%` }} />
                       </div>
-                      <p className="text-[11px] text-[#6B7280] mt-[3px] mb-0">{data.count} ite{data.count !== 1 ? 'ns' : 'm'}</p>
+                      <p className="text-[11px] text-on-surface-variant mt-[3px] mb-0">{data.count} ite{data.count !== 1 ? 'ns' : 'm'}</p>
                     </div>
                   )
                 })}
@@ -953,15 +1021,15 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
             {Object.keys(materiaisPorComprador).length > 1 && (
               <div className="flex gap-2 mb-3">
                 {Object.entries(materiaisPorComprador).map(([buyer, total]) => (
-                  <div key={buyer} className="flex-1 py-2 px-3 rounded-sm bg-surface-lowest border border-[#D1FAE5] text-center">
-                    <div className="text-[11px] text-[#6B7280]">👤 {buyer}</div>
+                  <div key={buyer} className="flex-1 py-2 px-3 rounded-2xl bg-surface-lowest border border-[#D1FAE5] text-center">
+                    <div className="text-[11px] text-on-surface-variant">👤 {buyer}</div>
                     <div className="text-sm font-bold text-[#166534]">{fmt(total)}</div>
                   </div>
                 ))}
               </div>
             )}
 
-            <div className="py-2.5 px-3.5 rounded-[10px] bg-success text-white flex justify-between items-center">
+            <div className="py-2.5 px-3.5 rounded-2xl bg-success text-white flex justify-between items-center">
               <span className="text-[13px] font-semibold">Total Materiais</span>
               <span className="text-base font-extrabold">{fmt(materiaisTotal)}</span>
             </div>
@@ -970,18 +1038,18 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
       </div>
 
       {/* === RESUMO GERAL === */}
-      <div className="mt-5 rounded-[14px] bg-gradient-to-br from-[#1E293B] to-[#334155] p-4 text-white">
+      <div className="mt-5 rounded-2xl bg-gradient-to-br from-[#1E293B] to-[#334155] p-4 text-white">
         <h3 className="text-[15px] font-bold mt-0 mb-3">📊 Resumo Geral da Reforma</h3>
         <div className="grid grid-cols-2 gap-2">
-          <div className="bg-white/10 rounded-[10px] p-2.5 text-center">
-            <div className="text-[11px] opacity-70">Serviços</div>
+          <div className="bg-white/10 rounded-2xl p-2.5 text-center">
+            <div className="text-[11px] opacity-70">Servicos</div>
             <div className="text-[15px] font-extrabold">{fmt(totalNegociado)}</div>
           </div>
-          <div className="bg-white/10 rounded-[10px] p-2.5 text-center">
+          <div className="bg-white/10 rounded-2xl p-2.5 text-center">
             <div className="text-[11px] opacity-70">Materiais</div>
             <div className="text-[15px] font-extrabold">{fmt(materiaisTotal)}</div>
           </div>
-          <div className="col-span-full bg-white/15 rounded-[10px] p-3 text-center">
+          <div className="col-span-full bg-white/15 rounded-2xl p-3 text-center">
             <div className="text-[11px] opacity-70">Total Investido na Reforma</div>
             <div className="text-xl font-extrabold">{fmt(totalGeral)}</div>
             <div className="text-[11px] opacity-70 mt-1">

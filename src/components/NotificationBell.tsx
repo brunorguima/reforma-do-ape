@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Bell, X, Check, CheckCheck, ClipboardCheck, Package, DollarSign, AlertTriangle, Info } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { Bell, X, CheckCheck, ClipboardCheck, Package, DollarSign, AlertTriangle, Info } from 'lucide-react'
 
 interface Notification {
   id: string
@@ -23,23 +23,36 @@ const TYPE_ICONS = {
   alert: AlertTriangle,
 }
 
-const TYPE_COLORS = {
-  info: { bg: '#DBEAFE', color: '#2563EB' },
-  measurement: { bg: '#FEF3C7', color: '#D97706' },
-  material_request: { bg: '#E0E7FF', color: '#4F46E5' },
-  payment: { bg: '#D1FAE5', color: '#059669' },
-  alert: { bg: '#FEE2E2', color: '#DC2626' },
+const TYPE_STYLES = {
+  info: { bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-600' },
+  measurement: { bg: 'bg-orange-50', border: 'border-orange-100', text: 'text-orange-600' },
+  material_request: { bg: 'bg-primary/5', border: 'border-primary/10', text: 'text-primary' },
+  payment: { bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-600' },
+  alert: { bg: 'bg-red-50', border: 'border-red-100', text: 'text-red-600' },
 }
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'agora'
-  if (mins < 60) return `${mins}min`
+  if (mins < 1) return 'AGORA'
+  if (mins < 60) return `${mins}MIN`
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h`
+  if (hours < 24) return `${hours}H`
   const days = Math.floor(hours / 24)
-  return `${days}d`
+  return `${days}D`
+}
+
+function getDateGroup(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const notifDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+  if (notifDate.getTime() === today.getTime()) return 'Hoje'
+  if (notifDate.getTime() === yesterday.getTime()) return 'Ontem'
+  return 'Anteriores'
 }
 
 export default function NotificationBell({
@@ -56,6 +69,17 @@ export default function NotificationBell({
 
   const unreadCount = notifications.filter(n => !n.is_read).length
 
+  const groupedNotifications = useMemo(() => {
+    const groups: Record<string, Notification[]> = {}
+    const order = ['Hoje', 'Ontem', 'Anteriores']
+    for (const n of notifications) {
+      const group = getDateGroup(n.created_at)
+      if (!groups[group]) groups[group] = []
+      groups[group].push(n)
+    }
+    return order.filter(g => groups[g]?.length).map(g => ({ label: g, items: groups[g] }))
+  }, [notifications])
+
   const fetchNotifications = useCallback(async () => {
     if (!projectId) return
     try {
@@ -71,7 +95,6 @@ export default function NotificationBell({
 
   useEffect(() => {
     fetchNotifications()
-    // Poll every 30s
     const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
   }, [fetchNotifications])
@@ -125,140 +148,125 @@ export default function NotificationBell({
   }
 
   return (
-    <div ref={panelRef} style={{ position: 'relative' }}>
+    <div ref={panelRef} className="relative">
+      {/* Bell Button */}
       <button
         onClick={() => {
           setIsOpen(!isOpen)
           requestPermission()
         }}
-        className="btn-ghost"
-        style={{ padding: 8, position: 'relative' }}
+        className="p-2 rounded-full hover:bg-surface-container transition-colors active:scale-95 relative"
       >
-        <Bell size={20} style={{ color: 'var(--color-on-surface-variant)' }} />
+        <Bell size={20} className="text-on-surface-variant" />
         {unreadCount > 0 && (
-          <span style={{
-            position: 'absolute', top: 2, right: 2,
-            width: 18, height: 18, borderRadius: '50%',
-            background: '#DC2626', color: 'white',
-            fontSize: 10, fontWeight: 800,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: '2px solid white',
-          }}>
+          <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] rounded-full bg-secondary text-white text-[10px] font-black flex items-center justify-center border-2 border-surface-lowest px-1">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
+      {/* Dropdown Panel */}
       {isOpen && (
-        <div style={{
-          position: 'absolute', top: '100%', right: 0,
-          width: 360, maxHeight: 480,
-          background: 'white', borderRadius: 16,
-          boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-          zIndex: 100, overflow: 'hidden',
-          animation: 'fadeIn 0.2s ease-out',
-        }}>
+        <div className="absolute top-full right-0 w-[360px] max-h-[480px] bg-surface-lowest border border-outline-variant rounded-2xl shadow-xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
           {/* Header */}
-          <div style={{
-            padding: '14px 16px',
-            borderBottom: '1px solid var(--color-outline-variant)',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-on-surface)' }}>
-              Notificações
+          <div className="px-4 py-3.5 border-b border-outline-variant flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-[15px] text-on-surface">Notificações</span>
               {unreadCount > 0 && (
-                <span style={{
-                  marginLeft: 8, fontSize: 12, fontWeight: 600,
-                  padding: '2px 8px', borderRadius: 10,
-                  background: '#FEE2E2', color: '#DC2626',
-                }}>
+                <span className="text-[10px] font-black bg-secondary/10 text-secondary px-2 py-0.5 rounded-full">
                   {unreadCount} nova{unreadCount > 1 ? 's' : ''}
                 </span>
               )}
-            </span>
-            <div style={{ display: 'flex', gap: 4 }}>
+            </div>
+            <div className="flex items-center gap-1">
               {unreadCount > 0 && (
                 <button
                   onClick={markAllRead}
-                  className="btn-ghost"
-                  style={{ padding: '4px 8px', fontSize: 12, color: 'var(--color-secondary)', fontWeight: 600 }}
                   disabled={loading}
+                  className="text-[10px] font-black text-secondary uppercase tracking-widest px-2 py-1 rounded-lg hover:bg-secondary/5 transition-colors flex items-center gap-1 disabled:opacity-50"
                 >
-                  <CheckCheck size={14} /> Ler tudo
+                  <CheckCheck size={12} />
+                  Marcar tudo
                 </button>
               )}
-              <button onClick={() => setIsOpen(false)} className="btn-ghost" style={{ padding: 4 }}>
-                <X size={16} />
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1.5 rounded-full hover:bg-surface-container transition-colors"
+              >
+                <X size={16} className="text-outline" />
               </button>
             </div>
           </div>
 
           {/* Notification list */}
-          <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+          <div className="max-h-[400px] overflow-y-auto">
             {notifications.length === 0 ? (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-outline)' }}>
-                <Bell size={32} style={{ margin: '0 auto 8px', opacity: 0.3 }} />
-                <p style={{ fontSize: 14 }}>Nenhuma notificação</p>
+              <div className="py-12 flex flex-col items-center text-center">
+                <div className="w-14 h-14 rounded-full bg-surface-container flex items-center justify-center mb-3">
+                  <Bell size={24} className="text-outline opacity-40" />
+                </div>
+                <p className="text-sm text-outline font-medium">Nenhuma notificação</p>
               </div>
             ) : (
-              notifications.map(n => {
-                const IconComp = TYPE_ICONS[n.type] || Info
-                const colors = TYPE_COLORS[n.type] || TYPE_COLORS.info
+              <div className="p-3 space-y-4">
+                {groupedNotifications.map(group => (
+                  <div key={group.label}>
+                    {/* Date section header */}
+                    <p className="text-[10px] font-black text-outline uppercase tracking-widest mb-2 px-1">
+                      {group.label}
+                    </p>
 
-                return (
-                  <div
-                    key={n.id}
-                    onClick={() => {
-                      if (!n.is_read) markRead([n.id])
-                      if (n.url) {
-                        window.location.hash = n.url
-                        setIsOpen(false)
-                      }
-                    }}
-                    style={{
-                      padding: '12px 16px',
-                      borderBottom: '1px solid var(--color-surface-container)',
-                      cursor: n.url ? 'pointer' : 'default',
-                      background: n.is_read ? 'transparent' : 'var(--color-surface-container-low)',
-                      display: 'flex', gap: 10, alignItems: 'flex-start',
-                      transition: 'background 0.15s',
-                    }}
-                  >
-                    <div style={{
-                      width: 32, height: 32, borderRadius: 8,
-                      background: colors.bg, color: colors.color,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0,
-                    }}>
-                      <IconComp size={16} />
+                    <div className="space-y-2">
+                      {group.items.map(n => {
+                        const IconComp = TYPE_ICONS[n.type] || Info
+                        const styles = TYPE_STYLES[n.type] || TYPE_STYLES.info
+
+                        return (
+                          <div
+                            key={n.id}
+                            onClick={() => {
+                              if (!n.is_read) markRead([n.id])
+                              if (n.url) {
+                                window.location.hash = n.url
+                                setIsOpen(false)
+                              }
+                            }}
+                            className={`
+                              bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 flex gap-4 shadow-sm
+                              transition-colors
+                              ${n.url ? 'cursor-pointer hover:bg-surface-container-low' : ''}
+                              ${!n.is_read ? 'bg-secondary/[0.03]' : ''}
+                            `}
+                          >
+                            {/* Type icon */}
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${styles.bg} border ${styles.border} ${styles.text}`}>
+                              <IconComp size={18} />
+                            </div>
+
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-[13px] text-on-surface mb-0.5 ${n.is_read ? 'font-medium' : 'font-bold'}`}>
+                                {n.title}
+                              </p>
+                              <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-2">
+                                {n.body}
+                              </p>
+                              <p className="text-[10px] font-bold text-outline uppercase tracking-wider mt-2">
+                                {timeAgo(n.created_at)}
+                              </p>
+                            </div>
+
+                            {/* Unread indicator */}
+                            {!n.is_read && (
+                              <div className="w-2 h-2 bg-secondary rounded-full shrink-0 mt-1.5" />
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        fontSize: 13, fontWeight: n.is_read ? 500 : 700,
-                        color: 'var(--color-on-surface)',
-                        marginBottom: 2,
-                      }}>
-                        {n.title}
-                      </div>
-                      <div style={{
-                        fontSize: 12, color: 'var(--color-on-surface-variant)',
-                        lineHeight: 1.4,
-                      }}>
-                        {n.body}
-                      </div>
-                      <div style={{ fontSize: 11, color: 'var(--color-outline)', marginTop: 4 }}>
-                        {timeAgo(n.created_at)}
-                      </div>
-                    </div>
-                    {!n.is_read && (
-                      <div style={{
-                        width: 8, height: 8, borderRadius: '50%',
-                        background: '#2563EB', flexShrink: 0, marginTop: 6,
-                      }} />
-                    )}
                   </div>
-                )
-              })
+                ))}
+              </div>
             )}
           </div>
         </div>

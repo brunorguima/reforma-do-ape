@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import type { Room, Category, Item } from '@/lib/supabase'
 import type { UserID } from '@/lib/constants'
 import { USERS, USER_GREETINGS, APP_NAME, APP_SUBTITLE, ACCESS_KEY_USER_MAP } from '@/lib/constants'
@@ -565,6 +566,14 @@ export default function HomePage() {
 
         {/* Tab Content */}
         <div className="px-4 md:px-8 py-6">
+          <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] }}
+          >
           {activeTab === 'home' ? (
             <DashboardPanel onNavigate={(tab: string) => handleTabChange(tab as TabType)} projectId={activeProjectId || undefined} />
           ) : activeTab === 'orcamentos' ? (
@@ -835,6 +844,8 @@ export default function HomePage() {
               />
             </>
           )}
+          </motion.div>
+          </AnimatePresence>
         </div>
       </main>
 
