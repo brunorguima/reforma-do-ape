@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
 
 export const metadata: Metadata = {
   title: "Reforma do Apê",
@@ -31,7 +32,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body>
+        <AuthProvider>
         {children}
+        </AuthProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `

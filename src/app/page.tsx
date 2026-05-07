@@ -5,6 +5,7 @@ import type { Room, Category, Item } from '@/lib/supabase'
 import type { UserID } from '@/lib/constants'
 import { USERS, USER_GREETINGS, APP_NAME, APP_SUBTITLE, ACCESS_KEY_USER_MAP } from '@/lib/constants'
 import { apiUrl, withProjectId } from '@/lib/project-client'
+import { useAuth } from '@/lib/auth-context'
 import UserSelector from '@/components/UserSelector'
 import RoomSelector from '@/components/RoomSelector'
 import ItemCard from '@/components/ItemCard'
@@ -21,7 +22,7 @@ import DashboardPanel from '@/components/DashboardPanel'
 import FeedPanel from '@/components/FeedPanel'
 import ProjectSelector from '@/components/ProjectSelector'
 import NotificationBell from '@/components/NotificationBell'
-import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, ClipboardCheck, LayoutDashboard, Package, Camera } from 'lucide-react'
+import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, ClipboardCheck, LayoutDashboard, Package, Camera, LogOut, User } from 'lucide-react'
 
 interface Project {
   id: string
@@ -50,7 +51,66 @@ const NAV_ITEMS: { key: TabType; label: string; icon: React.ReactNode }[] = [
 ]
 
 export default function HomePage() {
+  const auth = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('home')
+
+  // Auth gate: redirect to /login if not authenticated
+  useEffect(() => {
+    if (auth.loading) return
+    // Check if user has access key in URL (allowing access key login flow)
+    const params = new URLSearchParams(window.location.search)
+    const hasKeyParam = params.has('key')
+    if (hasKeyParam) return // Let the access key flow handle it
+
+    // If no Supabase session AND no saved access key → redirect to login
+    if (auth.authMode !== 'supabase' && !auth.session) {
+      const savedKey = localStorage.getItem('reforma-access-key')
+      if (!savedKey) {
+        window.location.href = '/login'
+        return
+      }
+    }
+  }, [auth.loading, auth.authMode, auth.session])
+
+  // When Supabase auth is active, populate project state from auth context
+  useEffect(() => {
+    if (auth.authMode !== 'supabase' || !auth.profile || auth.memberships.length === 0) return
+
+    // Set user info from Supabase profile
+    const name = auth.profile.name.toLowerCase() as UserID
+    // Map profile name to legacy user ID for compatibility
+    const userIdMap: Record<string, UserID> = {
+      'bruno': 'bruno',
+      'graziela': 'graziela',
+      'mari': 'mari',
+    }
+    const mappedId = userIdMap[name] || 'bruno'
+    setCurrentUser(mappedId)
+    setUserRole(auth.memberships[0]?.role || 'owner')
+
+    // Set project IDs from memberships
+    const pIds = auth.memberships.map(m => m.project_id)
+    setProjectIds(pIds)
+    const savedActiveProjId = localStorage.getItem('reforma-active-project')
+    if (savedActiveProjId && pIds.includes(savedActiveProjId)) {
+      setActiveProjectId(savedActiveProjId)
+    } else {
+      setActiveProjectId(pIds[0])
+    }
+
+    // Set projects from membership data
+    const projs = auth.memberships.map(m => m.project) as Project[]
+    setProjects(projs)
+
+    // Determine allowed users based on role
+    if (auth.memberships[0]?.role === 'owner') {
+      setAllowedUsers(['bruno', 'graziela', 'mari'])
+    } else if (auth.memberships[0]?.role === 'designer') {
+      setAllowedUsers([mappedId])
+    } else {
+      setAllowedUsers([mappedId])
+    }
+  }, [auth.authMode, auth.profile, auth.memberships])
 
   // Restore tab from URL hash on mount + listen for back/forward
   useEffect(() => {
@@ -556,6 +616,26 @@ export default function HomePage() {
         {/* User Selector at Bottom */}
         <div className="px-4 py-4 border-t border-slate-100">
           <UserSelector currentUser={currentUser} onUserChange={handleUserChange} allowedUsers={allowedUsers} />
+          {auth.authMode === 'supabase' && auth.profile && (
+            <div className="mt-3 flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                  style={{ backgroundColor: auth.profile.color }}
+                >
+                  {auth.profile.name[0]}
+                </div>
+                <span className="text-xs text-slate-500 truncate">{auth.profile.email}</span>
+              </div>
+              <button
+                onClick={() => auth.signOut().then(() => { window.location.href = '/login' })}
+                className="p-1.5 rounded-lg bg-transparent border-none cursor-pointer hover:bg-slate-100 transition-colors"
+                title="Sair"
+              >
+                <LogOut size={14} className="text-slate-400" />
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -604,6 +684,16 @@ export default function HomePage() {
               <div className="md:hidden">
                 <UserSelector currentUser={currentUser} onUserChange={handleUserChange} allowedUsers={allowedUsers} />
               </div>
+              {/* Logout button */}
+              {auth.authMode === 'supabase' && (
+                <button
+                  onClick={() => auth.signOut().then(() => { window.location.href = '/login' })}
+                  className="p-2 rounded-xl bg-white border border-slate-100 hover:bg-slate-50 transition-colors"
+                  title="Sair"
+                >
+                  <LogOut size={18} className="text-slate-500" />
+                </button>
+              )}
             </div>
           </div>
         </header>
