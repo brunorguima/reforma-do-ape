@@ -15,8 +15,9 @@ import FinanceiroPanel from '@/components/FinanceiroPanel'
 import WelcomeScreen from '@/components/WelcomeScreen'
 import MeasurementPanel from '@/components/MeasurementPanel'
 import MeasurementApprovalPanel from '@/components/MeasurementApprovalPanel'
+import MaterialRequestPanel from '@/components/MaterialRequestPanel'
 import DashboardPanel from '@/components/DashboardPanel'
-import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, ClipboardCheck, LayoutDashboard } from 'lucide-react'
+import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, ClipboardCheck, LayoutDashboard, Package } from 'lucide-react'
 
 interface Project {
   id: string
@@ -28,13 +29,14 @@ interface Project {
   is_active: boolean
 }
 
-type TabType = 'home' | 'orcamentos' | 'obra' | 'financeiro' | 'mobilia' | 'medicoes'
+type TabType = 'home' | 'orcamentos' | 'obra' | 'financeiro' | 'mobilia' | 'medicoes' | 'pedidos'
 
 const NAV_ITEMS: { key: TabType; label: string; icon: React.ReactNode }[] = [
   { key: 'home', label: 'Home', icon: <LayoutDashboard size={20} /> },
   { key: 'orcamentos', label: 'Orçamentos', icon: <Wrench size={20} /> },
   { key: 'obra', label: 'Obra', icon: <HardHat size={20} /> },
   { key: 'medicoes', label: 'Medições', icon: <ClipboardCheck size={20} /> },
+  { key: 'pedidos', label: 'Pedidos', icon: <Package size={20} /> },
   { key: 'financeiro', label: 'Financeiro', icon: <DollarSign size={20} /> },
   { key: 'mobilia', label: 'Mobília', icon: <Sofa size={20} /> },
 ]
@@ -44,7 +46,7 @@ export default function HomePage() {
 
   // Restore tab from URL hash on mount + listen for back/forward
   useEffect(() => {
-    const validTabs: TabType[] = ['home', 'orcamentos', 'obra', 'financeiro', 'mobilia', 'medicoes']
+    const validTabs: TabType[] = ['home', 'orcamentos', 'obra', 'financeiro', 'mobilia', 'medicoes', 'pedidos']
     const readHash = () => {
       const hash = window.location.hash.replace('#', '') as TabType
       if (validTabs.includes(hash)) setActiveTab(hash)
@@ -413,32 +415,28 @@ export default function HomePage() {
   if (userRole === 'professional' && professionalId && projectIds.length > 0) {
     return (
       <div className="app-container">
-        <header style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <HardHat size={28} color="#D97706" />
+        <header className="mb-5">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <HardHat size={28} className="text-warning" />
               <div>
-                <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#1f2937', margin: 0 }}>Meus Serviços</h1>
-                <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>Medições e pagamentos</p>
+                <h1 className="text-xl font-extrabold text-on-surface m-0">Meus Serviços</h1>
+                <p className="text-xs text-on-surface-variant m-0">Medições e pagamentos</p>
               </div>
             </div>
             <button
               onClick={() => { localStorage.clear(); window.location.reload() }}
-              style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #E5E7EB', background: 'white', cursor: 'pointer', fontSize: '13px', color: '#6B7280' }}
+              className="px-3.5 py-2 rounded-sm border border-outline-variant bg-surface-lowest cursor-pointer text-[13px] text-on-surface-variant"
             >
               Sair
             </button>
           </div>
           {greeting && (
-            <div style={{
-              marginTop: '12px', padding: '12px 16px', borderRadius: '12px',
-              background: 'linear-gradient(135deg, #D9770615, #D9770608)',
-              borderLeft: '4px solid #D97706',
-            }}>
-              <p style={{ fontSize: '16px', fontWeight: 700, color: '#1f2937', margin: '0 0 2px' }}>
+            <div className="mt-3 px-4 py-3 rounded-md bg-gradient-to-br from-warning/10 to-warning/5 border-l-4 border-warning">
+              <p className="text-base font-bold text-on-surface m-0 mb-0.5">
                 {greeting.greeting}
               </p>
-              <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>{greeting.subtitle}</p>
+              <p className="text-[13px] text-on-surface-variant m-0">{greeting.subtitle}</p>
             </div>
           )}
         </header>
@@ -573,6 +571,8 @@ export default function HomePage() {
             <ObraPanel currentUser={currentUser} projectId={activeProjectId} />
           ) : activeTab === 'medicoes' ? (
             <MeasurementApprovalPanel projectId={activeProjectId} />
+          ) : activeTab === 'pedidos' ? (
+            <MaterialRequestPanel projectId={activeProjectId} />
           ) : activeTab === 'financeiro' ? (
             <FinanceiroPanel currentUser={currentUser} projectId={activeProjectId} />
           ) : (
@@ -595,22 +595,22 @@ export default function HomePage() {
               </div>
 
               {/* Search and Filter Bar */}
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
-                  <Search size={16} color="#9ca3af" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+              <div className="flex gap-3 mb-5 flex-wrap">
+                <div className="flex-1 min-w-[200px] relative">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
                   <input
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                     placeholder="Buscar itens..."
-                    style={{ paddingLeft: '36px' }}
+                    className="pl-9"
                   />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Filter size={16} color="#6b7280" />
+                <div className="flex items-center gap-2">
+                  <Filter size={16} className="text-on-surface-variant" />
                   <select
                     value={filterStatus}
                     onChange={e => setFilterStatus(e.target.value)}
-                    style={{ width: 'auto', minWidth: '140px' }}
+                    className="w-auto min-w-[140px]"
                   >
                     <option value="">Todos os status</option>
                     <option value="ja_temos">🟣 Já Temos</option>
@@ -622,8 +622,8 @@ export default function HomePage() {
               </div>
 
               {/* Items count */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <p style={{ fontSize: '14px', color: '#6b7280' }}>
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-sm text-on-surface-variant">
                   {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'itens'}
                   {selectedRoom && rooms.find(r => r.id === selectedRoom) && (
                     <span> em <strong>{rooms.find(r => r.id === selectedRoom)?.name}</strong></span>
@@ -633,19 +633,19 @@ export default function HomePage() {
 
               {/* Items Grid */}
               {filteredItems.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>📦</div>
-                  <h3 style={{ fontSize: '18px', color: '#374151', marginBottom: '8px' }}>Nenhum item encontrado</h3>
-                  <p style={{ color: '#6b7280', marginBottom: '20px' }}>
+                <div className="text-center py-15 px-5">
+                  <div className="text-5xl mb-4">📦</div>
+                  <h3 className="text-lg text-on-surface mb-2">Nenhum item encontrado</h3>
+                  <p className="text-on-surface-variant mb-5">
                     {searchTerm ? 'Tente outra busca' : 'Comece adicionando itens que vocês desejam para o apartamento!'}
                   </p>
                   <button className="btn-primary" onClick={() => { setEditingItem(null); setIsModalOpen(true) }}>
-                    <Plus size={16} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+                    <Plus size={16} className="inline mr-1 align-middle" />
                     Adicionar primeiro item
                   </button>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
                   {filteredItems.map(item => (
                     <ItemCard
                       key={item.id}
@@ -659,41 +659,25 @@ export default function HomePage() {
               )}
 
               {/* Floating Quick Search Bar */}
-              <div style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                zIndex: 40,
-                background: 'white',
-                borderTop: '1px solid #E5E7EB',
-                boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
-                padding: quickExpanded ? '0' : '12px 16px',
-                transition: 'all 0.3s',
-              }}>
+              <div className={`fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-outline-variant shadow-[0_-4px_20px_rgba(0,0,0,0.1)] transition-all duration-300 ${quickExpanded ? 'p-0' : 'px-4 py-3'}`}>
                 {/* Expanded results panel */}
                 {quickExpanded && (
-                  <div style={{
-                    maxHeight: '60vh',
-                    overflowY: 'auto',
-                    padding: '12px 16px 0',
-                    background: '#F9FAFB',
-                  }}>
+                  <div className="max-h-[60vh] overflow-y-auto px-4 pt-3 bg-surface-container-low">
                     {/* Stats badges */}
                     {quickStats && quickStats.total > 0 && (
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-                        <span style={{ padding: '4px 10px', background: '#DBEAFE', borderRadius: '8px', color: '#1E40AF', fontWeight: 700, fontSize: '12px' }}>
+                      <div className="flex gap-2 mb-2.5 flex-wrap items-center">
+                        <span className="px-2.5 py-1 bg-secondary-container/20 rounded-lg text-secondary font-bold text-xs">
                           {quickStats.total} resultado{quickStats.total !== 1 ? 's' : ''}
                         </span>
-                        <span style={{ padding: '4px 10px', background: '#D1FAE5', borderRadius: '8px', color: '#065F46', fontWeight: 700, fontSize: '12px' }}>
+                        <span className="px-2.5 py-1 bg-success-light rounded-lg text-success font-bold text-xs">
                           Média: R$ {quickStats.avgPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </span>
-                        <span style={{ padding: '4px 10px', background: '#FEF3C7', borderRadius: '8px', color: '#92400E', fontWeight: 700, fontSize: '12px' }}>
+                        <span className="px-2.5 py-1 bg-warning-light rounded-lg text-warning font-bold text-xs">
                           Min: R$ {quickStats.minPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </span>
                         <button
                           onClick={() => setQuickExpanded(false)}
-                          style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', fontSize: '12px', fontWeight: 600 }}
+                          className="ml-auto bg-transparent border-none cursor-pointer text-on-surface-variant text-xs font-semibold"
                         >
                           Fechar ▼
                         </button>
@@ -702,34 +686,27 @@ export default function HomePage() {
 
                     {/* Loading */}
                     {quickSearching && (
-                      <div style={{ textAlign: 'center', padding: '24px', color: '#6B7280' }}>
-                        <Loader2 size={22} className="spin" style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }} />
-                        <p style={{ fontSize: '13px', marginTop: '8px' }}>Buscando em Amazon, Zoom e Buscapé...</p>
+                      <div className="text-center py-6 text-on-surface-variant">
+                        <Loader2 size={22} className="spin inline-block" />
+                        <p className="text-[13px] mt-2">Buscando em Amazon, Zoom e Buscapé...</p>
                       </div>
                     )}
 
                     {/* Results grid */}
                     {!quickSearching && quickResults.length > 0 && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '8px', paddingBottom: '8px' }}>
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-2 pb-2">
                         {quickResults.map((product, i) => (
                           <div
                             key={i}
                             onClick={() => handleQuickSelect(product)}
-                            style={{
-                              display: 'flex', gap: '10px', padding: '10px',
-                              background: 'white', borderRadius: '10px', cursor: 'pointer',
-                              border: '1px solid #E5E7EB', transition: 'all 0.15s',
-                              position: 'relative',
-                            }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#2563EB'; (e.currentTarget as HTMLElement).style.background = '#F0F7FF' }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E5E7EB'; (e.currentTarget as HTMLElement).style.background = 'white' }}
+                            className="flex gap-2.5 p-2.5 bg-white rounded-[10px] cursor-pointer border border-outline-variant hover:border-secondary hover:bg-secondary/5 transition-all relative"
                           >
                             {product.image && (
-                              <div style={{ position: 'relative', flexShrink: 0 }} className="img-zoom-container">
+                              <div className="relative shrink-0">
                                 <img
                                   src={product.image}
                                   alt=""
-                                  style={{ width: '52px', height: '52px', objectFit: 'contain', borderRadius: '8px', background: '#F3F4F6', cursor: 'zoom-in', transition: 'transform 0.2s' }}
+                                  className="w-[52px] h-[52px] object-contain rounded-lg bg-surface-container-low cursor-zoom-in transition-transform duration-200"
                                   onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
                                   onMouseEnter={e => {
                                     const img = e.target as HTMLImageElement
@@ -752,23 +729,20 @@ export default function HomePage() {
                                 />
                               </div>
                             )}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <p
-                                title={product.title}
-                                style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                              >
+                            <div className="flex-1 min-w-0">
+                              <p title={product.title} className="text-[13px] font-semibold text-on-surface m-0 overflow-hidden text-ellipsis whitespace-nowrap">
                                 {product.title}
                               </p>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                                <span style={{ fontSize: '15px', fontWeight: 800, color: '#059669' }}>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[15px] font-extrabold text-success">
                                   R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </span>
-                                <span style={{ fontSize: '10px', color: '#6B7280', background: '#F3F4F6', padding: '2px 6px', borderRadius: '4px' }}>
+                                <span className="text-[10px] text-on-surface-variant bg-surface-container-low px-1.5 py-0.5 rounded">
                                   {product.store}
                                 </span>
                               </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                            <div className="flex items-center gap-1.5 shrink-0">
                               {product.url && (
                                 <a
                                   href={product.url}
@@ -776,14 +750,12 @@ export default function HomePage() {
                                   rel="noopener noreferrer"
                                   onClick={e => e.stopPropagation()}
                                   title="Ver na loja"
-                                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '6px', background: '#F3F4F6', transition: 'background 0.15s' }}
-                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#DBEAFE' }}
-                                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#F3F4F6' }}
+                                  className="flex items-center justify-center w-7 h-7 rounded-md bg-surface-container-low hover:bg-secondary-container/20 transition-colors"
                                 >
-                                  <ExternalLink size={14} color="#2563EB" />
+                                  <ExternalLink size={14} className="text-secondary" />
                                 </a>
                               )}
-                              <Plus size={18} color="#2563EB" />
+                              <Plus size={18} className="text-secondary" />
                             </div>
                           </div>
                         ))}
@@ -792,12 +764,12 @@ export default function HomePage() {
 
                     {/* No results - show manual links */}
                     {!quickSearching && quickResults.length === 0 && quickSearchLinks.length > 0 && (
-                      <div style={{ padding: '16px', textAlign: 'center' }}>
-                        <p style={{ color: '#6B7280', fontSize: '13px', marginBottom: '10px' }}>Nenhum resultado automático. Busque manualmente:</p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center', paddingBottom: '8px' }}>
+                      <div className="p-4 text-center">
+                        <p className="text-on-surface-variant text-[13px] mb-2.5">Nenhum resultado automático. Busque manualmente:</p>
+                        <div className="flex flex-wrap gap-1.5 justify-center pb-2">
                           {quickSearchLinks.map((link, i) => (
                             <a key={i} href={link.url} target="_blank" rel="noopener noreferrer"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'white', border: '1px solid #D1D5DB', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#374151', textDecoration: 'none' }}>
+                              className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-outline-variant rounded-lg text-xs font-semibold text-on-surface no-underline hover:bg-surface-container-low transition-colors">
                               <ExternalLink size={11} /> {link.store}
                             </a>
                           ))}
@@ -808,40 +780,20 @@ export default function HomePage() {
                 )}
 
                 {/* Bottom search input bar */}
-                <div style={{
-                  display: 'flex', gap: '8px', alignItems: 'center',
-                  padding: quickExpanded ? '10px 16px' : '0',
-                  background: 'white',
-                }}>
-                  <div style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    background: '#F3F4F6',
-                    borderRadius: '12px',
-                    padding: '10px 14px',
-                    border: '2px solid transparent',
-                    transition: 'all 0.2s',
-                  }}
-                  onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = '#2563EB'; (e.currentTarget as HTMLElement).style.background = 'white' }}
-                  onBlur={e => { if (!quickExpanded) { (e.currentTarget as HTMLElement).style.borderColor = 'transparent'; (e.currentTarget as HTMLElement).style.background = '#F3F4F6' } }}
-                  >
-                    <ShoppingBag size={18} color="#6B7280" />
+                <div className={`flex gap-2 items-center bg-white ${quickExpanded ? 'px-4 py-2.5' : ''}`}>
+                  <div className="flex-1 flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
+                    <ShoppingBag size={18} className="text-on-surface-variant" />
                     <input
                       value={quickSearch}
                       onChange={e => setQuickSearch(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleQuickSearch() } }}
                       onFocus={() => { if (quickResults.length > 0 || quickSearchLinks.length > 0) setQuickExpanded(true) }}
                       placeholder="Buscar produto na internet e adicionar..."
-                      style={{
-                        flex: 1, border: 'none', background: 'transparent', outline: 'none',
-                        fontSize: '14px', color: '#1F2937', padding: 0,
-                      }}
+                      className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
                     />
                     {quickSearch && (
                       <button onClick={() => { setQuickSearch(''); setQuickResults([]); setQuickStats(null); setQuickExpanded(false); setQuickSearchLinks([]) }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#9CA3AF' }}>
+                        className="bg-transparent border-none cursor-pointer p-0.5 text-outline">
                         ✕
                       </button>
                     )}
@@ -849,37 +801,16 @@ export default function HomePage() {
                   <button
                     onClick={handleQuickSearch}
                     disabled={quickSearching || quickSearch.length < 2}
-                    style={{
-                      padding: '10px 18px',
-                      background: quickSearching ? '#93C5FD' : 'linear-gradient(135deg, #2563EB, #7C3AED)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '12px',
-                      fontSize: '14px',
-                      fontWeight: 700,
-                      cursor: quickSearching ? 'default' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      whiteSpace: 'nowrap',
-                      boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
-                    }}
+                    className={`px-4 py-2.5 text-white border-none rounded-xl text-sm font-bold cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-md ${
+                      quickSearching ? 'bg-secondary-container' : 'bg-gradient-to-br from-secondary to-primary-light'
+                    }`}
                   >
                     {quickSearching ? <Loader2 size={16} className="spin" /> : <Search size={16} />}
                     Buscar
                   </button>
                   <button
                     onClick={() => { setEditingItem(null); setIsModalOpen(true); setQuickExpanded(false) }}
-                    style={{
-                      padding: '10px',
-                      background: '#F3F4F6',
-                      color: '#374151',
-                      border: '1px solid #E5E7EB',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
+                    className="p-2.5 bg-surface-container-low text-on-surface border border-outline-variant rounded-xl cursor-pointer flex items-center hover:bg-surface-container-high transition-colors"
                     title="Adicionar manualmente"
                   >
                     <Plus size={20} />
@@ -888,7 +819,7 @@ export default function HomePage() {
               </div>
 
               {/* Spacer for fixed bottom bar */}
-              <div style={{ height: '80px' }} />
+              <div className="h-20" />
 
               {/* Add/Edit Modal */}
               <AddItemModal

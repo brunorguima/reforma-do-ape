@@ -157,113 +157,102 @@ export default function MaterialsPanel({ currentUser, projectId }: Props) {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '30px', color: '#9CA3AF' }}>
-        <p style={{ fontSize: '13px' }}>Carregando materiais...</p>
+      <div className="text-center py-8 text-on-surface-variant">
+        <p className="text-[13px]">Carregando materiais...</p>
       </div>
     )
   }
 
   return (
-    <div style={{ marginTop: '28px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#374151', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <div className="mt-7">
+      <div className="flex justify-between items-center mb-3.5 flex-wrap gap-2">
+        <h3 className="text-base font-bold text-[#374151] m-0 flex items-center gap-2">
           <ShoppingCart size={18} /> Materiais Comprados
-          <span style={{ fontSize: '12px', fontWeight: 500, color: '#6B7280', background: '#F3F4F6', borderRadius: '12px', padding: '2px 8px' }}>
+          <span className="text-xs font-medium text-on-surface-variant bg-surface-container-low rounded-xl px-2 py-0.5">
             {materials.length} · {fmtBRL(materialsTotal)}
           </span>
         </h3>
         <button
           onClick={() => { setShowAddMaterial(true); setFormError('') }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '4px', padding: '8px 14px',
-            background: '#059669', color: 'white', border: 'none', borderRadius: '10px',
-            fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-          }}>
+          className="flex items-center gap-1 px-3.5 py-2 bg-success text-white border-none rounded-[10px] text-[13px] font-semibold cursor-pointer">
           <Plus size={14} /> Novo Material
         </button>
       </div>
 
       {/* Add Material Modal */}
       {showAddMaterial && (
-        <div style={{
-          background: 'white', borderRadius: '14px', padding: '20px', marginBottom: '16px',
-          border: '2px solid #059669', boxShadow: '0 4px 12px rgba(5,150,105,0.15)',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#059669', margin: 0 }}>📦 Novo Material</h4>
+        <div className="bg-surface-lowest rounded-[14px] p-5 mb-4 border-2 border-success shadow-[0_4px_12px_rgba(5,150,105,0.15)]">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="text-[15px] font-bold text-success m-0">📦 Novo Material</h4>
             <button onClick={() => { setShowAddMaterial(false); setFormError('') }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280' }}><X size={18} /></button>
+              className="bg-transparent border-none cursor-pointer text-on-surface-variant"><X size={18} /></button>
           </div>
-          {formError && <p style={{ color: '#DC2626', fontSize: '12px', marginBottom: '12px', padding: '8px', background: '#FEF2F2', borderRadius: '8px' }}>{formError}</p>}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Nome *</label>
+          {formError && <p className="text-danger text-xs mb-3 p-2 bg-danger-light rounded-sm">{formError}</p>}
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="col-span-full">
+              <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Nome *</label>
               <input value={newMaterial.name} onChange={e => setNewMaterial(p => ({ ...p, name: e.target.value }))}
                 placeholder="Ex: Fio 2.5mm, Cimento, Porcelanato..."
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
+                className="w-full p-2.5 rounded-sm border border-outline-variant text-sm box-border" />
             </div>
             <div>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Categoria</label>
+              <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Categoria</label>
               <select value={newMaterial.category} onChange={e => setNewMaterial(p => ({ ...p, category: e.target.value }))}
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }}>
+                className="w-full p-2.5 rounded-sm border border-outline-variant text-sm box-border">
                 {MATERIAL_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>)}
               </select>
             </div>
             <div>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Comprado por</label>
+              <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Comprado por</label>
               <select value={newMaterial.purchased_by} onChange={e => setNewMaterial(p => ({ ...p, purchased_by: e.target.value }))}
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }}>
+                className="w-full p-2.5 rounded-sm border border-outline-variant text-sm box-border">
                 <option value="Bruno">Bruno</option>
                 <option value="Graziela">Graziela</option>
               </select>
             </div>
             <div>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Quantidade</label>
+              <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Quantidade</label>
               <input type="number" min="1" value={newMaterial.quantity} onChange={e => setNewMaterial(p => ({ ...p, quantity: e.target.value }))}
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
+                className="w-full p-2.5 rounded-sm border border-outline-variant text-sm box-border" />
             </div>
             <div>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Valor Unitário (R$) *</label>
+              <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Valor Unitário (R$) *</label>
               <input type="number" step="0.01" value={newMaterial.unit_price} onChange={e => setNewMaterial(p => ({ ...p, unit_price: e.target.value }))}
                 placeholder="0,00"
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
+                className="w-full p-2.5 rounded-sm border border-outline-variant text-sm box-border" />
             </div>
             <div>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Loja</label>
+              <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Loja</label>
               <input value={newMaterial.store} onChange={e => setNewMaterial(p => ({ ...p, store: e.target.value }))}
                 placeholder="Ex: Leroy Merlin, C&C..."
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
+                className="w-full p-2.5 rounded-sm border border-outline-variant text-sm box-border" />
             </div>
             <div>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Data da Compra</label>
+              <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Data da Compra</label>
               <input type="date" value={newMaterial.purchase_date} onChange={e => setNewMaterial(p => ({ ...p, purchase_date: e.target.value }))}
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
+                className="w-full p-2.5 rounded-sm border border-outline-variant text-sm box-border" />
             </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Link da Compra (opcional)</label>
+            <div className="col-span-full">
+              <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Link da Compra (opcional)</label>
               <input value={newMaterial.purchase_url} onChange={e => setNewMaterial(p => ({ ...p, purchase_url: e.target.value }))}
                 placeholder="https://..."
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
+                className="w-full p-2.5 rounded-sm border border-outline-variant text-sm box-border" />
             </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Observações (opcional)</label>
+            <div className="col-span-full">
+              <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Observações (opcional)</label>
               <textarea value={newMaterial.notes} onChange={e => setNewMaterial(p => ({ ...p, notes: e.target.value }))}
                 rows={2} placeholder="Notas adicionais..."
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box', resize: 'vertical' }} />
+                className="w-full p-2.5 rounded-sm border border-outline-variant text-sm box-border resize-y" />
             </div>
           </div>
           {newMaterial.unit_price && (
-            <div style={{ marginTop: '10px', padding: '8px 12px', background: '#F0FDF4', borderRadius: '8px', fontSize: '13px', color: '#059669', fontWeight: 600 }}>
+            <div className="mt-2.5 px-3 py-2 bg-[#F0FDF4] rounded-sm text-[13px] text-success font-semibold">
               Total: {fmtBRL((Number(newMaterial.quantity) || 1) * (Number(newMaterial.unit_price) || 0))}
             </div>
           )}
-          <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+          <div className="flex gap-2 mt-3.5">
             <button onClick={handleAddMaterial} disabled={saving}
-              style={{
-                flex: 1, padding: '12px', background: '#059669', color: 'white', border: 'none',
-                borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
-                opacity: saving ? 0.6 : 1,
-              }}>
+              className={`flex-1 p-3 bg-success text-white border-none rounded-[10px] text-sm font-bold ${saving ? 'cursor-not-allowed opacity-60' : 'cursor-pointer opacity-100'}`}>
               {saving ? 'Salvando...' : '✓ Salvar Material'}
             </button>
           </div>
@@ -272,22 +261,18 @@ export default function MaterialsPanel({ currentUser, projectId }: Props) {
 
       {/* Filter by category */}
       {materials.length > 0 && (
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
+        <div className="flex gap-1.5 mb-3 flex-wrap">
           <button onClick={() => setFilterMaterialCategory('')}
-            style={{
-              padding: '4px 10px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: 600,
-              cursor: 'pointer', background: !filterMaterialCategory ? '#059669' : '#F3F4F6',
-              color: !filterMaterialCategory ? 'white' : '#6B7280',
-            }}>Todos</button>
+            className={`px-2.5 py-1 rounded-sm border-none text-xs font-semibold cursor-pointer ${
+              !filterMaterialCategory ? 'bg-success text-white' : 'bg-surface-container-low text-on-surface-variant'
+            }`}>Todos</button>
           {[...new Set(materials.map(m => m.category))].map(cat => {
             const catInfo = MATERIAL_CATEGORIES.find(c => c.value === cat)
             return (
               <button key={cat} onClick={() => setFilterMaterialCategory(cat)}
-                style={{
-                  padding: '4px 10px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: 600,
-                  cursor: 'pointer', background: filterMaterialCategory === cat ? '#059669' : '#F3F4F6',
-                  color: filterMaterialCategory === cat ? 'white' : '#6B7280',
-                }}>{catInfo?.emoji} {catInfo?.label || cat}</button>
+                className={`px-2.5 py-1 rounded-sm border-none text-xs font-semibold cursor-pointer ${
+                  filterMaterialCategory === cat ? 'bg-success text-white' : 'bg-surface-container-low text-on-surface-variant'
+                }`}>{catInfo?.emoji} {catInfo?.label || cat}</button>
             )
           })}
         </div>
@@ -295,70 +280,67 @@ export default function MaterialsPanel({ currentUser, projectId }: Props) {
 
       {/* Materials List */}
       {filteredMaterials.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '30px', color: '#9CA3AF' }}>
-          <Package size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
-          <p style={{ fontSize: '13px' }}>Nenhum material cadastrado ainda</p>
+        <div className="text-center py-8 text-on-surface-variant">
+          <Package size={32} className="mb-2 opacity-50" />
+          <p className="text-[13px]">Nenhum material cadastrado ainda</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="flex flex-col gap-2">
           {Object.entries(materialsByCategory).map(([cat, catMaterials]) => {
             const catInfo = MATERIAL_CATEGORIES.find(c => c.value === cat)
             const catTotal = catMaterials.reduce((s, m) => s + m.total_price, 0)
             return (
               <div key={cat}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#6B7280', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div className="text-xs font-bold text-on-surface-variant mb-1.5 flex items-center gap-1">
                   <span>{catInfo?.emoji || '📦'}</span> {catInfo?.label || cat}
-                  <span style={{ fontWeight: 500, color: '#9CA3AF' }}>· {fmtBRL(catTotal)}</span>
+                  <span className="font-medium text-[#9CA3AF]">· {fmtBRL(catTotal)}</span>
                 </div>
                 {catMaterials.map(mat => {
                   const isExpanded = expandedMaterial === mat.id
                   const isEditing = editingMaterial === mat.id
                   return (
-                    <div key={mat.id} style={{
-                      background: 'white', borderRadius: '12px', padding: '12px 14px', marginBottom: '6px',
-                      border: '1px solid #E5E7EB', transition: 'all 0.2s',
-                    }}>
+                    <div key={mat.id} className="bg-surface-lowest rounded-md px-3.5 py-3 mb-1.5 border border-outline-variant transition-all duration-200">
                       {isEditing ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                          <div style={{ gridColumn: '1 / -1' }}>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="col-span-full">
                             <input value={editMaterialForm.name || ''} onChange={e => setEditMaterialForm(p => ({ ...p, name: e.target.value }))}
-                              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                              className="w-full p-2 rounded-[6px] border border-outline-variant text-[13px] box-border" />
                           </div>
                           <select value={editMaterialForm.category || 'outro'} onChange={e => setEditMaterialForm(p => ({ ...p, category: e.target.value }))}
-                            style={{ padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }}>
+                            className="p-2 rounded-[6px] border border-outline-variant text-[13px]">
                             {MATERIAL_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>)}
                           </select>
                           <select value={editMaterialForm.purchased_by || 'Bruno'} onChange={e => setEditMaterialForm(p => ({ ...p, purchased_by: e.target.value }))}
-                            style={{ padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }}>
+                            className="p-2 rounded-[6px] border border-outline-variant text-[13px]">
                             <option value="Bruno">Bruno</option>
                             <option value="Graziela">Graziela</option>
                           </select>
                           <input type="number" min="1" value={editMaterialForm.quantity || 1}
                             onChange={e => setEditMaterialForm(p => ({ ...p, quantity: Number(e.target.value) }))}
-                            placeholder="Qtd" style={{ padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
+                            placeholder="Qtd" className="p-2 rounded-[6px] border border-outline-variant text-[13px]" />
                           <input type="number" step="0.01" value={editMaterialForm.unit_price || 0}
                             onChange={e => setEditMaterialForm(p => ({ ...p, unit_price: Number(e.target.value) }))}
-                            placeholder="Valor un." style={{ padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
+                            placeholder="Valor un." className="p-2 rounded-[6px] border border-outline-variant text-[13px]" />
                           <input value={editMaterialForm.store || ''} onChange={e => setEditMaterialForm(p => ({ ...p, store: e.target.value }))}
-                            placeholder="Loja" style={{ padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
+                            placeholder="Loja" className="p-2 rounded-[6px] border border-outline-variant text-[13px]" />
                           <input type="date" value={editMaterialForm.purchase_date || ''} onChange={e => setEditMaterialForm(p => ({ ...p, purchase_date: e.target.value }))}
-                            style={{ padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
-                          <div style={{ gridColumn: '1 / -1' }}>
+                            className="p-2 rounded-[6px] border border-outline-variant text-[13px]" />
+                          <div className="col-span-full">
                             <input value={editMaterialForm.purchase_url || ''} onChange={e => setEditMaterialForm(p => ({ ...p, purchase_url: e.target.value }))}
-                              placeholder="Link da compra" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                              placeholder="Link da compra" className="w-full p-2 rounded-[6px] border border-outline-variant text-[13px] box-border" />
                           </div>
-                          <div style={{ gridColumn: '1 / -1' }}>
+                          <div className="col-span-full">
                             <textarea value={editMaterialForm.notes || ''} onChange={e => setEditMaterialForm(p => ({ ...p, notes: e.target.value }))}
                               placeholder="Observações" rows={2}
-                              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box', resize: 'vertical' }} />
+                              className="w-full p-2 rounded-[6px] border border-outline-variant text-[13px] box-border resize-y" />
                           </div>
-                          <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '8px' }}>
+                          <div className="col-span-full flex gap-2">
                             <button onClick={handleSaveMaterial}
-                              style={{ flex: 1, padding: '8px', background: '#059669', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                              className="flex-1 p-2 bg-success text-white border-none rounded-sm text-[13px] font-semibold cursor-pointer">
                               <Check size={14} /> Salvar
                             </button>
                             <button onClick={() => { setEditingMaterial(null); setEditMaterialForm({}) }}
-                              style={{ padding: '8px 14px', background: '#F3F4F6', color: '#6B7280', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                              className="px-3.5 py-2 bg-surface-container-low text-on-surface-variant border-none rounded-sm text-[13px] font-semibold cursor-pointer">
                               <X size={14} />
                             </button>
                           </div>
@@ -366,47 +348,47 @@ export default function MaterialsPanel({ currentUser, projectId }: Props) {
                       ) : (
                         <>
                           <div onClick={() => setExpandedMaterial(isExpanded ? null : mat.id)}
-                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937' }}>{mat.name}</span>
+                            className="flex justify-between items-center cursor-pointer">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm font-semibold text-[#1F2937]">{mat.name}</span>
                                 {mat.purchase_url && <ExternalLink size={12} color="#3B82F6" />}
                               </div>
-                              <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
+                              <div className="text-xs text-on-surface-variant mt-0.5">
                                 {mat.quantity > 1 ? `${mat.quantity}x ${fmtBRL(mat.unit_price)} = ` : ''}{fmtBRL(mat.total_price)}
                                 {mat.store ? ` · ${mat.store}` : ''}
                                 {` · ${mat.purchased_by}`}
                               </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '14px', fontWeight: 700, color: '#059669' }}>{fmtBRL(mat.total_price)}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-bold text-success">{fmtBRL(mat.total_price)}</span>
                               {isExpanded ? <ChevronUp size={14} color="#9CA3AF" /> : <ChevronDown size={14} color="#9CA3AF" />}
                             </div>
                           </div>
                           {isExpanded && (
-                            <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #F3F4F6' }}>
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '12px', color: '#6B7280' }}>
+                            <div className="mt-2.5 pt-2.5 border-t border-surface-container-low">
+                              <div className="grid grid-cols-2 gap-1.5 text-xs text-on-surface-variant">
                                 <div>📅 {fmtDate(mat.purchase_date)}</div>
                                 <div>👤 {mat.purchased_by}</div>
                                 {mat.store && <div>🏪 {mat.store}</div>}
-                                {mat.description && <div style={{ gridColumn: '1 / -1' }}>📝 {mat.description}</div>}
-                                {mat.notes && <div style={{ gridColumn: '1 / -1' }}>💬 {mat.notes}</div>}
+                                {mat.description && <div className="col-span-full">📝 {mat.description}</div>}
+                                {mat.notes && <div className="col-span-full">💬 {mat.notes}</div>}
                                 {mat.purchase_url && (
-                                  <div style={{ gridColumn: '1 / -1' }}>
+                                  <div className="col-span-full">
                                     <a href={mat.purchase_url} target="_blank" rel="noopener noreferrer"
-                                      style={{ color: '#3B82F6', textDecoration: 'underline', fontSize: '12px' }}>
+                                      className="text-[#3B82F6] underline text-xs">
                                       🔗 Ver na loja
                                     </a>
                                   </div>
                                 )}
                               </div>
-                              <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+                              <div className="flex gap-1.5 mt-2.5">
                                 <button onClick={() => handleEditMaterial(mat)}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#EFF6FF', color: '#2563EB', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-[#EFF6FF] text-[#2563EB] border-none rounded-sm text-xs font-semibold cursor-pointer">
                                   <Edit3 size={12} /> Editar
                                 </button>
                                 <button onClick={() => handleDeleteMaterial(mat.id)}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#FEF2F2', color: '#DC2626', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-danger-light text-danger border-none rounded-sm text-xs font-semibold cursor-pointer">
                                   <Trash2 size={12} /> Excluir
                                 </button>
                               </div>

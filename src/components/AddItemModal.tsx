@@ -171,41 +171,36 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1f2937' }}>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-[#1f2937]">
             {editingItem ? 'Editar Item' : 'Novo Item'}
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+          <button onClick={onClose} className="bg-transparent border-none cursor-pointer p-1">
             <X size={20} color="#6b7280" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Search bar */}
           {!editingItem && (
-            <div style={{ background: '#F0F9FF', borderRadius: '12px', padding: '14px', border: '1px solid #BAE6FD' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+            <div className="bg-[#F0F9FF] rounded-md p-3.5 border border-[#BAE6FD]">
+              <div className="flex items-center gap-1.5 mb-2">
                 <Search size={14} color="#0284C7" />
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#0284C7' }}>Buscar na internet</span>
+                <span className="text-[13px] font-bold text-[#0284C7]">Buscar na internet</span>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="flex gap-2">
                 <input
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSearch() } }}
                   placeholder="Ex: geladeira frost free 480L inox..."
-                  style={{ flex: 1, fontSize: '14px' }}
+                  className="flex-1 text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => handleSearch()}
                   disabled={searching || searchQuery.length < 2}
-                  style={{
-                    padding: '8px 16px', background: '#0284C7', color: 'white', border: 'none',
-                    borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap',
-                    opacity: searching ? 0.6 : 1,
-                  }}>
+                  className={`px-4 py-2 bg-[#0284C7] text-white border-none rounded-sm text-[13px] font-bold cursor-pointer flex items-center gap-1 whitespace-nowrap ${searching ? 'opacity-60' : 'opacity-100'}`}>
                   {searching ? <Loader2 size={14} className="spin" /> : <Search size={14} />}
                   {searching ? 'Buscando...' : 'Buscar'}
                 </button>
@@ -213,18 +208,16 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
 
               {/* Search results */}
               {(searchResults.length > 0 || searching || searchLinks.length > 0) && (
-                <div style={{ marginTop: '10px', maxHeight: '280px', overflowY: 'auto', borderRadius: '8px' }}>
+                <div className="mt-2.5 max-h-[280px] overflow-y-auto rounded-sm">
                   {searchStats && searchStats.total > 0 && (
-                    <div style={{
-                      display: 'flex', gap: '8px', marginBottom: '8px', fontSize: '11px', flexWrap: 'wrap',
-                    }}>
-                      <span style={{ padding: '3px 8px', background: '#DBEAFE', borderRadius: '6px', color: '#1E40AF', fontWeight: 600 }}>
+                    <div className="flex gap-2 mb-2 text-[11px] flex-wrap">
+                      <span className="px-2 py-[3px] bg-[#DBEAFE] rounded-[6px] text-[#1E40AF] font-semibold">
                         {searchStats.total} resultado{searchStats.total !== 1 ? 's' : ''}
                       </span>
-                      <span style={{ padding: '3px 8px', background: '#D1FAE5', borderRadius: '6px', color: '#065F46', fontWeight: 600 }}>
+                      <span className="px-2 py-[3px] bg-success-light rounded-[6px] text-[#065F46] font-semibold">
                         Média: R$ {searchStats.avgPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </span>
-                      <span style={{ padding: '3px 8px', background: '#FEF3C7', borderRadius: '6px', color: '#92400E', fontWeight: 600 }}>
+                      <span className="px-2 py-[3px] bg-warning-light rounded-[6px] text-[#92400E] font-semibold">
                         Min: R$ {searchStats.minPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
@@ -233,21 +226,14 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
                     <div
                       key={i}
                       onClick={() => selectProduct(product)}
-                      style={{
-                        display: 'flex', gap: '10px', padding: '10px', marginBottom: '4px',
-                        background: 'white', borderRadius: '8px', cursor: 'pointer',
-                        border: '1px solid #E5E7EB', transition: 'all 0.15s',
-                        position: 'relative',
-                      }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#0284C7'; (e.currentTarget as HTMLElement).style.background = '#F0F9FF' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E5E7EB'; (e.currentTarget as HTMLElement).style.background = 'white' }}
+                      className="flex gap-2.5 p-2.5 mb-1 bg-white rounded-sm cursor-pointer border border-[#E5E7EB] transition-all duration-150 relative hover:border-[#0284C7] hover:bg-[#F0F9FF]"
                     >
                       {product.image && (
-                        <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <div className="relative shrink-0">
                           <img
                             src={product.image}
                             alt=""
-                            style={{ width: '56px', height: '56px', objectFit: 'contain', borderRadius: '6px', background: '#F9FAFB', cursor: 'zoom-in' }}
+                            className="w-14 h-14 object-contain rounded-[6px] bg-[#F9FAFB] cursor-zoom-in"
                             onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
                             onMouseEnter={e => {
                               const img = e.target as HTMLImageElement
@@ -270,23 +256,23 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
                           />
                         </div>
                       )}
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="flex-1 min-w-0">
                         <p
                           title={product.title}
-                          style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}
+                          className="text-[13px] font-semibold text-[#1F2937] m-0 overflow-hidden text-ellipsis line-clamp-2"
                         >
                           {product.title}
                         </p>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                          <span style={{ fontSize: '14px', fontWeight: 800, color: '#059669' }}>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm font-extrabold text-success">
                             R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
-                          <span style={{ fontSize: '10px', color: '#6B7280', background: '#F3F4F6', padding: '1px 6px', borderRadius: '4px' }}>
+                          <span className="text-[10px] text-[#6B7280] bg-[#F3F4F6] px-1.5 py-[1px] rounded-[4px]">
                             {product.store}
                           </span>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      <div className="flex items-center gap-1.5 shrink-0">
                         {product.url && (
                           <a
                             href={product.url}
@@ -294,9 +280,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
                             rel="noopener noreferrer"
                             onClick={e => e.stopPropagation()}
                             title="Ver na loja"
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '6px', background: '#F3F4F6', transition: 'background 0.15s' }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#DBEAFE' }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#F3F4F6' }}
+                            className="flex items-center justify-center w-7 h-7 rounded-[6px] bg-[#F3F4F6] transition-colors duration-150 hover:bg-[#DBEAFE]"
                           >
                             <ExternalLink size={14} color="#0284C7" />
                           </a>
@@ -306,29 +290,24 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
                     </div>
                   ))}
                   {searching && (
-                    <div style={{ textAlign: 'center', padding: '20px', color: '#6B7280' }}>
-                      <Loader2 size={20} className="spin" style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }} />
-                      <p style={{ fontSize: '12px', marginTop: '8px' }}>Buscando em Mercado Livre, Amazon e Buscapé...</p>
+                    <div className="text-center p-5 text-[#6B7280]">
+                      <Loader2 size={20} className="spin inline-block animate-spin" />
+                      <p className="text-xs mt-2">Buscando em Mercado Livre, Amazon e Buscapé...</p>
                     </div>
                   )}
                   {!searching && searchResults.length === 0 && searchLinks.length > 0 && (
-                    <div style={{ padding: '12px', textAlign: 'center' }}>
-                      <p style={{ color: '#6B7280', fontSize: '13px', marginBottom: '10px' }}>
+                    <div className="p-3 text-center">
+                      <p className="text-[#6B7280] text-[13px] mb-2.5">
                         Nenhum resultado automático. Busque manualmente:
                       </p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center' }}>
+                      <div className="flex flex-wrap gap-1.5 justify-center">
                         {searchLinks.map((link, i) => (
                           <a
                             key={i}
                             href={link.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{
-                              display: 'inline-flex', alignItems: 'center', gap: '4px',
-                              padding: '6px 12px', background: 'white', border: '1px solid #D1D5DB',
-                              borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#374151',
-                              textDecoration: 'none', transition: 'all 0.15s',
-                            }}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-[#D1D5DB] rounded-sm text-xs font-semibold text-[#374151] no-underline transition-all duration-150"
                           >
                             <ExternalLink size={11} /> {link.store}
                           </a>
@@ -343,7 +322,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
 
           {/* Name */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '4px', display: 'block' }}>Nome do item *</label>
+            <label className="text-[13px] font-semibold text-[#374151] mb-1 block">Nome do item *</label>
             <input
               value={name}
               onChange={e => setName(e.target.value)}
@@ -353,9 +332,9 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
           </div>
 
           {/* Room + Category */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '4px', display: 'block' }}>Cômodo *</label>
+              <label className="text-[13px] font-semibold text-[#374151] mb-1 block">Cômodo *</label>
               <select value={roomId} onChange={e => setRoomId(e.target.value)} required>
                 <option value="">Selecione...</option>
                 {rooms.map(r => (
@@ -364,7 +343,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
               </select>
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '4px', display: 'block' }}>Categoria</label>
+              <label className="text-[13px] font-semibold text-[#374151] mb-1 block">Categoria</label>
               <select value={categoryId} onChange={e => setCategoryId(e.target.value)}>
                 <option value="">Selecione...</option>
                 {categories.map(c => (
@@ -375,13 +354,13 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
           </div>
 
           {/* Quantity + Price + Status */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '4px', display: 'block' }}>Qtd</label>
+              <label className="text-[13px] font-semibold text-[#374151] mb-1 block">Qtd</label>
               <input type="number" min={1} value={quantity} onChange={e => setQuantity(parseInt(e.target.value) || 1)} />
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '4px', display: 'block' }}>Preço estimado (R$)</label>
+              <label className="text-[13px] font-semibold text-[#374151] mb-1 block">Preço estimado (R$)</label>
               <input
                 type="number"
                 step="0.01"
@@ -392,7 +371,7 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
               />
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '4px', display: 'block' }}>Status</label>
+              <label className="text-[13px] font-semibold text-[#374151] mb-1 block">Status</label>
               <select value={status} onChange={e => setStatus(e.target.value as Item['status'])}>
                 <option value="ja_temos">Já Temos</option>
                 <option value="desejado">Desejado</option>
@@ -404,68 +383,68 @@ export default function AddItemModal({ isOpen, onClose, onSave, rooms, categorie
 
           {/* Description */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '4px', display: 'block' }}>Descrição</label>
+            <label className="text-[13px] font-semibold text-[#374151] mb-1 block">Descrição</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="Detalhes, medidas, cor, material..."
               rows={2}
-              style={{ resize: 'vertical' }}
+              className="resize-y"
             />
           </div>
 
           {/* Reference Links */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <label className="text-[13px] font-semibold text-[#374151] mb-1 flex items-center gap-1">
               <Link size={14} /> Links de referência
             </label>
             {referenceLinks.map((link, i) => (
-              <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
+              <div key={i} className="flex gap-2 mb-1.5">
                 <input
                   value={link}
                   onChange={e => updateLink(i, e.target.value)}
                   placeholder="https://..."
                 />
                 {referenceLinks.length > 1 && (
-                  <button type="button" onClick={() => removeLink(i)} style={{ padding: '8px', border: 'none', cursor: 'pointer', background: '#fef2f2', borderRadius: '8px' }}>
+                  <button type="button" onClick={() => removeLink(i)} className="p-2 border-none cursor-pointer bg-[#fef2f2] rounded-sm">
                     <Trash2 size={14} color="#ef4444" />
                   </button>
                 )}
               </div>
             ))}
-            <button type="button" onClick={addLink} style={{ fontSize: '12px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <button type="button" onClick={addLink} className="text-xs text-[#2563eb] bg-transparent border-none cursor-pointer font-semibold flex items-center gap-1">
               <Plus size={12} /> Adicionar link
             </button>
           </div>
 
           {/* Image URLs */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <label className="text-[13px] font-semibold text-[#374151] mb-1 flex items-center gap-1">
               <Image size={14} /> URLs de imagens
             </label>
             {imageUrls.map((url, i) => (
-              <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
+              <div key={i} className="flex gap-2 mb-1.5">
                 <input
                   value={url}
                   onChange={e => updateImage(i, e.target.value)}
                   placeholder="https://imagem.com/foto.jpg"
                 />
                 {imageUrls.length > 1 && (
-                  <button type="button" onClick={() => removeImage(i)} style={{ padding: '8px', border: 'none', cursor: 'pointer', background: '#fef2f2', borderRadius: '8px' }}>
+                  <button type="button" onClick={() => removeImage(i)} className="p-2 border-none cursor-pointer bg-[#fef2f2] rounded-sm">
                     <Trash2 size={14} color="#ef4444" />
                   </button>
                 )}
               </div>
             ))}
-            <button type="button" onClick={addImage} style={{ fontSize: '12px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <button type="button" onClick={addImage} className="text-xs text-[#2563eb] bg-transparent border-none cursor-pointer font-semibold flex items-center gap-1">
               <Plus size={12} /> Adicionar imagem
             </button>
           </div>
 
           {/* Submit */}
-          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-            <button type="button" className="btn-secondary" onClick={onClose} style={{ flex: 1 }}>Cancelar</button>
-            <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+          <div className="flex gap-3 mt-2">
+            <button type="button" className="btn-secondary flex-1" onClick={onClose}>Cancelar</button>
+            <button type="submit" className="btn-primary flex-1">
               {editingItem ? 'Salvar alterações' : 'Adicionar item'}
             </button>
           </div>

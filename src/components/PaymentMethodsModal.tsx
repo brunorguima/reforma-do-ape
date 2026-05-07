@@ -170,47 +170,31 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
 
   return (
     <div
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1100,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
-      }}
+      className="fixed inset-0 bg-black/60 z-[1100] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
-        style={{
-          background: 'white', borderRadius: '16px', maxWidth: '680px', width: '100%',
-          maxHeight: '92vh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
-        }}
+        className="bg-white rounded-lg max-w-[680px] w-full max-h-[92vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{
-          padding: '16px 20px', borderBottom: '1px solid #E5E7EB',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          background: 'linear-gradient(135deg, #6366F1, #8B5CF6)', color: 'white',
-        }}>
-          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="px-5 py-4 border-b border-[#E5E7EB] flex justify-between items-center text-white" style={{ background: 'linear-gradient(135deg, #6366F1, #8B5CF6)' }}>
+          <h2 className="m-0 text-lg font-bold flex items-center gap-2">
             <CreditCard size={20} /> Formas de Pagamento
           </h2>
           <button
             onClick={onClose}
-            style={{
-              background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px',
-              padding: '6px', color: 'white', cursor: 'pointer',
-            }}
+            className="bg-white/20 border-none rounded-sm p-1.5 text-white cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
-          {loading && <div style={{ textAlign: 'center', color: '#6B7280' }}>Carregando…</div>}
+        <div className="flex-1 overflow-auto p-5">
+          {loading && <div className="text-center text-[#6B7280]">Carregando…</div>}
 
           {!loading && !editing && methods.length === 0 && (
-            <div style={{
-              padding: '24px', textAlign: 'center', background: '#F9FAFB',
-              borderRadius: '12px', color: '#6B7280',
-            }}>
+            <div className="p-6 text-center bg-[#F9FAFB] rounded-md text-[#6B7280]">
               Nenhuma forma de pagamento cadastrada.
               <br />
               Adicione cartões, PIX, boleto consolidado etc.
@@ -218,31 +202,23 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
           )}
 
           {!loading && !editing && methods.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="flex flex-col gap-2.5">
               {methods.map((m) => {
                 const ki = kindInfo(m.kind)
                 return (
                   <div
                     key={m.id}
-                    style={{
-                      padding: '14px', borderRadius: '12px',
-                      background: 'white', border: '1px solid #E5E7EB',
-                      display: 'flex', gap: '12px', alignItems: 'center',
-                    }}
+                    className="p-3.5 rounded-md bg-white border border-[#E5E7EB] flex gap-3 items-center"
                   >
-                    <div style={{
-                      width: '44px', height: '44px', borderRadius: '10px',
-                      background: '#EEF2FF', display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', fontSize: '20px', flexShrink: 0,
-                    }}>
+                    <div className="w-11 h-11 rounded-[10px] bg-[#EEF2FF] flex items-center justify-center text-xl shrink-0">
                       {ki.emoji}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-bold text-[#111827]">
                         {m.name}
-                        {m.last4 && <span style={{ color: '#6B7280', fontWeight: 500, marginLeft: '6px' }}>•••• {m.last4}</span>}
+                        {m.last4 && <span className="text-[#6B7280] font-medium ml-1.5">•••• {m.last4}</span>}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
+                      <div className="text-[11px] text-[#6B7280] mt-0.5">
                         {ki.label}
                         {m.brand && <> · {m.brand}</>}
                         {m.issuer_bank && <> · {m.issuer_bank}</>}
@@ -258,14 +234,14 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                     </div>
                     <button
                       onClick={() => { setEditing(m); setCreating(false) }}
-                      style={{ background: '#F3F4F6', border: 'none', borderRadius: '8px', padding: '8px', cursor: 'pointer' }}
+                      className="bg-[#F3F4F6] border-none rounded-sm p-2 cursor-pointer"
                       title="Editar"
                     >
                       <Pencil size={14} color="#374151" />
                     </button>
                     <button
                       onClick={() => remove(m.id)}
-                      style={{ background: '#FEE2E2', border: 'none', borderRadius: '8px', padding: '8px', cursor: 'pointer' }}
+                      className="bg-danger-light border-none rounded-sm p-2 cursor-pointer"
                       title="Desativar"
                     >
                       <Trash2 size={14} color="#DC2626" />
@@ -277,26 +253,23 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
           )}
 
           {editing && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div className="flex flex-col gap-3.5">
               <div>
-                <label style={labelStyle}>Tipo</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '6px' }}>
+                <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Tipo</label>
+                <div className="grid grid-cols-3 gap-2 mt-1.5">
                   {KIND_OPTIONS.map((opt) => {
                     const selected = editing.kind === opt.id
                     return (
                       <button
                         key={opt.id}
                         onClick={() => setEditing({ ...editing, kind: opt.id })}
-                        style={{
-                          padding: '10px 8px', borderRadius: '10px', cursor: 'pointer',
-                          background: selected ? '#6366F1' : '#F3F4F6',
-                          color: selected ? 'white' : '#374151',
-                          border: selected ? '2px solid #4338CA' : '1px solid #E5E7EB',
-                          fontSize: '12px', fontWeight: 600,
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                        }}
+                        className={`px-2 py-2.5 rounded-[10px] cursor-pointer text-xs font-semibold flex flex-col items-center gap-1 ${
+                          selected
+                            ? 'bg-[#6366F1] text-white border-2 border-[#4338CA]'
+                            : 'bg-[#F3F4F6] text-[#374151] border border-[#E5E7EB]'
+                        }`}
                       >
-                        <div style={{ fontSize: '20px' }}>{opt.emoji}</div>
+                        <div className="text-xl">{opt.emoji}</div>
                         {opt.label}
                       </button>
                     )
@@ -305,9 +278,9 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
               </div>
 
               <div>
-                <label style={labelStyle}>Nome / Apelido</label>
+                <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Nome / Apelido</label>
                 <input
-                  style={inputStyle}
+                  className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                   value={editing.name}
                   onChange={(e) => setEditing({ ...editing, name: e.target.value })}
                   placeholder="Ex: Nubank Bruno, Leroy Merlin mensal"
@@ -316,18 +289,15 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
               </div>
 
               {editing.kind === 'credito' && (
-                <div style={{
-                  padding: '12px', background: '#EEF2FF', borderRadius: '10px',
-                  border: '1px solid #C7D2FE',
-                }}>
-                  <div style={{ fontSize: '11px', color: '#4338CA', fontWeight: 700, marginBottom: '10px' }}>
+                <div className="p-3 bg-[#EEF2FF] rounded-[10px] border border-[#C7D2FE]">
+                  <div className="text-[11px] text-[#4338CA] font-bold mb-2.5">
                     📅 Datas do cartão
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label style={labelStyle}>Dia do fechamento</label>
+                      <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Dia do fechamento</label>
                       <select
-                        style={inputStyle}
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.closing_day ?? ''}
                         onChange={(e) => setEditing({ ...editing, closing_day: e.target.value ? Number(e.target.value) : null })}
                       >
@@ -338,9 +308,9 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                       </select>
                     </div>
                     <div>
-                      <label style={labelStyle}>Dia do pagamento</label>
+                      <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Dia do pagamento</label>
                       <select
-                        style={inputStyle}
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.due_day ?? ''}
                         onChange={(e) => setEditing({ ...editing, due_day: e.target.value ? Number(e.target.value) : null })}
                       >
@@ -351,11 +321,11 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                       </select>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+                  <div className="grid grid-cols-2 gap-2.5 mt-2.5">
                     <div>
-                      <label style={labelStyle}>Bandeira</label>
+                      <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Bandeira</label>
                       <select
-                        style={inputStyle}
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.brand || ''}
                         onChange={(e) => setEditing({ ...editing, brand: e.target.value || null })}
                       >
@@ -366,9 +336,9 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                       </select>
                     </div>
                     <div>
-                      <label style={labelStyle}>Banco emissor</label>
+                      <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Banco emissor</label>
                       <select
-                        style={inputStyle}
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.issuer_bank || ''}
                         onChange={(e) => setEditing({ ...editing, issuer_bank: e.target.value || null })}
                       >
@@ -379,10 +349,10 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                       </select>
                     </div>
                   </div>
-                  <div style={{ marginTop: '10px' }}>
-                    <label style={labelStyle}>Final do cartão</label>
+                  <div className="mt-2.5">
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Final do cartão</label>
                     <input
-                      style={inputStyle}
+                      className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                       maxLength={4}
                       value={editing.last4 || ''}
                       onChange={(e) => setEditing({ ...editing, last4: e.target.value.replace(/\D/g, '') || null })}
@@ -393,15 +363,12 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
               )}
 
               {editing.kind === 'debito' && (
-                <div style={{
-                  padding: '12px', background: '#ECFDF5', borderRadius: '10px',
-                  border: '1px solid #A7F3D0',
-                }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div className="p-3 bg-[#ECFDF5] rounded-[10px] border border-[#A7F3D0]">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label style={labelStyle}>Bandeira</label>
+                      <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Bandeira</label>
                       <select
-                        style={inputStyle}
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.brand || ''}
                         onChange={(e) => setEditing({ ...editing, brand: e.target.value || null })}
                       >
@@ -412,9 +379,9 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
                       </select>
                     </div>
                     <div>
-                      <label style={labelStyle}>Banco</label>
+                      <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Banco</label>
                       <select
-                        style={inputStyle}
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.issuer_bank || ''}
                         onChange={(e) => setEditing({ ...editing, issuer_bank: e.target.value || null })}
                       >
@@ -430,9 +397,9 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
 
               {(editing.kind === 'pix' || editing.kind === 'transferencia') && (
                 <div>
-                  <label style={labelStyle}>Banco</label>
+                  <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Banco</label>
                   <select
-                    style={inputStyle}
+                    className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                     value={editing.issuer_bank || ''}
                     onChange={(e) => setEditing({ ...editing, issuer_bank: e.target.value || null })}
                   >
@@ -445,38 +412,36 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
               )}
 
               {editing.kind === 'boleto' && (
-                <div style={{
-                  padding: '12px', background: '#FEF3C7', borderRadius: '10px', border: '1px solid #FDE68A',
-                }}>
-                  <label style={labelStyle}>Prazo padrão (dias após emissão)</label>
+                <div className="p-3 bg-warning-light rounded-[10px] border border-[#FDE68A]">
+                  <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Prazo padrão (dias após emissão)</label>
                   <input
                     type="number"
                     min={0}
                     max={120}
-                    style={inputStyle}
+                    className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                     value={editing.default_due_offset_days ?? ''}
                     onChange={(e) => setEditing({ ...editing, default_due_offset_days: e.target.value ? Number(e.target.value) : null })}
                   />
-                  <div style={{ marginTop: '12px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                  <div className="mt-3 flex gap-2 items-start">
                     <input
                       type="checkbox"
                       id="consolidate"
                       checked={editing.consolidate_monthly}
                       onChange={(e) => setEditing({ ...editing, consolidate_monthly: e.target.checked })}
-                      style={{ marginTop: '3px', width: '16px', height: '16px' }}
+                      className="mt-0.5 w-4 h-4"
                     />
-                    <label htmlFor="consolidate" style={{ fontSize: '12px', color: '#92400E', cursor: 'pointer' }}>
+                    <label htmlFor="consolidate" className="text-xs text-[#92400E] cursor-pointer">
                       <strong>Fornecedor consolidado</strong>
-                      <div style={{ fontSize: '11px', opacity: 0.8, marginTop: '2px' }}>
+                      <div className="text-[11px] opacity-80 mt-0.5">
                         Todas as notas desse fornecedor caem numa única fatura mensal no dia abaixo.
                       </div>
                     </label>
                   </div>
                   {editing.consolidate_monthly && (
-                    <div style={{ marginTop: '10px' }}>
-                      <label style={labelStyle}>Dia de pagamento mensal</label>
+                    <div className="mt-2.5">
+                      <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Dia de pagamento mensal</label>
                       <select
-                        style={inputStyle}
+                        className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                         value={editing.due_day ?? ''}
                         onChange={(e) => setEditing({ ...editing, due_day: e.target.value ? Number(e.target.value) : null })}
                       >
@@ -491,9 +456,9 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
               )}
 
               <div>
-                <label style={labelStyle}>Titular</label>
+                <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Titular</label>
                 <input
-                  style={inputStyle}
+                  className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                   value={editing.holder || ''}
                   onChange={(e) => setEditing({ ...editing, holder: e.target.value || null })}
                   placeholder="Bruno, Graziela…"
@@ -501,33 +466,27 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
               </div>
 
               <div>
-                <label style={labelStyle}>Notas (opcional)</label>
+                <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wide mb-1">Notas (opcional)</label>
                 <input
-                  style={inputStyle}
+                  className="w-full px-3 py-2.5 rounded-sm border border-[#D1D5DB] text-sm bg-white box-border"
                   value={editing.notes || ''}
                   onChange={(e) => setEditing({ ...editing, notes: e.target.value || null })}
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <div className="flex gap-2 justify-end">
                 <button
                   onClick={() => { setEditing(null); setCreating(false) }}
-                  style={{
-                    padding: '10px 16px', borderRadius: '10px', background: '#F3F4F6',
-                    border: '1px solid #D1D5DB', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
-                  }}
+                  className="px-4 py-2.5 rounded-[10px] bg-[#F3F4F6] border border-[#D1D5DB] cursor-pointer text-[13px] font-semibold"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={save}
                   disabled={saving || !editing.name.trim()}
-                  style={{
-                    padding: '10px 20px', borderRadius: '10px',
-                    background: saving || !editing.name.trim() ? '#9CA3AF' : '#6366F1',
-                    color: 'white', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 700,
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                  }}
+                  className={`px-5 py-2.5 rounded-[10px] text-white border-none cursor-pointer text-[13px] font-bold flex items-center gap-1.5 ${
+                    saving || !editing.name.trim() ? 'bg-[#9CA3AF]' : 'bg-[#6366F1]'
+                  }`}
                 >
                   {saving ? '...' : <><Check size={14} /> Salvar</>}
                 </button>
@@ -537,18 +496,10 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
         </div>
 
         {!editing && (
-          <div style={{
-            padding: '12px 20px', borderTop: '1px solid #E5E7EB', background: '#F9FAFB',
-            display: 'flex', justifyContent: 'flex-end',
-          }}>
+          <div className="px-5 py-3 border-t border-[#E5E7EB] bg-[#F9FAFB] flex justify-end">
             <button
               onClick={startCreate}
-              style={{
-                padding: '10px 18px', borderRadius: '10px',
-                background: '#6366F1', color: 'white', border: 'none',
-                cursor: 'pointer', fontSize: '13px', fontWeight: 700,
-                display: 'flex', alignItems: 'center', gap: '6px',
-              }}
+              className="px-4.5 py-2.5 rounded-[10px] bg-[#6366F1] text-white border-none cursor-pointer text-[13px] font-bold flex items-center gap-1.5"
             >
               <Plus size={14} /> Nova forma de pagamento
             </button>
@@ -557,17 +508,6 @@ export default function PaymentMethodsModal({ currentUser, onClose, onChanged }:
       </div>
     </div>
   )
-}
-
-const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: '10px', fontWeight: 700, color: '#6B7280',
-  textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px',
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', borderRadius: '8px',
-  border: '1px solid #D1D5DB', fontSize: '14px', background: 'white',
-  boxSizing: 'border-box',
 }
 
 // Helper export used by NFeImportModal to display labels

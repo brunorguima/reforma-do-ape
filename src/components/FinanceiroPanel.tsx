@@ -271,9 +271,9 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>💰</div>
-        <p style={{ color: '#6b7280' }}>Carregando financeiro...</p>
+      <div className="text-center py-15 px-5">
+        <div className="text-5xl mb-4">💰</div>
+        <p className="text-[#6b7280]">Carregando financeiro...</p>
       </div>
     )
   }
@@ -412,28 +412,23 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
   const PROF_COLORS = ['#3B82F6', '#8B5CF6', '#F59E0B', '#EC4899', '#10B981', '#EF4444']
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="relative">
       {/* TOAST */}
       {toast && (
-        <div style={{
-          position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
-          padding: '10px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600,
-          background: toast.type === 'success' ? '#059669' : '#DC2626', color: 'white',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)', animation: 'fadeIn 0.3s ease',
-        }}>
+        <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[9999] px-5 py-2.5 rounded-[10px] text-sm font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.15)] animate-[fadeIn_0.3s_ease] ${toast.type === 'success' ? 'bg-success' : 'bg-danger'}`}>
           {toast.type === 'success' ? '✓' : '✕'} {toast.msg}
         </div>
       )}
 
       {/* === HEADER === */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <DollarSign size={20} color="var(--foreground)" />
-          <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0 }}>Visão Geral</h2>
+      <div className="flex justify-between items-center mb-3">
+        <div className="flex items-center gap-2">
+          <DollarSign size={20} className="text-on-surface" />
+          <h2 className="text-[17px] font-bold m-0">Visão Geral</h2>
         </div>
         {isOwner && (
           <button onClick={() => { setShowAuditLog(!showAuditLog); if (!showAuditLog) fetchAuditLog() }}
-            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '4px 8px', cursor: 'pointer', color: 'var(--foreground)', display: 'flex', alignItems: 'center' }}
+            className="bg-surface-container border border-outline-variant rounded-sm px-2 py-1 cursor-pointer text-on-surface flex items-center"
             title="Ver histórico de alterações">
             <History size={14} />
           </button>
@@ -460,37 +455,37 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
         <div className="kpi-card" data-accent="blue">
           <p className="kpi-label">Total Geral</p>
           <p className="kpi-value">{fmt(totalGeral)}</p>
-          {economiaTotal > 0 && <p className="kpi-sub" style={{ color: 'var(--success)' }}>Economia: {fmt(economiaTotal)}</p>}
+          {economiaTotal > 0 && <p className="kpi-sub text-success">{`Economia: ${fmt(economiaTotal)}`}</p>}
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div style={{ background: '#F3F4F6', borderRadius: '8px', height: '8px', overflow: 'hidden', marginBottom: '16px' }}>
-        <div style={{ width: `${percentPago}%`, height: '100%', background: 'linear-gradient(90deg, #3B82F6, #60A5FA)', borderRadius: '8px', transition: 'width 0.5s ease' }} />
+      <div className="bg-[#F3F4F6] rounded-sm h-2 overflow-hidden mb-4">
+        <div className="h-full bg-gradient-to-r from-[#3B82F6] to-[#60A5FA] rounded-sm transition-all duration-500 ease-in-out" style={{ width: `${percentPago}%` }} />
       </div>
 
       {/* === AUDIT LOG PANEL === */}
       {showAuditLog && (
-        <div style={{ marginBottom: '16px', borderRadius: '12px', background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', maxHeight: '300px', overflow: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#374151', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div className="mb-4 rounded-md bg-[#F8FAFC] border border-[#E2E8F0] p-4 max-h-[300px] overflow-auto">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-sm font-bold text-[#374151] m-0 flex items-center gap-1.5">
               <History size={14} /> Histórico de Alterações
             </h3>
-            <button onClick={() => setShowAuditLog(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280' }}><X size={16} /></button>
+            <button onClick={() => setShowAuditLog(false)} className="bg-transparent border-none cursor-pointer text-[#6B7280]"><X size={16} /></button>
           </div>
           {auditLog.length === 0 ? (
-            <p style={{ fontSize: '12px', color: '#9CA3AF', textAlign: 'center' }}>Nenhuma alteração registrada ainda</p>
+            <p className="text-xs text-[#9CA3AF] text-center">Nenhuma alteração registrada ainda</p>
           ) : (
             auditLog.slice(0, 20).map(log => (
-              <div key={log.id} style={{ padding: '8px 0', borderBottom: '1px solid #E5E7EB', fontSize: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 600, color: log.action === 'delete' ? '#DC2626' : log.action === 'edit' ? '#D97706' : '#059669' }}>
+              <div key={log.id} className="py-2 border-b border-[#E5E7EB] text-xs">
+                <div className="flex justify-between items-center">
+                  <span className={`font-semibold ${log.action === 'delete' ? 'text-danger' : log.action === 'edit' ? 'text-warning' : 'text-success'}`}>
                     {log.action === 'delete' ? '🗑️ Deletou' : log.action === 'edit' ? '✏️ Editou' : log.action === 'create' ? '➕ Criou' : '🔄 Alterou'}
                   </span>
-                  <span style={{ color: '#9CA3AF' }}>{fmtDateTime(log.performed_at)}</span>
+                  <span className="text-[#9CA3AF]">{fmtDateTime(log.performed_at)}</span>
                 </div>
-                <p style={{ margin: '2px 0 0', color: '#6B7280' }}>{log.entity_description}</p>
-                <p style={{ margin: '2px 0 0', color: '#9CA3AF', fontStyle: 'italic' }}>por {log.performed_by}</p>
+                <p className="mt-0.5 mb-0 text-[#6B7280]">{log.entity_description}</p>
+                <p className="mt-0.5 mb-0 text-[#9CA3AF] italic">por {log.performed_by}</p>
               </div>
             ))
           )}
@@ -499,17 +494,13 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
 
       {/* === NEXT PAYMENT ALERT === */}
       {nextPayment && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', marginBottom: '16px',
-          background: daysUntilNext !== null && daysUntilNext <= 3 ? '#FEF2F2' : '#FFFBEB',
-          border: `1px solid ${daysUntilNext !== null && daysUntilNext <= 3 ? '#FECACA' : '#FDE68A'}`,
-        }}>
-          {daysUntilNext !== null && daysUntilNext <= 3 ? <AlertTriangle size={20} color="#DC2626" /> : <Calendar size={20} color="#D97706" />}
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937', margin: 0 }}>
+        <div className={`flex items-center gap-3 py-3.5 px-4 rounded-md mb-4 ${daysUntilNext !== null && daysUntilNext <= 3 ? 'bg-danger-light border border-[#FECACA]' : 'bg-[#FFFBEB] border border-[#FDE68A]'}`}>
+          {daysUntilNext !== null && daysUntilNext <= 3 ? <AlertTriangle size={20} className="text-danger" /> : <Calendar size={20} className="text-warning" />}
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#1F2937] m-0">
               Próximo: {fmt(nextPayment.amount)} — {nextPayment.professional}
             </p>
-            <p style={{ fontSize: '12px', color: '#6B7280', margin: '2px 0 0' }}>
+            <p className="text-xs text-[#6B7280] mt-0.5 mb-0">
               {fmtDate(nextPayment.due_date)} · {daysUntilNext !== null && daysUntilNext > 0
                 ? `Faltam ${daysUntilNext} dias` : daysUntilNext === 0 ? 'Vence HOJE!' : `Vencida há ${Math.abs(daysUntilNext!)} dias`}
             </p>
@@ -518,90 +509,82 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
       )}
 
       {/* === CONTRATOS & PAGAMENTOS === */}
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="mb-5">
+        <h3 className="text-[15px] font-bold text-[#374151] mb-1 flex items-center gap-2">
           <Users size={16} /> Contratos & Pagamentos
         </h3>
-        <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '0 0 12px', paddingLeft: '24px' }}>
+        <p className="text-[11px] text-[#9CA3AF] mt-0 mb-3 pl-6">
           Toque em um profissional para ver e gerenciar parcelas
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="flex flex-col gap-2.5">
           {profBreakdown.map((prof, idx) => {
             const isExpanded = expandedProf === prof.professional
             const profPaymentsSorted = prof.payments.sort((a, b) => a.installment_number - b.installment_number)
             const color = PROF_COLORS[idx % PROF_COLORS.length]
 
             return (
-              <div key={prof.professional} style={{
-                borderRadius: '12px', background: 'white', border: `1px solid ${isExpanded ? color + '40' : '#E5E7EB'}`,
-                overflow: 'hidden', transition: 'border-color 0.2s ease',
+              <div key={prof.professional} className="rounded-md bg-surface-lowest overflow-hidden transition-colors duration-200" style={{
+                border: `1px solid ${isExpanded ? color + '40' : '#E5E7EB'}`,
                 boxShadow: isExpanded ? `0 2px 8px ${color}15` : 'none',
               }}>
                 {/* Header */}
                 <div
                   onClick={() => setExpandedProf(isExpanded ? null : prof.professional)}
-                  style={{
-                    padding: '14px 16px', cursor: 'pointer', userSelect: 'none',
-                    background: isExpanded ? `${color}08` : 'white',
-                    transition: 'background 0.2s ease',
-                  }}
+                  className="py-3.5 px-4 cursor-pointer select-none transition-colors duration-200"
+                  style={{ background: isExpanded ? `${color}08` : 'white' }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{
-                        width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: `${color}15`, color, fontWeight: 800, fontSize: '14px',
-                      }}>
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-sm font-extrabold" style={{ background: `${color}15`, color }}>
                         {prof.professional.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p style={{ fontSize: '14px', fontWeight: 700, color: '#1F2937', margin: 0 }}>{prof.professional}</p>
-                        <p style={{ fontSize: '11px', color: '#6B7280', margin: 0 }}>{prof.role}</p>
+                        <p className="text-sm font-bold text-[#1F2937] m-0">{prof.professional}</p>
+                        <p className="text-[11px] text-[#6B7280] m-0">{prof.role}</p>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ textAlign: 'right' }}>
-                        <p style={{ fontSize: '15px', fontWeight: 800, color: '#1F2937', margin: 0 }}>{fmt(prof.negociado)}</p>
-                        <p style={{ fontSize: '11px', color: '#10B981', fontWeight: 600, margin: 0 }}>{prof.percent}% pago</p>
+                    <div className="flex items-center gap-2.5">
+                      <div className="text-right">
+                        <p className="text-[15px] font-extrabold text-[#1F2937] m-0">{fmt(prof.negociado)}</p>
+                        <p className="text-[11px] text-[#10B981] font-semibold m-0">{prof.percent}% pago</p>
                       </div>
                       {/* Clear expand/collapse indicator */}
-                      <div style={{
-                        width: '28px', height: '28px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: isExpanded ? color : '#F3F4F6', color: isExpanded ? 'white' : '#9CA3AF',
-                        transition: 'all 0.2s ease',
+                      <div className="w-7 h-7 rounded-sm flex items-center justify-center transition-all duration-200" style={{
+                        background: isExpanded ? color : '#F3F4F6',
+                        color: isExpanded ? 'white' : '#9CA3AF',
                       }}>
                         {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </div>
                     </div>
                   </div>
-                  <div style={{ background: '#F3F4F6', borderRadius: '6px', height: '6px', overflow: 'hidden' }}>
-                    <div style={{ width: `${prof.percent}%`, height: '100%', background: color, borderRadius: '6px', transition: 'width 0.5s ease' }} />
+                  <div className="bg-[#F3F4F6] rounded-[6px] h-1.5 overflow-hidden">
+                    <div className="h-full rounded-[6px] transition-all duration-500 ease-in-out" style={{ width: `${prof.percent}%`, background: color }} />
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '4px' }}>
+                  <div className="flex justify-between mt-1.5 flex-wrap gap-1">
                     {prof.isCartaoParcelado ? (
                       <>
-                        <span style={{ fontSize: '11px', color: '#059669', fontWeight: 600 }}>
-                          <CheckCircle2 size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }} />
+                        <span className="text-[11px] text-success font-semibold">
+                          <CheckCircle2 size={11} className="inline align-middle mr-[3px]" />
                           💳 Pago no cartão
                         </span>
-                        <span style={{ fontSize: '11px', color: '#6B7280' }}>
-                          <Clock size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }} />
+                        <span className="text-[11px] text-[#6B7280]">
+                          <Clock size={11} className="inline align-middle mr-[3px]" />
                           Fatura restante: {fmt(prof.pendente)}
                         </span>
                       </>
                     ) : (
                       <>
-                        <span style={{ fontSize: '11px', color: '#6B7280' }}>
-                          <CheckCircle2 size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }} />
+                        <span className="text-[11px] text-[#6B7280]">
+                          <CheckCircle2 size={11} className="inline align-middle mr-[3px]" />
                           Pago: {fmt(prof.pago)}
                         </span>
-                        <span style={{ fontSize: '11px', color: '#6B7280' }}>
-                          <Clock size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '3px' }} />
+                        <span className="text-[11px] text-[#6B7280]">
+                          <Clock size={11} className="inline align-middle mr-[3px]" />
                           Pendente: {fmt(prof.pendente)}
                         </span>
                       </>
                     )}
-                    <span style={{ fontSize: '11px', color: color, fontWeight: 600 }}>
+                    <span className="text-[11px] font-semibold" style={{ color }}>
                       {profPaymentsSorted.length} parcela{profPaymentsSorted.length !== 1 ? 's' : ''}
                     </span>
                   </div>
@@ -609,33 +592,25 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
 
                 {/* Expanded payments */}
                 {isExpanded && (
-                  <div style={{ borderTop: `2px solid ${color}20`, padding: '12px 16px', background: '#FAFBFC' }}>
+                  <div className="py-3 px-4 bg-[#FAFBFC]" style={{ borderTop: `2px solid ${color}20` }}>
                     {/* Discrepancy Alert */}
                     {Math.abs(prof.discrepancy) > 0.01 && prof.negociado > 0 && (
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '10px', marginBottom: '10px',
-                        background: prof.discrepancy > 0 ? '#FEF2F2' : '#FFF7ED',
-                        border: `1px solid ${prof.discrepancy > 0 ? '#FECACA' : '#FED7AA'}`,
-                      }}>
-                        <AlertTriangle size={16} color={prof.discrepancy > 0 ? '#DC2626' : '#D97706'} style={{ flexShrink: 0 }} />
-                        <div style={{ flex: 1 }}>
-                          <p style={{ fontSize: '12px', fontWeight: 700, color: '#1F2937', margin: 0 }}>
+                      <div className={`flex items-center gap-2.5 py-2.5 px-3.5 rounded-[10px] mb-2.5 ${prof.discrepancy > 0 ? 'bg-danger-light border border-[#FECACA]' : 'bg-[#FFF7ED] border border-[#FED7AA]'}`}>
+                        <AlertTriangle size={16} className={`shrink-0 ${prof.discrepancy > 0 ? 'text-danger' : 'text-warning'}`} />
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-[#1F2937] m-0">
                             {prof.discrepancy > 0
                               ? `Parcelas somam ${fmt(prof.discrepancy)} A MAIS que o contrato`
                               : `Faltam ${fmt(Math.abs(prof.discrepancy))} nas parcelas vs contrato`}
                           </p>
-                          <p style={{ fontSize: '11px', color: '#6B7280', margin: '2px 0 0' }}>
+                          <p className="text-[11px] text-[#6B7280] mt-0.5 mb-0">
                             Contrato: {fmt(prof.negociado)} · Pago: {fmt(prof.pago)} · Pendente: {fmt(prof.pendente)} · Falta pagar: {fmt(prof.negociado - prof.pago)}
                           </p>
                         </div>
                         {prof.pendingCount > 0 && (
                           <button
                             onClick={() => handleRecalculate(prof.professional, prof.negociado)}
-                            style={{
-                              padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 700,
-                              background: '#2563EB', color: 'white', border: 'none', cursor: 'pointer',
-                              whiteSpace: 'nowrap', flexShrink: 0,
-                            }}
+                            className="py-1.5 px-3 rounded-sm text-[11px] font-bold bg-[#2563EB] text-white border-none cursor-pointer whitespace-nowrap shrink-0"
                           >
                             ⚡ Recalcular
                           </button>
@@ -644,9 +619,9 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                     )}
 
                     {profPaymentsSorted.length === 0 && (
-                      <div style={{ textAlign: 'center', padding: '16px', background: '#FFF7ED', borderRadius: '8px', border: '1px solid #FED7AA', marginBottom: '8px' }}>
-                        <p style={{ fontSize: '13px', color: '#92400E', margin: 0, fontWeight: 600 }}>Nenhuma parcela cadastrada</p>
-                        <p style={{ fontSize: '12px', color: '#B45309', margin: '4px 0 0' }}>Adicione parcelas para controlar os pagamentos</p>
+                      <div className="text-center p-4 bg-[#FFF7ED] rounded-sm border border-[#FED7AA] mb-2">
+                        <p className="text-[13px] text-[#92400E] m-0 font-semibold">Nenhuma parcela cadastrada</p>
+                        <p className="text-xs text-[#B45309] mt-1 mb-0">Adicione parcelas para controlar os pagamentos</p>
                       </div>
                     )}
 
@@ -657,23 +632,14 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                       const isConfirmingDelete = confirmDelete === p.id
 
                       return (
-                        <div key={p.id} style={{
-                          display: 'flex', alignItems: 'center', gap: '8px',
-                          padding: '10px 12px', borderRadius: '8px', marginBottom: '6px',
-                          background: isPago ? '#F0FDF4' : days <= 3 && !isPago ? '#FEF2F2' : 'white',
-                          border: `1px solid ${isPago ? '#BBF7D0' : days <= 3 && !isPago ? '#FECACA' : '#E5E7EB'}`,
-                        }}>
-                          <div style={{
-                            width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: isPago ? '#10B981' : '#E5E7EB', color: isPago ? 'white' : '#6B7280',
-                            fontSize: '11px', fontWeight: 700, flexShrink: 0,
-                          }}>
+                        <div key={p.id} className={`flex items-center gap-2 py-2.5 px-3 rounded-sm mb-1.5 ${isPago ? 'bg-[#F0FDF4] border border-[#BBF7D0]' : days <= 3 && !isPago ? 'bg-danger-light border border-[#FECACA]' : 'bg-surface-lowest border border-[#E5E7EB]'}`}>
+                          <div className={`w-[26px] h-[26px] rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${isPago ? 'bg-[#10B981] text-white' : 'bg-[#E5E7EB] text-[#6B7280]'}`}>
                             {isPago ? '✓' : p.installment_number}
                           </div>
 
                           {isEditing ? (
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                              <label style={{ fontSize: '11px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Valor pago (R$)</label>
+                            <div className="flex-1 flex flex-col gap-2.5">
+                              <label className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">Valor pago (R$)</label>
                               <input
                                 type="number"
                                 inputMode="decimal"
@@ -682,79 +648,79 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
                                 onChange={e => setEditAmount(e.target.value)}
                                 placeholder="0,00"
                                 autoFocus
-                                style={{ width: '100%', padding: '14px 16px', borderRadius: '10px', border: '2px solid #BFDBFE', fontSize: '22px', fontWeight: 700, color: '#1E3A8A', background: 'white', boxSizing: 'border-box' }}
+                                className="w-full py-3.5 px-4 rounded-[10px] border-2 border-[#BFDBFE] text-[22px] font-bold text-[#1E3A8A] bg-surface-lowest box-border"
                               />
-                              <label style={{ fontSize: '11px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Data</label>
+                              <label className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">Data</label>
                               <input
                                 type="date"
                                 value={editDate}
                                 onChange={e => setEditDate(e.target.value)}
-                                style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '15px', boxSizing: 'border-box' }}
+                                className="w-full py-3 px-3.5 rounded-[10px] border border-[#D1D5DB] text-[15px] box-border"
                               />
                               <input
                                 type="text"
                                 value={editNotes}
                                 onChange={e => setEditNotes(e.target.value)}
                                 placeholder="Observação (opcional)"
-                                style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }}
+                                className="w-full py-3 px-3.5 rounded-[10px] border border-[#D1D5DB] text-sm box-border"
                               />
-                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                              <div className="flex gap-2 justify-end">
                                 <button onClick={() => handleSaveEdit(p)}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '10px', background: '#10B981', color: 'white', border: 'none', fontSize: '14px', cursor: 'pointer', fontWeight: 700 }}>
+                                  className="flex items-center gap-1.5 py-2.5 px-[18px] rounded-[10px] bg-[#10B981] text-white border-none text-sm cursor-pointer font-bold">
                                   <Save size={14} /> Salvar
                                 </button>
                                 <button onClick={() => setEditingPayment(null)}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '10px', background: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB', fontSize: '14px', cursor: 'pointer', fontWeight: 600 }}>
+                                  className="flex items-center gap-1.5 py-2.5 px-[18px] rounded-[10px] bg-[#F3F4F6] text-[#374151] border border-[#D1D5DB] text-sm cursor-pointer font-semibold">
                                   <X size={14} /> Cancelar
                                 </button>
                               </div>
                             </div>
                           ) : isConfirmingDelete ? (
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <span style={{ fontSize: '13px', color: '#DC2626', fontWeight: 600 }}>Confirmar exclusão?</span>
-                              <div style={{ display: 'flex', gap: '6px' }}>
+                            <div className="flex-1 flex items-center justify-between">
+                              <span className="text-[13px] text-danger font-semibold">Confirmar exclusão?</span>
+                              <div className="flex gap-1.5">
                                 <button onClick={() => handleDeletePayment(p)}
-                                  style={{ padding: '4px 10px', borderRadius: '6px', background: '#DC2626', color: 'white', border: 'none', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>
+                                  className="py-1 px-2.5 rounded-[6px] bg-danger text-white border-none text-xs cursor-pointer font-semibold">
                                   Sim, deletar
                                 </button>
                                 <button onClick={() => setConfirmDelete(null)}
-                                  style={{ padding: '4px 10px', borderRadius: '6px', background: '#F3F4F6', color: '#6B7280', border: 'none', fontSize: '12px', cursor: 'pointer' }}>
+                                  className="py-1 px-2.5 rounded-[6px] bg-[#F3F4F6] text-[#6B7280] border-none text-xs cursor-pointer">
                                   Cancelar
                                 </button>
                               </div>
                             </div>
                           ) : (
                             <>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0 }}>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[13px] font-semibold text-[#1F2937] m-0">
                                   {fmt(p.amount)}
-                                  <span style={{ fontWeight: 400, color: '#6B7280', marginLeft: '6px', fontSize: '12px' }}>
+                                  <span className="font-normal text-[#6B7280] ml-1.5 text-xs">
                                     {fmtDate(p.due_date)}
                                     {!isPago && days <= 3 && days >= 0 && ' ⚠️'}
                                     {!isPago && days < 0 && ' 🔴'}
                                   </span>
                                 </p>
-                                {p.notes && <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.notes}</p>}
+                                {p.notes && <p className="text-[11px] text-[#9CA3AF] mt-0.5 mb-0 whitespace-nowrap overflow-hidden text-ellipsis">{p.notes}</p>}
                               </div>
-                              <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                              <div className="flex gap-1 shrink-0">
                                 {isPago ? (
                                   <button onClick={() => handleUnmarkPaid(p)} title="Desfazer pagamento"
-                                    style={{ padding: '4px 8px', borderRadius: '6px', background: '#FEF3C7', color: '#92400E', border: 'none', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+                                    className="py-1 px-2 rounded-[6px] bg-warning-light text-[#92400E] border-none text-[11px] font-semibold cursor-pointer">
                                     Desfazer
                                   </button>
                                 ) : (
                                   <button onClick={() => handleMarkPaid(p)} title="Marcar como pago"
-                                    style={{ padding: '4px 8px', borderRadius: '6px', background: '#D1FAE5', color: '#065F46', border: 'none', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+                                    className="py-1 px-2 rounded-[6px] bg-success-light text-[#065F46] border-none text-[11px] font-semibold cursor-pointer">
                                     ✓ Pagar
                                   </button>
                                 )}
                                 <button onClick={() => { setEditingPayment(p.id); setEditAmount(String(p.amount)); setEditDate(p.due_date); setEditNotes(p.notes || '') }}
                                   title="Editar parcela"
-                                  style={{ padding: '4px 6px', borderRadius: '6px', background: '#DBEAFE', color: '#1D4ED8', border: 'none', cursor: 'pointer' }}>
+                                  className="py-1 px-1.5 rounded-[6px] bg-[#DBEAFE] text-[#1D4ED8] border-none cursor-pointer">
                                   <Pencil size={12} />
                                 </button>
                                 <button onClick={() => setConfirmDelete(p.id)} title="Excluir parcela"
-                                  style={{ padding: '4px 6px', borderRadius: '6px', background: '#FEE2E2', color: '#DC2626', border: 'none', cursor: 'pointer' }}>
+                                  className="py-1 px-1.5 rounded-[6px] bg-danger-light text-danger border-none cursor-pointer">
                                   <Trash2 size={12} />
                                 </button>
                               </div>
@@ -766,50 +732,47 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
 
                     {/* Add payment */}
                     {showAddPayment === prof.professional ? (
-                      <div style={{ padding: '12px', borderRadius: '8px', background: '#EFF6FF', border: '1px solid #BFDBFE', marginTop: '6px' }}>
-                        <p style={{ fontSize: '12px', fontWeight: 600, color: '#1D4ED8', margin: '0 0 8px' }}>Nova Parcela</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '6px' }}>
+                      <div className="p-3 rounded-sm bg-[#EFF6FF] border border-[#BFDBFE] mt-1.5">
+                        <p className="text-xs font-semibold text-[#1D4ED8] mt-0 mb-2">Nova Parcela</p>
+                        <div className="flex flex-col gap-1.5 mb-1.5">
                           <input type="number" placeholder="Valor (R$)" value={newPayment.amount}
                             onChange={e => setNewPayment({ ...newPayment, amount: e.target.value })}
-                            style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
+                            className="w-full py-2.5 px-3 rounded-[6px] border border-[#D1D5DB] text-sm box-border" />
                           <input type="date" value={newPayment.due_date}
                             onChange={e => setNewPayment({ ...newPayment, due_date: e.target.value })}
-                            style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
+                            className="w-full py-2.5 px-3 rounded-[6px] border border-[#D1D5DB] text-sm box-border" />
                         </div>
                         <select value={newPayment.payment_type}
                           onChange={e => setNewPayment({ ...newPayment, payment_type: e.target.value })}
-                          style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box', marginBottom: '6px', background: 'white' }}>
+                          className="w-full py-2.5 px-3 rounded-[6px] border border-[#D1D5DB] text-sm box-border mb-1.5 bg-surface-lowest">
                           <option value="pix">⚡ PIX</option>
                           <option value="cartao_parcelado">💳 Cartão Parcelado</option>
                           <option value="boleto">📄 Boleto</option>
                           <option value="dinheiro">💵 Dinheiro</option>
                           <option value="transferencia">🏦 Transferência</option>
                         </select>
-                    <input type="text" placeholder="Observação (opcional)" value={newPayment.notes}
+                        <input type="text" placeholder="Observação (opcional)" value={newPayment.notes}
                           onChange={e => setNewPayment({ ...newPayment, notes: e.target.value })}
-                          style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', marginBottom: '8px', boxSizing: 'border-box' }} />
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                          className="w-full py-2 px-2.5 rounded-[6px] border border-[#D1D5DB] text-[13px] mb-2 box-border" />
+                        <div className="flex gap-1.5 justify-end">
                           <button onClick={() => handleAddPayment(prof.professional, prof.contractId, prof.quoteId)}
                             disabled={!newPayment.amount || !newPayment.due_date}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 14px', borderRadius: '6px',
-                              background: newPayment.amount && newPayment.due_date ? '#2563EB' : '#D1D5DB',
-                              color: 'white', border: 'none', fontSize: '12px', fontWeight: 600, cursor: newPayment.amount && newPayment.due_date ? 'pointer' : 'default',
-                            }}>
+                            className={`flex items-center gap-1 py-1.5 px-3.5 rounded-[6px] text-white border-none text-xs font-semibold ${newPayment.amount && newPayment.due_date ? 'bg-[#2563EB] cursor-pointer' : 'bg-[#D1D5DB] cursor-default'}`}>
                             <Plus size={12} /> Adicionar
                           </button>
                           <button onClick={() => { setShowAddPayment(null); setNewPayment({ amount: '', due_date: '', notes: '', payment_type: 'pix' }) }}
-                            style={{ padding: '6px 14px', borderRadius: '6px', background: '#F3F4F6', color: '#6B7280', border: 'none', fontSize: '12px', cursor: 'pointer' }}>
+                            className="py-1.5 px-3.5 rounded-[6px] bg-[#F3F4F6] text-[#6B7280] border-none text-xs cursor-pointer">
                             Cancelar
                           </button>
                         </div>
                       </div>
                     ) : (
                       <button onClick={() => setShowAddPayment(prof.professional)}
+                        className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-sm text-xs font-semibold cursor-pointer mt-1"
                         style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%',
-                          padding: '10px', borderRadius: '8px', border: `1px dashed ${color}60`, background: `${color}05`,
-                          color, fontSize: '12px', fontWeight: 600, cursor: 'pointer', marginTop: '4px',
+                          border: `1px dashed ${color}60`,
+                          background: `${color}05`,
+                          color,
                         }}>
                         <Plus size={14} /> Adicionar Parcela
                       </button>
@@ -821,8 +784,8 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
           })}
 
           {profBreakdown.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '30px 20px', color: '#9CA3AF', fontSize: '13px', background: '#F9FAFB', borderRadius: '12px', border: '1px dashed #E5E7EB' }}>
-              <p style={{ fontSize: '24px', margin: '0 0 8px' }}>📋</p>
+            <div className="text-center py-[30px] px-5 text-[#9CA3AF] text-[13px] bg-[#F9FAFB] rounded-md border border-dashed border-[#E5E7EB]">
+              <p className="text-2xl mt-0 mb-2">📋</p>
               Nenhum contrato fechado ainda.<br />
               Feche orçamentos na aba Profissionais para vê-los aqui.
             </div>
@@ -832,32 +795,24 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
 
       {/* === UPCOMING PAYMENTS TIMELINE === */}
       {upcomingPayments.length > 0 && (
-        <div style={{ marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="mb-5">
+          <h3 className="text-[15px] font-bold text-[#374151] mb-3 flex items-center gap-2">
             <CreditCard size={16} /> Próximos Pagamentos
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div className="flex flex-col gap-1.5">
             {upcomingPayments.slice(0, 6).map((p, idx) => {
               const days = Math.ceil((new Date(p.due_date + 'T12:00:00').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
               const isUrgent = days <= 3
               return (
-                <div key={p.id} style={{
-                  display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', borderRadius: '10px',
-                  background: isUrgent ? '#FEF2F2' : idx === 0 ? '#FFFBEB' : '#F9FAFB',
-                  border: `1px solid ${isUrgent ? '#FECACA' : idx === 0 ? '#FDE68A' : '#F3F4F6'}`,
-                }}>
-                  <div style={{
-                    width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: isUrgent ? '#EF4444' : idx === 0 ? '#F59E0B' : '#E5E7EB',
-                    color: isUrgent || idx === 0 ? 'white' : '#9CA3AF', fontSize: '12px', fontWeight: 700, flexShrink: 0,
-                  }}>
+                <div key={p.id} className={`flex items-center gap-3 py-2.5 px-3.5 rounded-[10px] ${isUrgent ? 'bg-danger-light border border-[#FECACA]' : idx === 0 ? 'bg-[#FFFBEB] border border-[#FDE68A]' : 'bg-[#F9FAFB] border border-[#F3F4F6]'}`}>
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isUrgent ? 'bg-[#EF4444] text-white' : idx === 0 ? 'bg-[#F59E0B] text-white' : 'bg-[#E5E7EB] text-[#9CA3AF]'}`}>
                     {p.installment_number}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0 }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-[#1F2937] m-0">
                       {fmt(p.amount)} — {p.professional}
                     </p>
-                    <p style={{ fontSize: '11px', color: '#6B7280', margin: '2px 0 0' }}>
+                    <p className="text-[11px] text-[#6B7280] mt-0.5 mb-0">
                       {fmtDate(p.due_date)} · {days > 0 ? `${days}d` : days === 0 ? 'HOJE' : `${Math.abs(days)}d atrás`}
                     </p>
                   </div>
@@ -870,35 +825,30 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
 
       {/* === FLUXO DE CAIXA MENSAL === */}
       {cashFlowMonths.length > 0 && (
-        <div style={{ marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="mb-5">
+          <h3 className="text-[15px] font-bold text-[#374151] mb-1 flex items-center gap-2">
             <TrendingDown size={16} /> Fluxo de Caixa — Próximos Meses
           </h3>
-          <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '0 0 12px', paddingLeft: '24px' }}>
+          <p className="text-[11px] text-[#9CA3AF] mt-0 mb-3 pl-6">
             Quanto sai do bolso por mês (inclui faturas de cartão)
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="flex flex-col gap-2">
             {cashFlowMonths.slice(0, 6).map(([month, data]) => {
               const [y, m] = month.split('-')
               const monthName = new Date(Number(y), Number(m) - 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' })
               const maxFlow = Math.max(...cashFlowMonths.map(([, d]) => d.total))
               return (
-                <div key={month} style={{ padding: '12px 14px', borderRadius: '10px', background: 'white', border: '1px solid #E5E7EB' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <span style={{ fontWeight: 600, fontSize: '13px', color: '#374151', textTransform: 'capitalize' }}>{monthName}</span>
-                    <span style={{ fontWeight: 700, fontSize: '15px', color: '#DC2626' }}>- {fmt(data.total)}</span>
+                <div key={month} className="py-3 px-3.5 rounded-[10px] bg-surface-lowest border border-[#E5E7EB]">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="font-semibold text-[13px] text-[#374151] capitalize">{monthName}</span>
+                    <span className="font-bold text-[15px] text-danger">- {fmt(data.total)}</span>
                   </div>
-                  <div style={{ background: '#F3F4F6', borderRadius: '4px', height: '5px', overflow: 'hidden', marginBottom: '6px' }}>
-                    <div style={{ width: `${(data.total / maxFlow) * 100}%`, height: '100%', background: '#EF4444', borderRadius: '4px' }} />
+                  <div className="bg-[#F3F4F6] rounded h-[5px] overflow-hidden mb-1.5">
+                    <div className="h-full bg-[#EF4444] rounded" style={{ width: `${(data.total / maxFlow) * 100}%` }} />
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  <div className="flex flex-wrap gap-1">
                     {data.items.map((item, idx) => (
-                      <span key={idx} style={{
-                        fontSize: '10px', padding: '2px 8px', borderRadius: '20px',
-                        background: item.type === 'cartao_parcelado' ? '#EDE9FE' : '#DBEAFE',
-                        color: item.type === 'cartao_parcelado' ? '#6D28D9' : '#1D4ED8',
-                        fontWeight: 600,
-                      }}>
+                      <span key={idx} className={`text-[10px] py-0.5 px-2 rounded-full font-semibold ${item.type === 'cartao_parcelado' ? 'bg-[#EDE9FE] text-[#6D28D9]' : 'bg-[#DBEAFE] text-[#1D4ED8]'}`}>
                         {item.type === 'cartao_parcelado' ? '💳' : '⚡'} {item.professional.split(' ')[0]} {fmt(item.amount)}
                       </span>
                     ))}
@@ -907,13 +857,9 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
               )
             })}
           </div>
-          <div style={{
-            marginTop: '8px', padding: '10px 14px', borderRadius: '10px',
-            background: '#FEF2F2', border: '1px solid #FECACA',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#991B1B' }}>Total a sair do bolso</span>
-            <span style={{ fontSize: '15px', fontWeight: 800, color: '#DC2626' }}>{fmt(totalAindaSaiDoBolso)}</span>
+          <div className="mt-2 py-2.5 px-3.5 rounded-[10px] bg-danger-light border border-[#FECACA] flex justify-between items-center">
+            <span className="text-xs font-semibold text-[#991B1B]">Total a sair do bolso</span>
+            <span className="text-[15px] font-extrabold text-danger">{fmt(totalAindaSaiDoBolso)}</span>
           </div>
         </div>
       )}
@@ -921,148 +867,124 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
       {/* === GASTOS POR CATEGORIA === */}
       {categoryTotals.length > 0 && (
         <div>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 className="text-[15px] font-bold text-[#374151] mb-1 flex items-center gap-2">
             <PieChart size={16} /> Gastos por Categoria
           </h3>
-          <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '0 0 12px', paddingLeft: '24px' }}>
+          <p className="text-[11px] text-[#9CA3AF] mt-0 mb-3 pl-6">
             Valores finais negociados (descontos diluídos)
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="flex flex-col gap-2">
             {categoryTotals.map(cat => (
-              <div key={cat.name} style={{ padding: '12px 14px', borderRadius: '10px', background: 'white', border: '1px solid #E5E7EB' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontWeight: 600, fontSize: '13px', color: '#374151' }}>{cat.name}</span>
-                  <span style={{ fontWeight: 700, fontSize: '14px', color: '#1F2937' }}>{fmt(cat.total)}</span>
+              <div key={cat.name} className="py-3 px-3.5 rounded-[10px] bg-surface-lowest border border-[#E5E7EB]">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="font-semibold text-[13px] text-[#374151]">{cat.name}</span>
+                  <span className="font-bold text-sm text-[#1F2937]">{fmt(cat.total)}</span>
                 </div>
-                <div style={{ background: '#F3F4F6', borderRadius: '4px', height: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: `${(cat.total / maxCategoryTotal) * 100}%`, height: '100%', background: '#3B82F6', borderRadius: '4px' }} />
+                <div className="bg-[#F3F4F6] rounded h-1 overflow-hidden">
+                  <div className="h-full bg-[#3B82F6] rounded" style={{ width: `${(cat.total / maxCategoryTotal) * 100}%` }} />
                 </div>
-                <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '4px 0 0' }}>{cat.count} ite{cat.count !== 1 ? 'ns' : 'm'}</p>
+                <p className="text-[11px] text-[#9CA3AF] mt-1 mb-0">{cat.count} ite{cat.count !== 1 ? 'ns' : 'm'}</p>
               </div>
             ))}
           </div>
 
-          <div style={{
-            marginTop: '12px', padding: '12px 16px', borderRadius: '10px', background: '#F0F9FF', border: '1px solid #BAE6FD',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#0369A1' }}>Total Estimado</span>
-            <span style={{ fontSize: '16px', fontWeight: 800, color: '#0C4A6E' }}>{fmt(categoryGrandTotal)}</span>
+          <div className="mt-3 py-3 px-4 rounded-[10px] bg-[#F0F9FF] border border-[#BAE6FD] flex justify-between items-center">
+            <span className="text-[13px] font-semibold text-[#0369A1]">Total Estimado</span>
+            <span className="text-base font-extrabold text-[#0C4A6E]">{fmt(categoryGrandTotal)}</span>
           </div>
         </div>
       )}
 
       {/* === MATERIAIS SECTION === */}
-      <div style={{
-        marginTop: '20px', borderRadius: '14px', background: '#F0FDF4', border: '1px solid #BBF7D0', padding: '16px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#166534', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div className="mt-5 rounded-[14px] bg-[#F0FDF4] border border-[#BBF7D0] p-4">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <h3 className="text-[15px] font-bold text-[#166534] m-0 flex items-center gap-1.5">
             <ShoppingCart size={16} /> Materiais de Obra
-            <span style={{ fontSize: '12px', fontWeight: 500, color: '#4ADE80', marginLeft: '6px' }}>
+            <span className="text-xs font-medium text-[#4ADE80] ml-1.5">
               {materials.length} ite{materials.length !== 1 ? 'ns' : 'm'}
             </span>
           </h3>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="flex gap-2">
             <button
               onClick={() => setShowPaymentMethods(true)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '8px 14px', borderRadius: '10px',
-                background: 'white', color: '#4338CA', border: '1px solid #C7D2FE',
-                cursor: 'pointer', fontSize: '13px', fontWeight: 600,
-              }}
+              className="flex items-center gap-1.5 py-2 px-3.5 rounded-[10px] bg-surface-lowest text-[#4338CA] border border-[#C7D2FE] cursor-pointer text-[13px] font-semibold"
               title="Gerenciar formas de pagamento (cartões, PIX, boletos)"
             >
               <CreditCard size={14} /> Cartões
             </button>
             <button
               onClick={() => setShowNfeImport(true)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '8px 14px', borderRadius: '10px',
-                background: '#059669', color: 'white', border: 'none',
-                cursor: 'pointer', fontSize: '13px', fontWeight: 600,
-              }}
+              className="flex items-center gap-1.5 py-2 px-3.5 rounded-[10px] bg-success text-white border-none cursor-pointer text-[13px] font-semibold"
             >
               <FileText size={14} /> Importar NF-e
             </button>
           </div>
         </div>
-      {materials.length === 0 && (
-        <div style={{ padding: '16px', textAlign: 'center', color: '#6B7280', fontSize: '13px', background: 'white', borderRadius: '10px', border: '1px dashed #BBF7D0' }}>
-          Nenhum material ainda. Clique em &quot;Importar NF-e&quot; para começar.
-        </div>
-      )}
-      {materials.length > 0 && (
-        <>
-          {/* By Category */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
-            {Object.entries(materiaisPorCategoria)
-              .sort(([, a], [, b]) => b.total - a.total)
-              .map(([cat, data]) => {
-                const catInfo = MATERIAL_CATEGORIES[cat] || { label: cat, emoji: '📦' }
-                const maxMatCat = Math.max(...Object.values(materiaisPorCategoria).map(d => d.total))
-                return (
-                  <div key={cat} style={{ padding: '10px 12px', borderRadius: '10px', background: 'white', border: '1px solid #D1FAE5' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                      <span style={{ fontWeight: 600, fontSize: '13px', color: '#374151' }}>{catInfo.emoji} {catInfo.label}</span>
-                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#166534' }}>{fmt(data.total)}</span>
-                    </div>
-                    <div style={{ background: '#ECFDF5', borderRadius: '4px', height: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${(data.total / maxMatCat) * 100}%`, height: '100%', background: '#059669', borderRadius: '4px' }} />
-                    </div>
-                    <p style={{ fontSize: '11px', color: '#6B7280', margin: '3px 0 0' }}>{data.count} ite{data.count !== 1 ? 'ns' : 'm'}</p>
-                  </div>
-                )
-              })}
+        {materials.length === 0 && (
+          <div className="p-4 text-center text-[#6B7280] text-[13px] bg-surface-lowest rounded-[10px] border border-dashed border-[#BBF7D0]">
+            Nenhum material ainda. Clique em &quot;Importar NF-e&quot; para começar.
           </div>
-
-          {/* By Buyer */}
-          {Object.keys(materiaisPorComprador).length > 1 && (
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-              {Object.entries(materiaisPorComprador).map(([buyer, total]) => (
-                <div key={buyer} style={{
-                  flex: 1, padding: '8px 12px', borderRadius: '8px', background: 'white', border: '1px solid #D1FAE5',
-                  textAlign: 'center',
-                }}>
-                  <div style={{ fontSize: '11px', color: '#6B7280' }}>👤 {buyer}</div>
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#166534' }}>{fmt(total)}</div>
-                </div>
-              ))}
+        )}
+        {materials.length > 0 && (
+          <>
+            {/* By Category */}
+            <div className="flex flex-col gap-1.5 mb-3">
+              {Object.entries(materiaisPorCategoria)
+                .sort(([, a], [, b]) => b.total - a.total)
+                .map(([cat, data]) => {
+                  const catInfo = MATERIAL_CATEGORIES[cat] || { label: cat, emoji: '📦' }
+                  const maxMatCat = Math.max(...Object.values(materiaisPorCategoria).map(d => d.total))
+                  return (
+                    <div key={cat} className="py-2.5 px-3 rounded-[10px] bg-surface-lowest border border-[#D1FAE5]">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-semibold text-[13px] text-[#374151]">{catInfo.emoji} {catInfo.label}</span>
+                        <span className="font-bold text-[13px] text-[#166534]">{fmt(data.total)}</span>
+                      </div>
+                      <div className="bg-[#ECFDF5] rounded h-1 overflow-hidden">
+                        <div className="h-full bg-success rounded" style={{ width: `${(data.total / maxMatCat) * 100}%` }} />
+                      </div>
+                      <p className="text-[11px] text-[#6B7280] mt-[3px] mb-0">{data.count} ite{data.count !== 1 ? 'ns' : 'm'}</p>
+                    </div>
+                  )
+                })}
             </div>
-          )}
 
-          <div style={{
-            padding: '10px 14px', borderRadius: '10px', background: '#059669', color: 'white',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <span style={{ fontSize: '13px', fontWeight: 600 }}>Total Materiais</span>
-            <span style={{ fontSize: '16px', fontWeight: 800 }}>{fmt(materiaisTotal)}</span>
-          </div>
-        </>
-      )}
+            {/* By Buyer */}
+            {Object.keys(materiaisPorComprador).length > 1 && (
+              <div className="flex gap-2 mb-3">
+                {Object.entries(materiaisPorComprador).map(([buyer, total]) => (
+                  <div key={buyer} className="flex-1 py-2 px-3 rounded-sm bg-surface-lowest border border-[#D1FAE5] text-center">
+                    <div className="text-[11px] text-[#6B7280]">👤 {buyer}</div>
+                    <div className="text-sm font-bold text-[#166534]">{fmt(total)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="py-2.5 px-3.5 rounded-[10px] bg-success text-white flex justify-between items-center">
+              <span className="text-[13px] font-semibold">Total Materiais</span>
+              <span className="text-base font-extrabold">{fmt(materiaisTotal)}</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* === RESUMO GERAL === */}
-      <div style={{
-        marginTop: '20px', borderRadius: '14px', background: 'linear-gradient(135deg, #1E293B, #334155)',
-        padding: '16px', color: 'white',
-      }}>
-        <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 12px' }}>📊 Resumo Geral da Reforma</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-          <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', opacity: 0.7 }}>Serviços</div>
-            <div style={{ fontSize: '15px', fontWeight: 800 }}>{fmt(totalNegociado)}</div>
+      <div className="mt-5 rounded-[14px] bg-gradient-to-br from-[#1E293B] to-[#334155] p-4 text-white">
+        <h3 className="text-[15px] font-bold mt-0 mb-3">📊 Resumo Geral da Reforma</h3>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-white/10 rounded-[10px] p-2.5 text-center">
+            <div className="text-[11px] opacity-70">Serviços</div>
+            <div className="text-[15px] font-extrabold">{fmt(totalNegociado)}</div>
           </div>
-          <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', opacity: 0.7 }}>Materiais</div>
-            <div style={{ fontSize: '15px', fontWeight: 800 }}>{fmt(materiaisTotal)}</div>
+          <div className="bg-white/10 rounded-[10px] p-2.5 text-center">
+            <div className="text-[11px] opacity-70">Materiais</div>
+            <div className="text-[15px] font-extrabold">{fmt(materiaisTotal)}</div>
           </div>
-          <div style={{ gridColumn: '1 / -1', background: 'rgba(255,255,255,0.15)', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', opacity: 0.7 }}>Total Investido na Reforma</div>
-            <div style={{ fontSize: '20px', fontWeight: 800 }}>{fmt(totalGeral)}</div>
-            <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px' }}>
+          <div className="col-span-full bg-white/15 rounded-[10px] p-3 text-center">
+            <div className="text-[11px] opacity-70">Total Investido na Reforma</div>
+            <div className="text-xl font-extrabold">{fmt(totalGeral)}</div>
+            <div className="text-[11px] opacity-70 mt-1">
               {fmt(totalPago)} pago · {fmt(totalGeral - totalPago)} restante
             </div>
           </div>

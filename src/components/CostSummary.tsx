@@ -19,44 +19,44 @@ export default function CostSummary({ items }: CostSummaryProps) {
   const withoutPrice = itemCount - withPrice
 
   return (
-    <div className="total-banner">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <div className="bg-gradient-to-br from-primary to-secondary-light text-white rounded-2xl p-5 shadow-lg">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-bold flex items-center gap-2">
           <TrendingUp size={20} /> Resumo de Custos
         </h3>
-        <span style={{ fontSize: '12px', opacity: 0.8 }}>
+        <span className="text-xs opacity-80">
           {itemCount} itens ({withoutPrice} sem preço)
         </span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
-        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '4px' }}>Total Estimado</div>
-          <div style={{ fontSize: '22px', fontWeight: 800 }}>{formatCurrency(totalEstimated)}</div>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3">
+        <div className="bg-white/15 rounded-xl p-4 text-center backdrop-blur-sm">
+          <div className="text-xs opacity-80 mb-1">Total Estimado</div>
+          <div className="text-[22px] font-extrabold">{formatCurrency(totalEstimated)}</div>
         </div>
-        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+        <div className="bg-white/15 rounded-xl p-4 text-center backdrop-blur-sm">
+          <div className="text-xs opacity-80 mb-1 flex items-center justify-center gap-1">
             <Star size={12} /> Desejados
           </div>
-          <div style={{ fontSize: '18px', fontWeight: 700 }}>{formatCurrency(totalDesejado)}</div>
+          <div className="text-lg font-bold">{formatCurrency(totalDesejado)}</div>
         </div>
-        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+        <div className="bg-white/15 rounded-xl p-4 text-center backdrop-blur-sm">
+          <div className="text-xs opacity-80 mb-1 flex items-center justify-center gap-1">
             <CheckCircle size={12} /> Aprovados
           </div>
-          <div style={{ fontSize: '18px', fontWeight: 700 }}>{formatCurrency(totalApproved)}</div>
+          <div className="text-lg font-bold">{formatCurrency(totalApproved)}</div>
         </div>
-        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+        <div className="bg-white/15 rounded-xl p-4 text-center backdrop-blur-sm">
+          <div className="text-xs opacity-80 mb-1 flex items-center justify-center gap-1">
             <ShoppingCart size={12} /> Comprados
           </div>
-          <div style={{ fontSize: '18px', fontWeight: 700 }}>{formatCurrency(totalPurchased)}</div>
+          <div className="text-lg font-bold">{formatCurrency(totalPurchased)}</div>
         </div>
-        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+        <div className="bg-white/15 rounded-xl p-4 text-center backdrop-blur-sm">
+          <div className="text-xs opacity-80 mb-1 flex items-center justify-center gap-1">
             <Package size={12} /> Já Temos ({jaTemosCount})
           </div>
-          <div style={{ fontSize: '18px', fontWeight: 700 }}>{formatCurrency(totalJaTemos)}</div>
+          <div className="text-lg font-bold">{formatCurrency(totalJaTemos)}</div>
         </div>
       </div>
     </div>

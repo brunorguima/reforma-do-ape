@@ -15,15 +15,14 @@ export default function RoomSelector({ rooms, selectedRoom, onRoomSelect, itemCo
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '10px' }}>
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2.5">
       <div
         className={`room-card ${selectedRoom === null ? 'active' : ''}`}
         onClick={() => onRoomSelect(null)}
-        style={{ textAlign: 'center' }}
       >
-        <div style={{ fontSize: '28px', marginBottom: '8px' }}>🏠</div>
-        <div style={{ fontWeight: 700, fontSize: '14px', color: '#1f2937' }}>Todos</div>
-        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+        <div className="text-[28px] mb-2">🏠</div>
+        <div className="font-bold text-sm text-on-surface">Todos</div>
+        <div className="text-xs text-on-surface-variant mt-1">
           {Object.values(itemCounts).reduce((a, b) => a + b, 0)} itens
         </div>
       </div>
@@ -32,15 +31,14 @@ export default function RoomSelector({ rooms, selectedRoom, onRoomSelect, itemCo
           key={room.id}
           className={`room-card ${selectedRoom === room.id ? 'active' : ''}`}
           onClick={() => onRoomSelect(room.id)}
-          style={{ textAlign: 'center' }}
         >
-          <div style={{ fontSize: '28px', marginBottom: '8px' }}>{room.icon}</div>
-          <div style={{ fontWeight: 700, fontSize: '14px', color: '#1f2937' }}>{room.name}</div>
-          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+          <div className="text-[28px] mb-2">{room.icon}</div>
+          <div className="font-bold text-sm text-on-surface">{room.name}</div>
+          <div className="text-xs text-on-surface-variant mt-1">
             {itemCounts[room.id] || 0} itens
           </div>
           {roomTotals[room.id] > 0 && (
-            <div style={{ fontSize: '11px', color: '#059669', marginTop: '2px', fontWeight: 600 }}>
+            <div className="text-[11px] text-success mt-0.5 font-semibold">
               {formatCurrency(roomTotals[room.id])}
             </div>
           )}

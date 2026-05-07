@@ -385,47 +385,30 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
 
   return (
     <div
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
-      }}
+      className="modal-overlay"
       onClick={onClose}
     >
       <div
-        style={{
-          background: 'white', borderRadius: '16px', maxWidth: '1100px', width: '100%',
-          maxHeight: '92vh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
-        }}
+        className="bg-surface-lowest rounded-lg max-w-[1100px] w-full max-h-[92vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{
-          padding: '16px 20px', borderBottom: '1px solid #E5E7EB',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          background: 'linear-gradient(135deg, #059669, #10B981)', color: 'white',
-        }}>
-          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-gradient-to-br from-success to-[#10B981] text-white">
+          <h2 className="m-0 text-lg font-bold flex items-center gap-2">
             <FileText size={20} /> Importar NF-e
           </h2>
           <button
             onClick={onClose}
-            style={{
-              background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px',
-              padding: '6px', color: 'white', cursor: 'pointer',
-            }}
+            className="bg-white/20 border-none rounded-sm p-1.5 text-white cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ overflow: 'auto', flex: 1, padding: '20px' }}>
+        <div className="overflow-auto flex-1 p-5">
           {error && (
-            <div style={{
-              padding: '12px 14px', background: '#FEF2F2', border: '1px solid #FCA5A5',
-              borderRadius: '10px', color: '#991B1B', marginBottom: '12px',
-              display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px',
-            }}>
+            <div className="px-3.5 py-3 bg-danger-light border border-[#FCA5A5] rounded-[10px] text-[#991B1B] mb-3 flex items-center gap-2 text-[13px]">
               <AlertCircle size={16} /> {error}
             </div>
           )}
@@ -433,26 +416,20 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
           {step === 'upload' && (
             <div>
               {/* Mode switcher */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <div className="flex gap-2 mb-4">
                 <button
                   onClick={() => setInputMode('file')}
-                  style={{
-                    flex: 1, padding: '10px 14px', borderRadius: '10px', cursor: 'pointer',
-                    background: inputMode === 'file' ? '#059669' : '#F3F4F6',
-                    color: inputMode === 'file' ? 'white' : '#374151',
-                    border: 'none', fontWeight: 600, fontSize: '13px',
-                  }}
+                  className={`flex-1 px-3.5 py-2.5 rounded-[10px] cursor-pointer border-none font-semibold text-[13px] ${
+                    inputMode === 'file' ? 'bg-success text-white' : 'bg-surface-container-low text-[#374151]'
+                  }`}
                 >
                   📎 PDF ou XML
                 </button>
                 <button
                   onClick={() => setInputMode('chave')}
-                  style={{
-                    flex: 1, padding: '10px 14px', borderRadius: '10px', cursor: 'pointer',
-                    background: inputMode === 'chave' ? '#059669' : '#F3F4F6',
-                    color: inputMode === 'chave' ? 'white' : '#374151',
-                    border: 'none', fontWeight: 600, fontSize: '13px',
-                  }}
+                  className={`flex-1 px-3.5 py-2.5 rounded-[10px] cursor-pointer border-none font-semibold text-[13px] ${
+                    inputMode === 'chave' ? 'bg-success text-white' : 'bg-surface-container-low text-[#374151]'
+                  }`}
                 >
                   🔑 Chave (44 dígitos)
                 </button>
@@ -461,33 +438,30 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
               {inputMode === 'file' && (
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  style={{
-                    border: '2px dashed #10B981', borderRadius: '12px', padding: '40px 20px',
-                    textAlign: 'center', cursor: 'pointer', background: '#F0FDF4',
-                  }}
+                  className="border-2 border-dashed border-[#10B981] rounded-md px-5 py-10 text-center cursor-pointer bg-[#F0FDF4]"
                 >
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept=".pdf,.xml,application/pdf,text/xml"
-                    style={{ display: 'none' }}
+                    className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0]
                       if (f) handleFile(f)
                     }}
                   />
                   {loading ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      <Loader2 size={32} className="animate-spin" style={{ color: '#059669' }} />
-                      <div style={{ color: '#166534', fontSize: '14px' }}>Lendo nota fiscal…</div>
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 size={32} className="animate-spin text-success" />
+                      <div className="text-[#166534] text-sm">Lendo nota fiscal…</div>
                     </div>
                   ) : (
                     <>
-                      <Upload size={32} style={{ color: '#059669', marginBottom: '8px' }} />
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#166534' }}>
+                      <Upload size={32} className="text-success mb-2" />
+                      <div className="text-sm font-semibold text-[#166534]">
                         Clique para enviar PDF da DANFE ou arquivo XML
                       </div>
-                      <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
+                      <div className="text-xs text-on-surface-variant mt-1">
                         Formatos: .pdf (DANFE) ou .xml (NF-e oficial)
                       </div>
                     </>
@@ -497,7 +471,7 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
 
               {inputMode === 'chave' && (
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                  <label className="block text-[13px] font-semibold text-[#374151] mb-1.5">
                     Chave de acesso (44 dígitos)
                   </label>
                   <input
@@ -505,12 +479,9 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                     value={chaveInput}
                     onChange={(e) => setChaveInput(e.target.value)}
                     placeholder="0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000"
-                    style={{
-                      width: '100%', padding: '14px', borderRadius: '10px',
-                      border: '1px solid #D1D5DB', fontSize: '14px', fontFamily: 'monospace',
-                    }}
+                    className="w-full p-3.5 rounded-[10px] border border-outline-variant text-sm font-mono"
                   />
-                  <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '6px', lineHeight: 1.4 }}>
+                  <div className="text-[11px] text-on-surface-variant mt-1.5 leading-snug">
                     ⚠️ A consulta automática SEFAZ requer certificado. Com a chave, vamos
                     extrair CNPJ, número, série e modelo — você adiciona os itens manualmente.
                     Para puxar itens automaticamente, prefira enviar o PDF/XML.
@@ -518,12 +489,9 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                   <button
                     onClick={handleChave}
                     disabled={loading || chaveInput.replace(/\D/g, '').length !== 44}
-                    style={{
-                      marginTop: '12px', padding: '12px 20px', borderRadius: '10px',
-                      background: loading || chaveInput.replace(/\D/g, '').length !== 44 ? '#9CA3AF' : '#059669',
-                      color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer',
-                      fontSize: '14px', width: '100%',
-                    }}
+                    className={`mt-3 px-5 py-3 rounded-[10px] text-white border-none font-semibold cursor-pointer text-sm w-full ${
+                      loading || chaveInput.replace(/\D/g, '').length !== 44 ? 'bg-[#9CA3AF]' : 'bg-success'
+                    }`}
                   >
                     {loading ? 'Processando…' : 'Extrair dados da chave'}
                   </button>
@@ -536,14 +504,9 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
             <div>
               {/* Parse warning banner */}
               {header.parse_warning && (
-                <div style={{
-                  padding: '12px 14px', background: '#FEF3C7', borderRadius: '10px',
-                  border: '1px solid #FDE68A', marginBottom: '12px',
-                  display: 'flex', alignItems: 'flex-start', gap: '10px',
-                  fontSize: '12px', color: '#92400E',
-                }}>
-                  <div style={{ fontSize: '18px', lineHeight: 1 }}>⚠️</div>
-                  <div style={{ flex: 1, lineHeight: 1.4 }}>
+                <div className="px-3.5 py-3 bg-warning-light rounded-[10px] border border-[#FDE68A] mb-3 flex items-start gap-2.5 text-xs text-[#92400E]">
+                  <div className="text-lg leading-none">⚠️</div>
+                  <div className="flex-1 leading-snug">
                     <strong>Extração parcial</strong> — {header.parse_warning}
                   </div>
                 </div>
@@ -551,20 +514,11 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
 
               {/* Debug raw text panel (PDF source only) */}
               {header.source === 'pdf' && header.raw_data != null && (
-                <details style={{
-                  marginBottom: '12px', padding: '10px 12px',
-                  background: '#F3F4F6', borderRadius: '8px', border: '1px solid #E5E7EB',
-                  fontSize: '11px',
-                }}>
-                  <summary style={{ cursor: 'pointer', fontWeight: 600, color: '#4B5563' }}>
+                <details className="mb-3 px-3 py-2.5 bg-surface-container-low rounded-sm border border-outline-variant text-[11px]">
+                  <summary className="cursor-pointer font-semibold text-[#4B5563]">
                     🔍 Texto extraído do PDF (debug)
                   </summary>
-                  <pre style={{
-                    marginTop: '8px', maxHeight: '240px', overflow: 'auto',
-                    padding: '8px', background: '#1F2937', color: '#D1FAE5',
-                    borderRadius: '6px', fontSize: '10px', lineHeight: 1.35,
-                    whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                  }}>
+                  <pre className="mt-2 max-h-60 overflow-auto p-2 bg-[#1F2937] text-[#D1FAE5] rounded-[6px] text-[10px] leading-tight whitespace-pre-wrap break-words">
                     {(() => {
                       const raw = header.raw_data as { lines?: string[]; full?: string } | undefined
                       if (raw?.full) return raw.full
@@ -572,45 +526,42 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                       return JSON.stringify(header.raw_data, null, 2)
                     })()}
                   </pre>
-                  <div style={{ marginTop: '6px', color: '#6B7280', fontSize: '10px' }}>
+                  <div className="mt-1.5 text-on-surface-variant text-[10px]">
                     Copie esse texto e me mande se o parser não pegou algum campo — ajuda a melhorar.
                   </div>
                 </details>
               )}
 
               {/* Header preview */}
-              <div style={{
-                padding: '14px', background: '#F0FDF4', borderRadius: '12px',
-                border: '1px solid #BBF7D0', marginBottom: '16px',
-              }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="p-3.5 bg-[#F0FDF4] rounded-md border border-[#BBF7D0] mb-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label style={labelStyle}>Emitente</label>
+                    <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Emitente</label>
                     <input
-                      style={inputStyle}
+                      className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                       value={header.emitente_nome || ''}
                       onChange={(e) => setHeader({ ...header, emitente_nome: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label style={labelStyle}>CNPJ</label>
+                    <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">CNPJ</label>
                     <input
-                      style={inputStyle}
+                      className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                       value={header.emitente_cnpj || ''}
                       onChange={(e) => setHeader({ ...header, emitente_cnpj: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label style={labelStyle}>Número / Série</label>
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Número / Série</label>
+                    <div className="flex gap-1.5">
                       <input
-                        style={{ ...inputStyle, flex: 2 }}
+                        className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest flex-2"
                         value={header.numero || ''}
                         onChange={(e) => setHeader({ ...header, numero: e.target.value })}
                         placeholder="nº"
                       />
                       <input
-                        style={{ ...inputStyle, flex: 1 }}
+                        className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest flex-1"
                         value={header.serie || ''}
                         onChange={(e) => setHeader({ ...header, serie: e.target.value })}
                         placeholder="série"
@@ -618,9 +569,9 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                     </div>
                   </div>
                   <div>
-                    <label style={labelStyle}>Data Emissão</label>
+                    <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Data Emissão</label>
                     <input
-                      style={inputStyle}
+                      className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                       type="date"
                       value={header.data_emissao?.substring(0, 10) || ''}
                       onChange={(e) =>
@@ -628,18 +579,18 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                       }
                     />
                   </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Chave de Acesso</label>
+                  <div className="col-span-full">
+                    <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Chave de Acesso</label>
                     <input
-                      style={{ ...inputStyle, fontFamily: 'monospace', fontSize: '11px' }}
+                      className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[11px] font-mono bg-surface-lowest"
                       value={header.chave || ''}
                       onChange={(e) => setHeader({ ...header, chave: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label style={labelStyle}>Valor Total</label>
+                    <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Valor Total</label>
                     <input
-                      style={inputStyle}
+                      className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                       type="number"
                       step="0.01"
                       value={header.valor_total ?? ''}
@@ -647,9 +598,9 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                     />
                   </div>
                   <div>
-                    <label style={labelStyle}>Desconto</label>
+                    <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Desconto</label>
                     <input
-                      style={inputStyle}
+                      className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                       type="number"
                       step="0.01"
                       value={header.valor_desconto ?? ''}
@@ -658,9 +609,9 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                     />
                   </div>
                   <div>
-                    <label style={labelStyle}>Frete</label>
+                    <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Frete</label>
                     <input
-                      style={inputStyle}
+                      className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                       type="number"
                       step="0.01"
                       value={header.valor_frete ?? ''}
@@ -668,10 +619,10 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                       placeholder="0,00"
                     />
                   </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Natureza Operação</label>
+                  <div className="col-span-full">
+                    <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Natureza Operação</label>
                     <input
-                      style={inputStyle}
+                      className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                       value={header.natureza_operacao || ''}
                       onChange={(e) => setHeader({ ...header, natureza_operacao: e.target.value })}
                     />
@@ -680,22 +631,14 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
               </div>
 
               {/* Payment section */}
-              <div style={{
-                padding: '14px', background: 'linear-gradient(135deg, #EEF2FF, #F5F3FF)',
-                borderRadius: '12px', border: '1px solid #C7D2FE', marginBottom: '16px',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#4338CA', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div className="p-3.5 bg-gradient-to-br from-[#EEF2FF] to-[#F5F3FF] rounded-md border border-[#C7D2FE] mb-4">
+                <div className="flex justify-between items-center mb-2.5">
+                  <div className="text-xs font-extrabold text-[#4338CA] uppercase tracking-wide flex items-center gap-1.5">
                     <CreditCard size={14} /> Forma de Pagamento
                   </div>
                   <button
                     onClick={() => setShowPaymentMethodsModal(true)}
-                    style={{
-                      padding: '6px 12px', borderRadius: '8px', background: 'white',
-                      border: '1px solid #C7D2FE', cursor: 'pointer',
-                      fontSize: '11px', fontWeight: 700, color: '#4338CA',
-                      display: 'flex', alignItems: 'center', gap: '4px',
-                    }}
+                    className="px-3 py-1.5 rounded-sm bg-surface-lowest border border-[#C7D2FE] cursor-pointer text-[11px] font-bold text-[#4338CA] flex items-center gap-1"
                   >
                     <Plus size={12} /> Gerenciar cartões
                   </button>
@@ -703,23 +646,18 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
 
                 {/* Detected forms from NFe */}
                 {formasPagamento.length > 0 && (
-                  <div style={{ marginBottom: '12px' }}>
-                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                  <div className="mb-3">
+                    <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wide mb-1">
                       Detectado na nota
                     </div>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <div className="flex gap-1.5 flex-wrap">
                       {formasPagamento.map((f, i) => {
                         const info = PAYMENT_KIND_LABELS[f.kind] || PAYMENT_KIND_LABELS.outros
                         return (
-                          <div key={i} style={{
-                            padding: '6px 10px', borderRadius: '999px',
-                            background: 'white', border: '1px solid #C7D2FE',
-                            fontSize: '11px', fontWeight: 600, color: '#4338CA',
-                            display: 'flex', alignItems: 'center', gap: '4px',
-                          }}>
+                          <div key={i} className="px-2.5 py-1.5 rounded-full bg-surface-lowest border border-[#C7D2FE] text-[11px] font-semibold text-[#4338CA] flex items-center gap-1">
                             <span>{info.emoji}</span>
                             <span>{info.label}</span>
-                            {f.valor > 0 && <span style={{ color: '#6B7280' }}>· {fmt(f.valor)}</span>}
+                            {f.valor > 0 && <span className="text-on-surface-variant">· {fmt(f.valor)}</span>}
                           </div>
                         )
                       })}
@@ -728,18 +666,15 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                 )}
 
                 {/* Method picker */}
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={labelStyle}>Usar método cadastrado</label>
+                <div className="mb-2.5">
+                  <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Usar método cadastrado</label>
                   <select
                     value={selectedMethodId}
                     onChange={(e) => {
                       setSelectedMethodId(e.target.value)
                       setManualOverride(false)
                     }}
-                    style={{
-                      ...inputStyle, fontSize: '14px', padding: '10px 12px',
-                      fontWeight: 600, background: 'white',
-                    }}
+                    className="w-full px-3 py-2.5 rounded-sm border border-outline-variant text-sm font-semibold bg-surface-lowest"
                   >
                     <option value="">— Não criar lançamento no Financeiro —</option>
                     {paymentMethods.map((m) => {
@@ -757,11 +692,11 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                     })}
                   </select>
                   {paymentMethods.length === 0 && (
-                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '6px' }}>
+                    <div className="text-[11px] text-on-surface-variant mt-1.5">
                       Nenhuma forma de pagamento cadastrada.{' '}
                       <button
                         onClick={() => setShowPaymentMethodsModal(true)}
-                        style={{ background: 'none', border: 'none', color: '#4338CA', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer', fontSize: '11px', padding: 0 }}
+                        className="bg-transparent border-none text-[#4338CA] font-bold underline cursor-pointer text-[11px] p-0"
                       >
                         Cadastrar agora
                       </button>
@@ -771,22 +706,19 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
 
                 {/* Schedule preview (editable) */}
                 {selectedMethodId && (
-                  <div style={{
-                    padding: '12px', background: 'white', borderRadius: '10px',
-                    border: '1px solid #E0E7FF',
-                  }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <div className="p-3 bg-surface-lowest rounded-[10px] border border-[#E0E7FF]">
+                    <div className="grid grid-cols-3 gap-2.5">
                       <div>
-                        <label style={labelStyle}>Vencimento</label>
+                        <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Vencimento</label>
                         <input
                           type="date"
                           value={dueDateOverride}
                           onChange={(e) => { setDueDateOverride(e.target.value); setManualOverride(true) }}
-                          style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }}
+                          className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                         />
                       </div>
                       <div>
-                        <label style={labelStyle}>Data Paga</label>
+                        <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Data Paga</label>
                         <input
                           type="date"
                           value={paidDateOverride}
@@ -795,11 +727,11 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                             setStatusOverride(e.target.value ? 'pago' : 'pendente')
                             setManualOverride(true)
                           }}
-                          style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }}
+                          className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                         />
                       </div>
                       <div>
-                        <label style={labelStyle}>Status</label>
+                        <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Status</label>
                         <select
                           value={statusOverride}
                           onChange={(e) => {
@@ -811,23 +743,24 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                             if (v === 'pendente') setPaidDateOverride('')
                             setManualOverride(true)
                           }}
-                          style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px', fontWeight: 700,
-                            color: statusOverride === 'pago' ? '#065F46' : '#92400E',
-                            background: statusOverride === 'pago' ? '#D1FAE5' : '#FEF3C7',
-                          }}
+                          className={`w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] font-bold ${
+                            statusOverride === 'pago'
+                              ? 'text-[#065F46] bg-[#D1FAE5]'
+                              : 'text-[#92400E] bg-warning-light'
+                          }`}
                         >
                           <option value="pendente">⏳ Pendente</option>
                           <option value="pago">✓ Pago</option>
                         </select>
                       </div>
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '8px', lineHeight: 1.5 }}>
+                    <div className="text-[11px] text-on-surface-variant mt-2 leading-normal">
                       {manualOverride ? (
                         <>
                           ✏️ Datas editadas manualmente.{' '}
                           <button
                             onClick={() => setManualOverride(false)}
-                            style={{ background: 'none', border: 'none', color: '#4338CA', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer', fontSize: '11px', padding: 0 }}
+                            className="bg-transparent border-none text-[#4338CA] font-bold underline cursor-pointer text-[11px] p-0"
                           >
                             Recalcular automaticamente
                           </button>
@@ -841,59 +774,52 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
               </div>
 
               {/* Items table */}
-              <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#374151' }}>
+              <div className="mb-3 flex justify-between items-center">
+                <h3 className="m-0 text-sm font-bold text-[#374151]">
                   Itens ({selectedCount}/{items.length} selecionados)
                 </h3>
                 <button
                   onClick={addBlankItem}
-                  style={{
-                    padding: '6px 12px', borderRadius: '8px', background: '#F3F4F6',
-                    border: '1px solid #D1D5DB', cursor: 'pointer', fontSize: '12px', fontWeight: 600,
-                  }}
+                  className="px-3 py-1.5 rounded-sm bg-surface-container-low border border-outline-variant cursor-pointer text-xs font-semibold"
                 >
                   + Adicionar item
                 </button>
               </div>
 
               {items.length === 0 ? (
-                <div style={{
-                  padding: '24px', textAlign: 'center', background: '#F9FAFB',
-                  borderRadius: '10px', color: '#6B7280', fontSize: '13px',
-                }}>
+                <div className="p-6 text-center bg-surface rounded-[10px] text-on-surface-variant text-[13px]">
                   Nenhum item identificado. Clique em &quot;Adicionar item&quot; para inserir manualmente.
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div className="flex flex-col gap-2">
                   {items.map((it, idx) => (
                     <div
                       key={idx}
-                      style={{
-                        padding: '12px', borderRadius: '10px',
-                        background: it.import ? 'white' : '#F9FAFB',
-                        border: it.import ? '1px solid #A7F3D0' : '1px solid #E5E7EB',
-                        opacity: it.import ? 1 : 0.6,
-                      }}
+                      className={`p-3 rounded-[10px] ${
+                        it.import
+                          ? 'bg-surface-lowest border border-[#A7F3D0] opacity-100'
+                          : 'bg-surface border border-outline-variant opacity-60'
+                      }`}
                     >
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                      <div className="flex gap-2 items-start">
                         <input
                           type="checkbox"
                           checked={it.import}
                           onChange={(e) => updateItem(idx, { import: e.target.checked })}
-                          style={{ marginTop: '10px', width: '18px', height: '18px', cursor: 'pointer' }}
+                          className="mt-2.5 w-[18px] h-[18px] cursor-pointer"
                         />
-                        <div style={{ flex: 1, display: 'grid', gap: '6px' }}>
+                        <div className="flex-1 grid gap-1.5">
                           <input
-                            style={{ ...inputStyle, fontWeight: 600 }}
+                            className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest font-semibold"
                             value={it.descricao}
                             onChange={(e) => updateItem(idx, { descricao: e.target.value })}
                             placeholder="Descrição do produto"
                           />
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '6px' }}>
+                          <div className="grid grid-cols-4 gap-1.5">
                             <div>
-                              <label style={labelStyle}>Qtd</label>
+                              <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Qtd</label>
                               <input
-                                style={inputStyle}
+                                className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                                 type="number"
                                 step="0.001"
                                 value={it.quantidade}
@@ -904,9 +830,9 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                               />
                             </div>
                             <div>
-                              <label style={labelStyle}>V. Unit</label>
+                              <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">V. Unit</label>
                               <input
-                                style={inputStyle}
+                                className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                                 type="number"
                                 step="0.01"
                                 value={it.valor_unitario}
@@ -917,9 +843,9 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                               />
                             </div>
                             <div>
-                              <label style={labelStyle}>Total</label>
+                              <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Total</label>
                               <input
-                                style={inputStyle}
+                                className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                                 type="number"
                                 step="0.01"
                                 value={it.valor_total}
@@ -927,19 +853,19 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                               />
                             </div>
                             <div>
-                              <label style={labelStyle}>Un.</label>
+                              <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Un.</label>
                               <input
-                                style={inputStyle}
+                                className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                                 value={it.unidade || ''}
                                 onChange={(e) => updateItem(idx, { unidade: e.target.value })}
                               />
                             </div>
                           </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                          <div className="grid grid-cols-2 gap-1.5">
                             <div>
-                              <label style={labelStyle}>Categoria</label>
+                              <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Categoria</label>
                               <select
-                                style={inputStyle}
+                                className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                                 value={it.category}
                                 onChange={(e) => updateItem(idx, { category: e.target.value })}
                               >
@@ -951,9 +877,9 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                               </select>
                             </div>
                             <div>
-                              <label style={labelStyle}>Comprado por</label>
+                              <label className="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-0.5">Comprado por</label>
                               <select
-                                style={inputStyle}
+                                className="w-full px-2.5 py-2 rounded-sm border border-outline-variant text-[13px] bg-surface-lowest"
                                 value={it.purchased_by}
                                 onChange={(e) => updateItem(idx, { purchased_by: e.target.value })}
                               >
@@ -968,10 +894,7 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
                         </div>
                         <button
                           onClick={() => removeItem(idx)}
-                          style={{
-                            background: '#FEE2E2', border: 'none', borderRadius: '8px',
-                            padding: '8px', color: '#DC2626', cursor: 'pointer',
-                          }}
+                          className="bg-danger-light border-none rounded-sm p-2 text-danger cursor-pointer"
                           title="Remover"
                         >
                           <Trash2 size={14} />
@@ -985,29 +908,23 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
           )}
 
           {step === 'saving' && (
-            <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <Loader2 size={40} className="animate-spin" style={{ color: '#059669', marginBottom: '12px' }} />
-              <div style={{ fontSize: '16px', fontWeight: 600, color: '#374151' }}>
+            <div className="px-5 py-16 text-center">
+              <Loader2 size={40} className="animate-spin text-success mb-3" />
+              <div className="text-base font-semibold text-[#374151]">
                 Salvando NF-e e gerando materiais…
               </div>
             </div>
           )}
 
           {step === 'done' && (
-            <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <div
-                style={{
-                  width: '64px', height: '64px', borderRadius: '50%', background: '#D1FAE5',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto 16px',
-                }}
-              >
-                <Check size={32} style={{ color: '#059669' }} />
+            <div className="px-5 py-16 text-center">
+              <div className="w-16 h-16 rounded-full bg-[#D1FAE5] flex items-center justify-center mx-auto mb-4">
+                <Check size={32} className="text-success" />
               </div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: '#166534', marginBottom: '4px' }}>
+              <div className="text-lg font-bold text-[#166534] mb-1">
                 NF-e importada!
               </div>
-              <div style={{ fontSize: '13px', color: '#6B7280' }}>
+              <div className="text-[13px] text-on-surface-variant">
                 {savedCount} {savedCount === 1 ? 'material criado' : 'materiais criados'} com sucesso
               </div>
             </div>
@@ -1025,33 +942,24 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
 
         {/* Footer */}
         {step === 'review' && (
-          <div style={{
-            padding: '12px 20px', borderTop: '1px solid #E5E7EB',
-            background: '#F9FAFB',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
+          <div className="px-5 py-3 border-t border-outline-variant bg-surface flex justify-between items-center">
             <div>
-              <div style={{ fontSize: '11px', color: '#6B7280' }}>Total a importar</div>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#059669' }}>{fmt(totalSelecionado)}</div>
+              <div className="text-[11px] text-on-surface-variant">Total a importar</div>
+              <div className="text-lg font-extrabold text-success">{fmt(totalSelecionado)}</div>
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="flex gap-2">
               <button
                 onClick={() => setStep('upload')}
-                style={{
-                  padding: '10px 16px', borderRadius: '10px', background: '#F3F4F6',
-                  border: '1px solid #D1D5DB', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
-                }}
+                className="px-4 py-2.5 rounded-[10px] bg-surface-container-low border border-outline-variant cursor-pointer text-[13px] font-semibold"
               >
                 ← Voltar
               </button>
               <button
                 onClick={handleSave}
                 disabled={selectedCount === 0}
-                style={{
-                  padding: '10px 20px', borderRadius: '10px',
-                  background: selectedCount === 0 ? '#9CA3AF' : '#059669',
-                  color: 'white', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 700,
-                }}
+                className={`px-5 py-2.5 rounded-[10px] text-white border-none cursor-pointer text-[13px] font-bold ${
+                  selectedCount === 0 ? 'bg-[#9CA3AF]' : 'bg-success'
+                }`}
               >
                 ✓ Importar {selectedCount} {selectedCount === 1 ? 'item' : 'itens'}
               </button>
@@ -1061,14 +969,4 @@ export default function NFeImportModal({ currentUser, onClose, onSuccess }: Prop
       </div>
     </div>
   )
-}
-
-const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: '10px', fontWeight: 600, color: '#6B7280',
-  textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px',
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '8px 10px', borderRadius: '8px',
-  border: '1px solid #D1D5DB', fontSize: '13px', background: 'white',
 }

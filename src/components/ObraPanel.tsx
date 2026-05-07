@@ -301,9 +301,9 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏗️</div>
-        <p style={{ color: '#6b7280' }}>Carregando tarefas da obra...</p>
+      <div className="text-center py-[60px] px-5">
+        <div className="text-[48px] mb-4">🏗️</div>
+        <p className="text-[#6b7280]">Carregando tarefas da obra...</p>
       </div>
     )
   }
@@ -313,116 +313,64 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
   return (
     <div>
       {/* DOCUMENTS SECTION */}
-      <div style={{
-        borderRadius: '16px',
-        border: '1px solid #E5E7EB',
-        background: 'white',
-        marginBottom: '24px',
-        overflow: 'hidden',
-      }}>
+      <div className="rounded-lg border border-[#E5E7EB] bg-white mb-6 overflow-hidden">
         {/* Documents Header */}
-        <div style={{
-          padding: '16px 20px',
-          background: 'linear-gradient(135deg, #10B981, #059669)',
-          color: 'white',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>📁 Documentos / Projeto</h2>
+        <div className="px-5 py-4 bg-gradient-to-br from-[#10B981] to-[#059669] text-white flex justify-between items-center">
+          <h2 className="text-base font-bold m-0">📁 Documentos / Projeto</h2>
           <button
             onClick={() => setShowDocModal(true)}
-            style={{
-              padding: '8px 14px',
-              background: 'rgba(255,255,255,0.2)',
-              border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: '8px',
-              color: 'white',
-              fontWeight: 600,
-              fontSize: '13px',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.3)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.2)'
-            }}
+            className="py-2 px-3.5 bg-white/20 border border-white/30 rounded-lg text-white font-semibold text-[13px] cursor-pointer transition-all duration-200 hover:bg-white/30"
           >
             + Adicionar
           </button>
         </div>
 
         {/* Documents List */}
-        <div style={{ padding: '12px' }}>
+        <div className="p-3">
           {documents.length === 0 ? (
-            <div style={{ padding: '24px', textAlign: 'center', color: '#6B7280' }}>
-              <p style={{ fontSize: '14px', margin: 0 }}>Nenhum documento adicionado</p>
+            <div className="p-6 text-center text-[#6B7280]">
+              <p className="text-sm m-0">Nenhum documento adicionado</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gap: '8px' }}>
+            <div className="grid gap-2">
               {documents.map(doc => {
                 const isExpanded = expandedDocuments.has(doc.id)
                 const typeConfig = DOCUMENT_TYPE_CONFIG[doc.doc_type]
                 return (
                   <div
                     key={doc.id}
-                    style={{
-                      borderRadius: '10px',
-                      border: '1px solid #E5E7EB',
-                      background: 'white',
-                      overflow: 'hidden',
-                    }}
+                    className="rounded-[10px] border border-[#E5E7EB] bg-white overflow-hidden"
                   >
                     <button
                       onClick={() => toggleDocumentExpanded(doc.id)}
-                      style={{
-                        width: '100%',
-                        padding: '12px 14px',
-                        border: 'none',
-                        background: 'white',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        gap: '12px',
-                      }}
+                      className="w-full py-3 px-3.5 border-none bg-white cursor-pointer flex justify-between items-center gap-3"
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, textAlign: 'left' }}>
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: '6px 10px',
-                          borderRadius: '6px',
-                          background: typeConfig.bg,
-                          color: typeConfig.color,
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          minWidth: '80px',
-                        }}>
+                      <div className="flex items-center gap-2.5 flex-1 text-left">
+                        <span
+                          className="inline-flex items-center justify-center py-1.5 px-2.5 rounded-md text-xs font-semibold min-w-[80px]"
+                          style={{ background: typeConfig.bg, color: typeConfig.color }}
+                        >
                           {typeConfig.emoji} {typeConfig.label}
                         </span>
                         {doc.file_type?.startsWith('image/') && doc.url && (
-                          <img src={doc.url} alt="" style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />
+                          <img src={doc.url} alt="" className="w-9 h-9 object-cover rounded-md shrink-0" />
                         )}
                         {doc.file_type === 'application/pdf' && (
-                          <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <div className="w-9 h-9 rounded-md bg-[#FEF3C7] flex items-center justify-center shrink-0">
                             <FileText size={18} color="#D97706" />
                           </div>
                         )}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937', margin: '0 0 2px' }}>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-[#1F2937] m-0 mb-0.5">
                             {doc.title}
                           </p>
                           {doc.description && (
-                            <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
+                            <p className="text-xs text-[#6B7280] m-0">
                               {doc.description.length > 50 ? doc.description.substring(0, 50) + '...' : doc.description}
                             </p>
                           )}
                           {doc.file_name && !doc.description && (
-                            <p style={{ fontSize: '11px', color: '#9CA3AF', margin: 0 }}>
+                            <p className="text-[11px] text-[#9CA3AF] m-0">
                               {doc.file_name} {doc.file_size ? `• ${(doc.file_size / 1024 / 1024).toFixed(1)} MB` : ''}
                             </p>
                           )}
@@ -437,75 +385,57 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
 
                     {/* Expanded Details */}
                     {isExpanded && (
-                      <div style={{
-                        padding: '12px 14px',
-                        borderTop: '1px solid #E5E7EB',
-                        background: '#F9FAFB',
-                      }}>
+                      <div className="py-3 px-3.5 border-t border-[#E5E7EB] bg-[#F9FAFB]">
                         {/* File Preview */}
                         {doc.file_type?.startsWith('image/') && doc.url && (
-                          <div style={{ marginBottom: '12px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer' }}
+                          <div className="mb-3 rounded-lg overflow-hidden cursor-pointer"
                             onClick={() => setPreviewDoc(doc)}
                           >
                             <img
                               src={doc.url}
                               alt={doc.title}
-                              style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '8px' }}
+                              className="w-full max-h-[200px] object-cover rounded-lg"
                             />
                           </div>
                         )}
                         {doc.file_type === 'application/pdf' && doc.url && (
-                          <div style={{
-                            marginBottom: '12px', padding: '12px', borderRadius: '8px',
-                            background: '#FEF3C7', display: 'flex', alignItems: 'center', gap: '10px',
-                          }}>
+                          <div className="mb-3 p-3 rounded-lg bg-[#FEF3C7] flex items-center gap-2.5">
                             <FileText size={24} color="#D97706" />
-                            <div style={{ flex: 1 }}>
-                              <p style={{ fontSize: '13px', fontWeight: 600, color: '#92400E', margin: 0 }}>
+                            <div className="flex-1">
+                              <p className="text-[13px] font-semibold text-[#92400E] m-0">
                                 {doc.file_name || 'Documento PDF'}
                               </p>
                               {doc.file_size && (
-                                <p style={{ fontSize: '11px', color: '#B45309', margin: '2px 0 0' }}>
+                                <p className="text-[11px] text-[#B45309] mt-0.5 mb-0">
                                   {(doc.file_size / 1024 / 1024).toFixed(2)} MB
                                 </p>
                               )}
                             </div>
                             <a href={getViewUrl(doc)}
-                              style={{ padding: '6px 10px', borderRadius: '6px', background: '#D97706', color: 'white', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}
+                              className="py-1.5 px-2.5 rounded-md bg-[#D97706] text-white no-underline text-xs font-semibold"
                             >
-                              <Eye size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                              <Eye size={14} className="inline align-middle mr-1" />
                               Ver
                             </a>
                           </div>
                         )}
                         {doc.description && (
-                          <p style={{ fontSize: '13px', color: '#374151', margin: '0 0 10px', lineHeight: 1.5 }}>
+                          <p className="text-[13px] text-[#374151] mt-0 mb-2.5 leading-relaxed">
                             {doc.description}
                           </p>
                         )}
-                        <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '10px' }}>
+                        <div className="text-xs text-[#6B7280] mb-2.5">
                           <div>Por: <strong>{doc.created_by}</strong></div>
                           <div>Em: {new Date(doc.created_at).toLocaleDateString('pt-BR')}</div>
                           {doc.file_name && <div>Arquivo: {doc.file_name}</div>}
                           {doc.file_size && <div>Tamanho: {(doc.file_size / 1024 / 1024).toFixed(2)} MB</div>}
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <div className="flex gap-2 flex-wrap">
                           {doc.url && (
                             <a
                               href={doc.file_path ? getViewUrl(doc) : doc.url}
                               {...(doc.file_path ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                padding: '8px 12px',
-                                borderRadius: '6px',
-                                background: '#F0FDF4',
-                                color: '#059669',
-                                textDecoration: 'none',
-                                fontWeight: 600,
-                                fontSize: '12px',
-                              }}
+                              className="flex items-center gap-1.5 py-2 px-3 rounded-md bg-[#F0FDF4] text-[#059669] no-underline font-semibold text-xs"
                             >
                               <ExternalLink size={14} />
                               {doc.file_name ? 'Abrir arquivo' : 'Abrir link'}
@@ -514,11 +444,7 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
                           {doc.file_type?.startsWith('image/') && doc.url && (
                             <button
                               onClick={() => setPreviewDoc(doc)}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px',
-                                borderRadius: '6px', background: '#EFF6FF', color: '#2563EB',
-                                border: 'none', fontWeight: 600, fontSize: '12px', cursor: 'pointer',
-                              }}
+                              className="flex items-center gap-1.5 py-2 px-3 rounded-md bg-[#EFF6FF] text-[#2563EB] border-none font-semibold text-xs cursor-pointer"
                             >
                               <Eye size={14} />
                               Visualizar
@@ -526,26 +452,7 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
                           )}
                           <button
                             onClick={() => handleDeleteDocument(doc.id)}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '8px 12px',
-                              borderRadius: '6px',
-                              background: '#FEF2F2',
-                              color: '#DC2626',
-                              border: 'none',
-                              fontWeight: 600,
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = '#FEE2E2'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = '#FEF2F2'
-                            }}
+                            className="flex items-center gap-1.5 py-2 px-3 rounded-md bg-[#FEF2F2] text-[#DC2626] border-none font-semibold text-xs cursor-pointer transition-all duration-200 hover:bg-danger-light"
                           >
                             <Trash2 size={14} />
                             Excluir
@@ -562,43 +469,34 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
       </div>
 
       {/* Progress Header */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1E40AF, #7C3AED)',
-        borderRadius: '16px',
-        padding: '20px',
-        marginBottom: '20px',
-        color: 'white',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Progresso da Obra</h2>
-          <span style={{ fontSize: '28px', fontWeight: 800 }}>{progressPercent}%</span>
+      <div className="bg-gradient-to-br from-[#1E40AF] to-[#7C3AED] rounded-lg p-5 mb-5 text-white">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-bold m-0">Progresso da Obra</h2>
+          <span className="text-[28px] font-extrabold">{progressPercent}%</span>
         </div>
-        <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '8px', height: '10px', overflow: 'hidden', marginBottom: '16px' }}>
-          <div style={{
-            width: `${progressPercent}%`,
-            height: '100%',
-            background: 'linear-gradient(90deg, #34D399, #10B981)',
-            borderRadius: '8px',
-            transition: 'width 0.5s ease',
-          }} />
+        <div className="bg-white/20 rounded-lg h-2.5 overflow-hidden mb-4">
+          <div
+            className="h-full bg-gradient-to-r from-[#34D399] to-[#10B981] rounded-lg transition-all duration-500 ease-in-out"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+        <div className="grid grid-cols-4 gap-2">
           {[
             { label: 'Concluídas', value: stats.concluido, color: '#34D399' },
             { label: 'Andamento', value: stats.em_andamento, color: '#60A5FA' },
             { label: 'A Fazer', value: stats.a_fazer, color: '#FBBF24' },
             { label: 'Bloqueadas', value: stats.bloqueada, color: '#F87171' },
           ].map(s => (
-            <div key={s.label} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '20px', fontWeight: 800 }}>{s.value}</div>
-              <div style={{ fontSize: '11px', opacity: 0.8 }}>{s.label}</div>
+            <div key={s.label} className="text-center">
+              <div className="text-xl font-extrabold">{s.value}</div>
+              <div className="text-[11px] opacity-80">{s.label}</div>
             </div>
           ))}
         </div>
       </div>
 
       {/* View Mode Toggle */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', background: '#f3f4f6', borderRadius: '10px', padding: '3px' }}>
+      <div className="flex gap-1 mb-4 bg-[#f3f4f6] rounded-[10px] p-[3px]">
         {[
           { key: 'status', label: 'Status' },
           { key: 'fase', label: 'Fase' },
@@ -611,19 +509,11 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
               if (v.key === 'status') setExpandedGroups(new Set(['em_andamento', 'a_fazer']))
               else setExpandedGroups(new Set(PHASE_ORDER.slice(0, 2)))
             }}
-            style={{
-              flex: 1,
-              padding: '10px 12px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '13px',
-              transition: 'all 0.2s',
-              background: viewMode === v.key ? 'white' : 'transparent',
-              color: viewMode === v.key ? '#1E40AF' : '#6b7280',
-              boxShadow: viewMode === v.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-            }}
+            className={`flex-1 py-2.5 px-3 rounded-lg border-none cursor-pointer font-semibold text-[13px] transition-all duration-200 ${
+              viewMode === v.key
+                ? 'bg-white text-[#1E40AF] shadow-sm'
+                : 'bg-transparent text-[#6b7280]'
+            }`}
           >
             {v.label}
           </button>
@@ -632,17 +522,15 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
 
       {/* Layout Toggle */}
       {viewMode === 'status' && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px', gap: '4px' }}>
-          <button onClick={() => setLayoutMode('list')} style={{
-            padding: '6px 10px', borderRadius: '8px', border: '1px solid #E5E7EB', cursor: 'pointer',
-            background: layoutMode === 'list' ? '#1E40AF' : 'white', color: layoutMode === 'list' ? 'white' : '#6B7280',
-          }}>
+        <div className="flex justify-end mb-3 gap-1">
+          <button onClick={() => setLayoutMode('list')} className={`py-1.5 px-2.5 rounded-lg border border-[#E5E7EB] cursor-pointer ${
+            layoutMode === 'list' ? 'bg-[#1E40AF] text-white' : 'bg-white text-[#6B7280]'
+          }`}>
             <List size={16} />
           </button>
-          <button onClick={() => setLayoutMode('kanban')} style={{
-            padding: '6px 10px', borderRadius: '8px', border: '1px solid #E5E7EB', cursor: 'pointer',
-            background: layoutMode === 'kanban' ? '#1E40AF' : 'white', color: layoutMode === 'kanban' ? 'white' : '#6B7280',
-          }}>
+          <button onClick={() => setLayoutMode('kanban')} className={`py-1.5 px-2.5 rounded-lg border border-[#E5E7EB] cursor-pointer ${
+            layoutMode === 'kanban' ? 'bg-[#1E40AF] text-white' : 'bg-white text-[#6B7280]'
+          }`}>
             <LayoutGrid size={16} />
           </button>
         </div>
@@ -650,41 +538,38 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
 
       {/* KANBAN VIEW (side-by-side columns) */}
       {viewMode === 'status' && layoutMode === 'kanban' ? (
-        <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '16px', minHeight: '400px' }}>
+        <div className="flex gap-3 overflow-x-auto pb-4 min-h-[400px]">
           {STATUS_ORDER.map(status => {
             const conf = STATUS_CONFIG[status]
             const columnTasks = tasks.filter(t => t.status === status).sort((a, b) => a.sort_order - b.sort_order)
             return (
-              <div key={status} style={{
-                minWidth: '260px', maxWidth: '300px', flex: '1 0 260px',
-                borderRadius: '12px', border: `1px solid ${conf.border}`, background: conf.bg, display: 'flex', flexDirection: 'column',
-              }}>
-                <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: `1px solid ${conf.border}` }}>
+              <div key={status} className="min-w-[260px] max-w-[300px] flex-[1_0_260px] rounded-xl flex flex-col"
+                style={{ border: `1px solid ${conf.border}`, background: conf.bg }}
+              >
+                <div className="py-3 px-3.5 flex items-center gap-2" style={{ borderBottom: `1px solid ${conf.border}` }}>
                   <conf.icon size={16} color={conf.color} />
-                  <span style={{ fontWeight: 700, fontSize: '13px', color: conf.color }}>{conf.label}</span>
-                  <span style={{
-                    background: conf.color, color: 'white', borderRadius: '10px', padding: '1px 8px', fontSize: '11px', fontWeight: 700, marginLeft: 'auto',
-                  }}>{columnTasks.length}</span>
+                  <span className="font-bold text-[13px]" style={{ color: conf.color }}>{conf.label}</span>
+                  <span className="rounded-[10px] py-px px-2 text-[11px] font-bold ml-auto text-white" style={{ background: conf.color }}>{columnTasks.length}</span>
                 </div>
-                <div style={{ padding: '8px', flex: 1, overflowY: 'auto' }}>
+                <div className="p-2 flex-1 overflow-y-auto">
                   {columnTasks.map(task => {
                     const assignee = ASSIGNEE_CONFIG[task.assigned_to]
                     const priority = PRIORITY_CONFIG[task.priority]
                     return (
-                      <div key={task.id} style={{
-                        padding: '10px 12px', borderRadius: '8px', marginBottom: '6px', background: 'white',
-                        border: '1px solid #E5E7EB', boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                      }}>
-                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: '0 0 6px', lineHeight: 1.3 }}>
+                      <div key={task.id} className="py-2.5 px-3 rounded-lg mb-1.5 bg-white border border-[#E5E7EB] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                        <p className="text-[13px] font-semibold text-[#1F2937] mt-0 mb-1.5 leading-tight">
                           {task.title}
                         </p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '1px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 600,
-                            background: assignee?.color ? `${assignee.color}15` : '#F3F4F6', color: assignee?.color || '#6B7280',
-                          }}>{assignee?.emoji || '👤'} {task.assigned_to}</span>
+                        <div className="flex flex-wrap gap-1">
+                          <span
+                            className="inline-flex items-center gap-[3px] py-px px-1.5 rounded text-[10px] font-semibold"
+                            style={{
+                              background: assignee?.color ? `${assignee.color}15` : '#F3F4F6',
+                              color: assignee?.color || '#6B7280',
+                            }}
+                          >{assignee?.emoji || '👤'} {task.assigned_to}</span>
                           {priority && (
-                            <span style={{ padding: '1px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, background: priority.bg, color: priority.color }}>
+                            <span className="py-px px-1.5 rounded text-[10px] font-semibold" style={{ background: priority.bg, color: priority.color }}>
                               {priority.label}
                             </span>
                           )}
@@ -699,37 +584,30 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
         </div>
       ) : (
         /* LIST VIEW (collapsible groups) */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div className="flex flex-col gap-3">
           {groups.map(group => {
             const isExpanded = expandedGroups.has(group.key)
             const statusConf = STATUS_CONFIG[group.key]
             const groupColor = statusConf?.color || '#6B7280'
 
             return (
-              <div key={group.key} style={{
-                borderRadius: '12px',
-                border: `1px solid ${statusConf?.border || '#E5E7EB'}`,
-                overflow: 'hidden',
-                background: 'white',
-              }}>
+              <div key={group.key} className="rounded-xl overflow-hidden bg-white"
+                style={{ border: `1px solid ${statusConf?.border || '#E5E7EB'}` }}
+              >
                 <button
                   onClick={() => toggleGroup(group.key)}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '14px 16px', border: 'none', cursor: 'pointer', background: statusConf?.bg || '#F9FAFB',
-                  }}
+                  className="w-full flex items-center justify-between py-3.5 px-4 border-none cursor-pointer"
+                  style={{ background: statusConf?.bg || '#F9FAFB' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="flex items-center gap-2.5">
                     {statusConf && <statusConf.icon size={18} color={groupColor} />}
-                    <span style={{ fontWeight: 700, fontSize: '14px', color: groupColor }}>{group.label}</span>
-                    <span style={{
-                      background: groupColor, color: 'white', borderRadius: '12px', padding: '2px 10px', fontSize: '12px', fontWeight: 700,
-                    }}>{group.tasks.length}</span>
+                    <span className="font-bold text-sm" style={{ color: groupColor }}>{group.label}</span>
+                    <span className="rounded-xl py-0.5 px-2.5 text-xs font-bold text-white" style={{ background: groupColor }}>{group.tasks.length}</span>
                   </div>
                   {isExpanded ? <ChevronUp size={18} color="#9CA3AF" /> : <ChevronDown size={18} color="#9CA3AF" />}
                 </button>
                 {isExpanded && (
-                  <div style={{ padding: '8px' }}>
+                  <div className="p-2">
                     {group.tasks.map(task => (
                       <TaskCard key={task.id} task={task} onStatusChange={handleStatusChange} updating={updatingTask === task.id} viewMode={viewMode} />
                     ))}
@@ -744,11 +622,7 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
       {/* Floating Add Task Button */}
       <button
         onClick={() => setShowAddModal(true)}
-        style={{
-          position: 'fixed', bottom: '24px', right: '24px', width: '56px', height: '56px', borderRadius: '50%',
-          background: 'linear-gradient(135deg, #D97706, #F59E0B)', color: 'white', border: 'none', cursor: 'pointer',
-          boxShadow: '0 4px 15px rgba(217, 119, 6, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 40,
-        }}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-[#D97706] to-[#F59E0B] text-white border-none cursor-pointer shadow-[0_4px_15px_rgba(217,119,6,0.4)] flex items-center justify-center z-40"
         title="Nova tarefa"
       >
         <Plus size={26} />
@@ -756,53 +630,54 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
 
       {/* Add Task Modal */}
       {showAddModal && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 50,
-        }} onClick={() => setShowAddModal(false)}>
-          <div style={{
-            background: 'white', borderRadius: '20px 20px 0 0', padding: '24px 20px', width: '100%', maxWidth: '500px', maxHeight: '80vh', overflowY: 'auto',
-          }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Nova Tarefa</h3>
-              <button onClick={() => setShowAddModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="#6B7280" /></button>
+        <div className="modal-overlay fixed inset-0 bg-black/50 flex items-end justify-center z-50"
+          onClick={() => setShowAddModal(false)}
+        >
+          <div className="modal-content bg-white rounded-t-[20px] p-6 px-5 w-full max-w-[500px] max-h-[80vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-lg font-bold m-0">Nova Tarefa</h3>
+              <button onClick={() => setShowAddModal(false)} className="bg-transparent border-none cursor-pointer"><X size={20} color="#6B7280" /></button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div className="flex flex-col gap-3.5">
               <div>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Título *</label>
-                <input value={newTask.title} onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))} placeholder="Ex: Comprar argamassa" style={{ width: '100%' }} />
+                <label className="text-[13px] font-semibold text-[#374151] block mb-1">Titulo *</label>
+                <input value={newTask.title} onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))} placeholder="Ex: Comprar argamassa" className="w-full" />
               </div>
               <div>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Descrição</label>
-                <input value={newTask.description} onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))} placeholder="Detalhes opcionais" style={{ width: '100%' }} />
+                <label className="text-[13px] font-semibold text-[#374151] block mb-1">Descricao</label>
+                <input value={newTask.description} onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))} placeholder="Detalhes opcionais" className="w-full" />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Fase</label>
-                  <select value={newTask.phase} onChange={e => setNewTask(p => ({ ...p, phase: e.target.value }))} style={{ width: '100%' }}>
+                  <label className="text-[13px] font-semibold text-[#374151] block mb-1">Fase</label>
+                  <select value={newTask.phase} onChange={e => setNewTask(p => ({ ...p, phase: e.target.value }))} className="w-full">
                     {PHASE_ORDER.map(ph => <option key={ph} value={ph}>{ph.replace(' — ', ' · ')}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Prioridade</label>
-                  <select value={newTask.priority} onChange={e => setNewTask(p => ({ ...p, priority: e.target.value }))} style={{ width: '100%' }}>
+                  <label className="text-[13px] font-semibold text-[#374151] block mb-1">Prioridade</label>
+                  <select value={newTask.priority} onChange={e => setNewTask(p => ({ ...p, priority: e.target.value }))} className="w-full">
                     <option value="alta">🔴 Alta</option>
-                    <option value="media">🟡 Média</option>
+                    <option value="media">🟡 Media</option>
                     <option value="baixa">🟢 Baixa</option>
                   </select>
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Responsável</label>
-                <select value={newTask.assigned_to} onChange={e => setNewTask(p => ({ ...p, assigned_to: e.target.value }))} style={{ width: '100%' }}>
+                <label className="text-[13px] font-semibold text-[#374151] block mb-1">Responsavel</label>
+                <select value={newTask.assigned_to} onChange={e => setNewTask(p => ({ ...p, assigned_to: e.target.value }))} className="w-full">
                   {Object.entries(ASSIGNEE_CONFIG).map(([name, conf]) => (
                     <option key={name} value={name}>{conf.emoji} {name}</option>
                   ))}
                 </select>
               </div>
-              <button onClick={handleAddTask} disabled={!newTask.title.trim()} style={{
-                padding: '14px', borderRadius: '12px', border: 'none', background: newTask.title.trim() ? 'linear-gradient(135deg, #D97706, #F59E0B)' : '#E5E7EB',
-                color: 'white', fontWeight: 700, fontSize: '15px', cursor: newTask.title.trim() ? 'pointer' : 'default',
-              }}>
+              <button onClick={handleAddTask} disabled={!newTask.title.trim()} className={`py-3.5 rounded-xl border-none text-white font-bold text-[15px] ${
+                newTask.title.trim()
+                  ? 'bg-gradient-to-br from-[#D97706] to-[#F59E0B] cursor-pointer'
+                  : 'bg-[#E5E7EB] cursor-default'
+              }`}>
                 Criar Tarefa
               </button>
             </div>
@@ -812,67 +687,56 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
 
       {/* Add Document Modal */}
       {showDocModal && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 50,
-          backdropFilter: 'blur(4px)',
-        }} onClick={() => { if (!uploading) { setShowDocModal(false); setUploadFile(null); setUploadPreview(null) } }}>
-          <div style={{
-            background: 'white', borderRadius: '20px 20px 0 0', padding: '24px 20px', width: '100%', maxWidth: '500px', maxHeight: '85vh', overflowY: 'auto',
-          }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Novo Documento</h3>
-              <button onClick={() => { if (!uploading) { setShowDocModal(false); setUploadFile(null); setUploadPreview(null) } }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="#6B7280" /></button>
+        <div className="modal-overlay fixed inset-0 bg-black/50 flex items-end justify-center z-50 backdrop-blur-sm"
+          onClick={() => { if (!uploading) { setShowDocModal(false); setUploadFile(null); setUploadPreview(null) } }}
+        >
+          <div className="modal-content bg-white rounded-t-[20px] p-6 px-5 w-full max-w-[500px] max-h-[85vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-lg font-bold m-0">Novo Documento</h3>
+              <button onClick={() => { if (!uploading) { setShowDocModal(false); setUploadFile(null); setUploadPreview(null) } }} className="bg-transparent border-none cursor-pointer"><X size={20} color="#6B7280" /></button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div className="flex flex-col gap-3.5">
               {/* File Upload Area */}
               <div>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>📎 Arquivo</label>
+                <label className="text-[13px] font-semibold text-[#374151] block mb-1.5">📎 Arquivo</label>
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.dwg,.dxf"
                   onChange={handleFileSelect}
-                  style={{ display: 'none' }}
+                  className="hidden"
                 />
                 {!uploadFile ? (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    style={{
-                      width: '100%', padding: '24px 16px', borderRadius: '12px',
-                      border: '2px dashed #D1D5DB', background: '#F9FAFB',
-                      cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', gap: '8px', transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#10B981'; e.currentTarget.style.background = '#F0FDF4' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.background = '#F9FAFB' }}
+                    className="w-full py-6 px-4 rounded-xl border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB] cursor-pointer flex flex-col items-center gap-2 transition-all duration-200 hover:border-[#10B981] hover:bg-[#F0FDF4]"
                   >
                     <Upload size={28} color="#9CA3AF" />
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#6B7280' }}>Toque para selecionar arquivo</span>
-                    <span style={{ fontSize: '11px', color: '#9CA3AF' }}>Imagens, PDF, Word, Excel, DWG</span>
+                    <span className="text-sm font-semibold text-[#6B7280]">Toque para selecionar arquivo</span>
+                    <span className="text-[11px] text-[#9CA3AF]">Imagens, PDF, Word, Excel, DWG</span>
                   </button>
                 ) : (
-                  <div style={{
-                    padding: '12px', borderRadius: '10px', border: '1px solid #D1FAE5',
-                    background: '#F0FDF4', display: 'flex', alignItems: 'center', gap: '10px',
-                  }}>
+                  <div className="p-3 rounded-[10px] border border-[#D1FAE5] bg-[#F0FDF4] flex items-center gap-2.5">
                     {uploadPreview ? (
-                      <img src={uploadPreview} alt="preview" style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px' }} />
+                      <img src={uploadPreview} alt="preview" className="w-12 h-12 object-cover rounded-lg" />
                     ) : (
-                      <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div className="w-12 h-12 rounded-lg bg-[#D1FAE5] flex items-center justify-center">
                         <FileText size={24} color="#059669" />
                       </div>
                     )}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold text-[#1F2937] m-0 overflow-hidden text-ellipsis whitespace-nowrap">
                         {uploadFile.name}
                       </p>
-                      <p style={{ fontSize: '11px', color: '#6B7280', margin: '2px 0 0' }}>
+                      <p className="text-[11px] text-[#6B7280] mt-0.5 mb-0">
                         {(uploadFile.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
                     <button
                       onClick={() => { setUploadFile(null); setUploadPreview(null); if (fileInputRef.current) fileInputRef.current.value = '' }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                      className="bg-transparent border-none cursor-pointer p-1"
                     >
                       <X size={18} color="#DC2626" />
                     </button>
@@ -881,38 +745,38 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
               </div>
 
               {/* Divider */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
-                <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 600 }}>ou adicione um link</span>
-                <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-[#E5E7EB]" />
+                <span className="text-[11px] text-[#9CA3AF] font-semibold">ou adicione um link</span>
+                <div className="flex-1 h-px bg-[#E5E7EB]" />
               </div>
 
               <div>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>🔗 Link (opcional)</label>
+                <label className="text-[13px] font-semibold text-[#374151] block mb-1">🔗 Link (opcional)</label>
                 <input
                   value={newDocument.url}
                   onChange={e => setNewDocument(p => ({ ...p, url: e.target.value }))}
                   placeholder="https://exemplo.com/documento"
-                  style={{ width: '100%' }}
+                  className="w-full"
                   disabled={!!uploadFile}
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Título *</label>
+                <label className="text-[13px] font-semibold text-[#374151] block mb-1">Titulo *</label>
                 <input
                   value={newDocument.title}
                   onChange={e => setNewDocument(p => ({ ...p, title: e.target.value }))}
                   placeholder="Ex: Planta do apartamento"
-                  style={{ width: '100%' }}
+                  className="w-full"
                 />
               </div>
               <div>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Tipo *</label>
+                <label className="text-[13px] font-semibold text-[#374151] block mb-1">Tipo *</label>
                 <select
                   value={newDocument.type}
                   onChange={e => setNewDocument(p => ({ ...p, type: e.target.value as any }))}
-                  style={{ width: '100%' }}
+                  className="w-full"
                 >
                   {Object.entries(DOCUMENT_TYPE_CONFIG).map(([key, conf]) => (
                     <option key={key} value={key}>{conf.emoji} {conf.label}</option>
@@ -920,28 +784,26 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>Descrição</label>
+                <label className="text-[13px] font-semibold text-[#374151] block mb-1">Descricao</label>
                 <textarea
                   value={newDocument.description || ''}
                   onChange={e => setNewDocument(p => ({ ...p, description: e.target.value }))}
                   placeholder="Detalhes sobre o documento..."
-                  style={{ width: '100%', minHeight: '70px', padding: '10px', borderRadius: '8px', border: '2px solid #e5e7eb', fontFamily: 'inherit', fontSize: '16px' }}
+                  className="w-full min-h-[70px] p-2.5 rounded-lg border-2 border-[#e5e7eb] font-[inherit] text-base"
                 />
               </div>
               <button
                 onClick={handleAddDocument}
                 disabled={!newDocument.title.trim() || uploading}
-                style={{
-                  padding: '14px', borderRadius: '12px', border: 'none',
-                  background: newDocument.title.trim() && !uploading ? 'linear-gradient(135deg, #10B981, #059669)' : '#E5E7EB',
-                  color: 'white', fontWeight: 700, fontSize: '15px',
-                  cursor: newDocument.title.trim() && !uploading ? 'pointer' : 'default',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                }}
+                className={`py-3.5 rounded-xl border-none text-white font-bold text-[15px] flex items-center justify-center gap-2 ${
+                  newDocument.title.trim() && !uploading
+                    ? 'bg-gradient-to-br from-[#10B981] to-[#059669] cursor-pointer'
+                    : 'bg-[#E5E7EB] cursor-default'
+                }`}
               >
                 {uploading ? (
                   <>
-                    <span style={{ display: 'inline-block', width: '16px', height: '16px', border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Enviando...
                   </>
                 ) : (
@@ -959,37 +821,29 @@ export default function ObraPanel({ currentUser = 'bruno', projectId }: ObraPane
       {/* Full-screen Image Preview Modal */}
       {previewDoc && previewDoc.url && (
         <div
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex',
-            alignItems: 'center', justifyContent: 'center', zIndex: 60,
-            backdropFilter: 'blur(8px)', cursor: 'pointer',
-          }}
+          className="fixed inset-0 bg-black/85 flex items-center justify-center z-[60] backdrop-blur-lg cursor-pointer"
           onClick={() => setPreviewDoc(null)}
         >
           <button
             onClick={() => setPreviewDoc(null)}
-            style={{
-              position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.2)',
-              border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
+            className="absolute top-4 right-4 bg-white/20 border-none rounded-full w-10 h-10 cursor-pointer flex items-center justify-center"
           >
             <X size={24} color="white" />
           </button>
-          <div style={{ textAlign: 'center', maxWidth: '90vw', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
+          <div className="text-center max-w-[90vw] max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <img
               src={previewDoc.url}
               alt={previewDoc.title}
-              style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: '8px' }}
+              className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg"
             />
-            <p style={{ color: 'white', fontSize: '14px', marginTop: '12px', fontWeight: 600 }}>
+            <p className="text-white text-sm mt-3 font-semibold">
               {previewDoc.title}
             </p>
           </div>
         </div>
       )}
 
-      {/* === MATERIAIS COMPRADOS (movido da aba Orçamentos) === */}
+      {/* === MATERIAIS COMPRADOS (movido da aba Orcamentos) === */}
       <MaterialsPanel currentUser={currentUser as UserID} projectId={projectId} />
     </div>
   )
@@ -1010,80 +864,55 @@ function TaskCard({ task, onStatusChange, updating, viewMode }: {
 
   return (
     <div
-      style={{
-        padding: '12px 14px',
-        borderRadius: '10px',
-        marginBottom: '6px',
-        background: updating ? '#F9FAFB' : 'white',
-        border: '1px solid #F3F4F6',
-        transition: 'all 0.2s',
-        opacity: updating ? 0.6 : 1,
-      }}
+      className={`py-3 px-3.5 rounded-[10px] mb-1.5 border border-[#F3F4F6] transition-all duration-200 ${
+        updating ? 'bg-[#F9FAFB] opacity-60' : 'bg-white opacity-100'
+      }`}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937', margin: '0 0 6px', lineHeight: 1.3 }}>
+      <div className="flex justify-between items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-[#1F2937] mt-0 mb-1.5 leading-tight">
             {task.title}
           </p>
           {task.description && (
-            <p style={{ fontSize: '12px', color: '#6B7280', margin: '0 0 8px', lineHeight: 1.4 }}>
+            <p className="text-xs text-[#6B7280] mt-0 mb-2 leading-snug">
               {task.description}
             </p>
           )}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+          <div className="flex flex-wrap gap-1.5 items-center">
             {/* Assignee badge */}
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '2px 8px',
-              borderRadius: '6px',
-              fontSize: '11px',
-              fontWeight: 600,
-              background: assignee?.color ? `${assignee.color}15` : '#F3F4F6',
-              color: assignee?.color || '#6B7280',
-            }}>
+            <span
+              className="inline-flex items-center gap-1 py-0.5 px-2 rounded-md text-[11px] font-semibold"
+              style={{
+                background: assignee?.color ? `${assignee.color}15` : '#F3F4F6',
+                color: assignee?.color || '#6B7280',
+              }}
+            >
               {assignee?.emoji || '👤'} {task.assigned_to}
             </span>
 
             {/* Priority badge */}
             {priority && (
-              <span style={{
-                padding: '2px 8px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                fontWeight: 600,
-                background: priority.bg,
-                color: priority.color,
-              }}>
+              <span
+                className="py-0.5 px-2 rounded-md text-[11px] font-semibold"
+                style={{ background: priority.bg, color: priority.color }}
+              >
                 {priority.label}
               </span>
             )}
 
             {/* Phase badge (show when not grouping by fase) */}
             {viewMode !== 'fase' && (
-              <span style={{
-                padding: '2px 8px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                fontWeight: 500,
-                background: '#F3F4F6',
-                color: '#6B7280',
-              }}>
+              <span className="py-0.5 px-2 rounded-md text-[11px] font-medium bg-[#F3F4F6] text-[#6B7280]">
                 {task.phase.replace(' — ', ' · ')}
               </span>
             )}
 
             {/* Status badge (show when not grouping by status) */}
             {viewMode !== 'status' && statusConf && (
-              <span style={{
-                padding: '2px 8px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                fontWeight: 600,
-                background: statusConf.bg,
-                color: statusConf.color,
-              }}>
+              <span
+                className="py-0.5 px-2 rounded-md text-[11px] font-semibold"
+                style={{ background: statusConf.bg, color: statusConf.color }}
+              >
                 {statusConf.label}
               </span>
             )}
@@ -1093,14 +922,9 @@ function TaskCard({ task, onStatusChange, updating, viewMode }: {
         {/* Quick action button */}
         <button
           onClick={() => setShowActions(!showActions)}
-          style={{
-            padding: '6px',
-            borderRadius: '8px',
-            border: '1px solid #E5E7EB',
-            background: showActions ? '#F3F4F6' : 'white',
-            cursor: 'pointer',
-            flexShrink: 0,
-          }}
+          className={`p-1.5 rounded-lg border border-[#E5E7EB] cursor-pointer shrink-0 ${
+            showActions ? 'bg-[#F3F4F6]' : 'bg-white'
+          }`}
         >
           <AlertCircle size={16} color="#9CA3AF" />
         </button>
@@ -1108,14 +932,7 @@ function TaskCard({ task, onStatusChange, updating, viewMode }: {
 
       {/* Status change actions */}
       {showActions && (
-        <div style={{
-          marginTop: '10px',
-          paddingTop: '10px',
-          borderTop: '1px solid #F3F4F6',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '6px',
-        }}>
+        <div className="mt-2.5 pt-2.5 border-t border-[#F3F4F6] flex flex-wrap gap-1.5">
           {nextStatuses.map(status => {
             const conf = STATUS_CONFIG[status]
             return (
@@ -1123,18 +940,11 @@ function TaskCard({ task, onStatusChange, updating, viewMode }: {
                 key={status}
                 onClick={() => { onStatusChange(task.id, status); setShowActions(false) }}
                 disabled={updating}
+                className="flex items-center gap-1 py-1.5 px-3 rounded-lg text-xs font-semibold cursor-pointer"
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '6px 12px',
-                  borderRadius: '8px',
                   border: `1px solid ${conf.border}`,
                   background: conf.bg,
                   color: conf.color,
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
                 }}
               >
                 <conf.icon size={14} />

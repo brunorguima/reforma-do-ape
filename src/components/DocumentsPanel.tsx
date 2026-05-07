@@ -337,29 +337,24 @@ export default function DocumentsPanel({
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+      <div className="flex justify-between items-start flex-wrap gap-3 mb-4">
         <div>
-          <h2 style={{ fontSize: '22px', fontWeight: 800, margin: 0, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h2 className="text-[22px] font-extrabold m-0 text-[#111827] flex items-center gap-2">
             📁 Hub de Documentos
           </h2>
-          <p style={{ fontSize: '13px', color: '#6b7280', margin: '4px 0 0' }}>
+          <p className="text-[13px] text-on-surface-variant mt-1 mb-0">
             Tudo num lugar só: memoriais, orçamentos, NFs, contratos, fotos e plantas
           </p>
         </div>
         <button
           onClick={() => setUploadOpen(true)}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px',
-            borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 700,
-            background: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)', color: 'white',
-            boxShadow: '0 2px 6px rgba(124, 58, 237, 0.25)',
-          }}>
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-[10px] border-none cursor-pointer text-[13px] font-bold bg-gradient-to-br from-[#7c3aed] to-[#2563eb] text-white shadow-[0_2px_6px_rgba(124,58,237,0.25)]">
           <Upload size={14} /> Enviar documento
         </button>
       </div>
 
       {/* KPI tiles */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px', marginBottom: '16px' }}>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2 mb-4">
         <KpiTile label="Total" value={docs.length} color="#111827" />
         {DOC_TYPES.filter(t => (typeCounts[t.key] || 0) > 0).map(t => (
           <KpiTile key={t.key} label={`${t.emoji} ${t.label}`} value={typeCounts[t.key] || 0} color={t.color} />
@@ -369,37 +364,33 @@ export default function DocumentsPanel({
       </div>
 
       {/* Search + quick filters */}
-      <div style={{ background: 'white', borderRadius: '14px', padding: '14px', border: '1px solid #e5e7eb', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
-          <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
-            <Search size={16} color="#9ca3af" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+      <div className="bg-surface-lowest rounded-[14px] p-3.5 border border-outline-variant mb-4">
+        <div className="flex gap-2 items-center flex-wrap mb-2.5">
+          <div className="flex-1 min-w-[220px] relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
             <input
               placeholder="Buscar por título, descrição, arquivo ou tag..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px 10px 38px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '14px', boxSizing: 'border-box' }}
+              className="w-full py-2.5 pr-3 pl-[38px] rounded-[10px] border border-outline-variant text-sm box-border"
             />
           </div>
           <button
             onClick={() => setShowAdvanced(v => !v)}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 14px', borderRadius: '10px',
-              border: '1px solid #e5e7eb', background: showAdvanced ? '#eff6ff' : 'white', color: '#2563eb',
-              cursor: 'pointer', fontSize: '13px', fontWeight: 600,
-            }}>
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-[10px] border border-outline-variant ${showAdvanced ? 'bg-[#eff6ff]' : 'bg-surface-lowest'} text-secondary cursor-pointer text-[13px] font-semibold`}>
             <FilterIcon size={14} /> Filtros{anyFilterActive ? ' ✓' : ''}
           </button>
           {anyFilterActive && (
             <button
               onClick={clearFilters}
-              style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+              className="px-3 py-2.5 rounded-[10px] border border-[#fca5a5] bg-danger-light text-danger cursor-pointer text-xs font-semibold">
               Limpar
             </button>
           )}
         </div>
 
         {/* Type chips */}
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        <div className="flex gap-1.5 flex-wrap">
           <TypeChip label="Todos" active={!typeFilter} onClick={() => setTypeFilter('')} color="#374151" />
           {DOC_TYPES.map(t => (
             <TypeChip
@@ -413,7 +404,7 @@ export default function DocumentsPanel({
         </div>
 
         {showAdvanced && (
-          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f3f4f6', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+          <div className="mt-3 pt-3 border-t border-[#f3f4f6] grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-2.5">
             <FilterSelect label="👷 Profissional" value={proFilter} onChange={setProFilter}
               options={[{ value: '', label: 'Todos' }, { value: '__none__', label: '⚠️ Sem profissional' }, ...pros.map(p => ({ value: p.id, label: p.name }))]} />
             <FilterSelect label="🏠 Cômodo" value={roomFilter} onChange={setRoomFilter}
@@ -421,12 +412,12 @@ export default function DocumentsPanel({
             <FilterSelect label="🏷️ Tag" value={tagFilter} onChange={setTagFilter}
               options={[{ value: '', label: 'Todas' }, ...allTags.map(t => ({ value: t, label: t }))]} />
             <div>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: '4px' }}>📅 Período</label>
-              <div style={{ display: 'flex', gap: '6px' }}>
+              <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">📅 Período</label>
+              <div className="flex gap-1.5">
                 <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-                  style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '12px', boxSizing: 'border-box' }} />
+                  className="flex-1 p-2 rounded-sm border border-outline-variant text-xs box-border" />
                 <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-                  style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '12px', boxSizing: 'border-box' }} />
+                  className="flex-1 p-2 rounded-sm border border-outline-variant text-xs box-border" />
               </div>
             </div>
           </div>
@@ -435,30 +426,25 @@ export default function DocumentsPanel({
 
       {/* Bulk bar */}
       {selected.size > 0 && (
-        <div style={{
-          position: 'sticky', top: '8px', zIndex: 20, marginBottom: '12px',
-          background: '#1f2937', borderRadius: '12px', padding: '12px 14px', color: 'white',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap',
-          boxShadow: '0 8px 20px rgba(31,41,55,0.35)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 600 }}>
+        <div className="sticky top-2 z-20 mb-3 bg-[#1f2937] rounded-md px-3.5 py-3 text-white flex justify-between items-center gap-3 flex-wrap shadow-[0_8px_20px_rgba(31,41,55,0.35)]">
+          <div className="flex items-center gap-2.5 text-[13px] font-semibold">
             <Layers size={16} /> {selected.size} selecionado{selected.size !== 1 ? 's' : ''}
           </div>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          <div className="flex gap-1.5 flex-wrap">
             <button onClick={() => { setBulkMode('tag'); setBulkValue('') }}
-              style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#374151', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              className="px-3 py-1.5 rounded-sm border-none bg-[#374151] text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1">
               <TagIcon size={12} /> Adicionar tag
             </button>
             <button onClick={() => { setBulkMode('move'); setBulkValue('') }}
-              style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#374151', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              className="px-3 py-1.5 rounded-sm border-none bg-[#374151] text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1">
               <UserIcon size={12} /> Vincular profissional
             </button>
             <button onClick={runBulkDelete}
-              style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#dc2626', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              className="px-3 py-1.5 rounded-sm border-none bg-danger text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1">
               <Trash2 size={12} /> Excluir
             </button>
             <button onClick={() => setSelected(new Set())}
-              style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#4b5563', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+              className="px-3 py-1.5 rounded-sm border-none bg-[#4b5563] text-white text-xs font-semibold cursor-pointer">
               Limpar
             </button>
           </div>
@@ -469,7 +455,7 @@ export default function DocumentsPanel({
       {bulkMode && (
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setBulkMode(null); setBulkValue('') } }}>
           <div className="modal-content">
-            <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '12px' }}>
+            <h3 className="text-base font-bold mb-3">
               {bulkMode === 'tag' ? `Adicionar tag a ${selected.size} documento(s)` : `Vincular profissional a ${selected.size} documento(s)`}
             </h3>
             {bulkMode === 'tag' ? (
@@ -479,30 +465,26 @@ export default function DocumentsPanel({
                 value={bulkValue}
                 onChange={e => setBulkValue(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && bulkValue.trim()) runBulkTag() }}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '14px', boxSizing: 'border-box' }}
+                className="w-full py-2.5 px-3 rounded-[10px] border border-outline-variant text-sm box-border"
               />
             ) : (
               <select
                 value={bulkValue}
                 onChange={e => setBulkValue(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '14px', boxSizing: 'border-box' }}>
+                className="w-full py-2.5 px-3 rounded-[10px] border border-outline-variant text-sm box-border">
                 <option value="">— Nenhum (remover vínculo) —</option>
                 {pros.map(p => <option key={p.id} value={p.id}>{p.name}{p.specialty ? ` (${p.specialty})` : ''}</option>)}
               </select>
             )}
-            <div style={{ display: 'flex', gap: '8px', marginTop: '14px', justifyContent: 'flex-end' }}>
+            <div className="flex gap-2 mt-3.5 justify-end">
               <button onClick={() => { setBulkMode(null); setBulkValue('') }}
-                style={{ padding: '9px 18px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '13px' }}>
+                className="px-[18px] py-[9px] border border-outline-variant rounded-[10px] bg-surface-lowest cursor-pointer font-semibold text-[13px]">
                 Cancelar
               </button>
               <button
                 onClick={bulkMode === 'tag' ? runBulkTag : runBulkMovePro}
                 disabled={bulkMode === 'tag' && !bulkValue.trim()}
-                style={{
-                  padding: '9px 18px', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '13px',
-                  background: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)', color: 'white',
-                  opacity: (bulkMode === 'tag' && !bulkValue.trim()) ? 0.5 : 1,
-                }}>
+                className={`px-[18px] py-[9px] border-none rounded-[10px] cursor-pointer font-bold text-[13px] bg-gradient-to-br from-[#7c3aed] to-[#2563eb] text-white ${(bulkMode === 'tag' && !bulkValue.trim()) ? 'opacity-50' : 'opacity-100'}`}>
                 Aplicar
               </button>
             </div>
@@ -511,14 +493,14 @@ export default function DocumentsPanel({
       )}
 
       {/* Summary bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px', padding: '0 4px' }}>
-        <div style={{ fontSize: '12px', color: '#6b7280' }}>
+      <div className="flex justify-between items-center mb-2.5 flex-wrap gap-2 px-1">
+        <div className="text-xs text-on-surface-variant">
           {totalFiltered} documento{totalFiltered !== 1 ? 's' : ''}{anyFilterActive ? ` · filtrado de ${docs.length}` : ''}
           {totalSize > 0 && ` · ${fmtFileSize(totalSize)}`}
         </div>
         {filteredDocs.length > 0 && (
           <button onClick={selectAllFiltered}
-            style={{ fontSize: '12px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+            className="text-xs text-secondary bg-transparent border-none cursor-pointer font-semibold">
             {filteredDocs.every(d => selected.has(d.id)) && filteredDocs.length > 0 ? 'Desmarcar tudo' : 'Selecionar todos'}
           </button>
         )}
@@ -526,29 +508,29 @@ export default function DocumentsPanel({
 
       {/* Error */}
       {error && (
-        <div style={{ padding: '12px 14px', borderRadius: '10px', background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: '13px', marginBottom: '12px' }}>
+        <div className="px-3.5 py-3 rounded-[10px] bg-danger-light border border-[#fecaca] text-danger text-[13px] mb-3">
           {error}
         </div>
       )}
 
       {/* List */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
-          <Loader2 size={28} className="animate-spin" style={{ margin: '0 auto 8px', display: 'block' }} />
+        <div className="text-center p-10 text-on-surface-variant">
+          <Loader2 size={28} className="animate-spin mx-auto mb-2 block" />
           Carregando documentos...
         </div>
       ) : filteredDocs.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', background: '#f9fafb', borderRadius: '14px', border: '1px dashed #e5e7eb' }}>
-          <FileText size={36} color="#9ca3af" style={{ margin: '0 auto 12px', display: 'block' }} />
-          <p style={{ fontSize: '15px', fontWeight: 700, color: '#374151', margin: '0 0 4px' }}>
+        <div className="text-center py-[60px] px-5 bg-[#f9fafb] rounded-[14px] border border-dashed border-outline-variant">
+          <FileText size={36} className="text-[#9ca3af] mx-auto mb-3 block" />
+          <p className="text-[15px] font-bold text-[#374151] mb-1 mt-0">
             {anyFilterActive ? 'Nenhum documento bate com esses filtros' : 'Nenhum documento ainda'}
           </p>
-          <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
+          <p className="text-[13px] text-on-surface-variant m-0">
             {anyFilterActive ? 'Tenta limpar os filtros ou ajustar a busca.' : 'Clica em "Enviar documento" pra subir o primeiro.'}
           </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: '10px' }}>
+        <div className="grid gap-2.5">
           {filteredDocs.map(d => {
             const meta = docTypeMeta(d.doc_type)
             const pro = d.professional_id ? proById[d.professional_id] : null
@@ -562,47 +544,48 @@ export default function DocumentsPanel({
               : 0
 
             return (
-              <div key={d.id} style={{
-                background: 'white', borderRadius: '14px', border: `1px solid ${isSelected ? meta.color : '#e5e7eb'}`,
-                padding: '14px', boxShadow: isSelected ? `0 0 0 2px ${meta.color}22` : 'none',
-                transition: 'all 0.15s',
-              }}>
+              <div key={d.id}
+                className="bg-surface-lowest rounded-[14px] p-3.5 transition-all duration-150"
+                style={{
+                  border: `1px solid ${isSelected ? meta.color : '#e5e7eb'}`,
+                  boxShadow: isSelected ? `0 0 0 2px ${meta.color}22` : 'none',
+                }}>
                 {isEditing ? (
                   // --- Edit form ---
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#6b7280', fontWeight: 600 }}>
+                  <div className="flex flex-col gap-2.5">
+                    <div className="flex items-center gap-2 text-xs text-on-surface-variant font-semibold">
                       <Edit3 size={14} /> Editando documento
                     </div>
                     <input
                       value={editForm.title || ''}
                       onChange={e => setEditForm({ ...editForm, title: e.target.value })}
                       placeholder="Título"
-                      style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '14px', fontWeight: 600 }}
+                      className="py-2.5 px-3 rounded-[10px] border border-outline-variant text-sm font-semibold"
                     />
                     <textarea
                       value={editForm.description || ''}
                       onChange={e => setEditForm({ ...editForm, description: e.target.value })}
                       placeholder="Descrição"
                       rows={2}
-                      style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '13px', resize: 'vertical', fontFamily: 'inherit' }}
+                      className="py-2.5 px-3 rounded-[10px] border border-outline-variant text-[13px] resize-y font-[inherit]"
                     />
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px' }}>
+                    <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-2">
                       <select value={editForm.doc_type || 'outro'} onChange={e => setEditForm({ ...editForm, doc_type: e.target.value })}
-                        style={{ padding: '9px 10px', borderRadius: '9px', border: '1px solid #e5e7eb', fontSize: '13px' }}>
+                        className="py-[9px] px-2.5 rounded-[9px] border border-outline-variant text-[13px]">
                         {DOC_TYPES.map(t => <option key={t.key} value={t.key}>{t.emoji} {t.label}</option>)}
                       </select>
                       <select value={editForm.professional_id || ''} onChange={e => setEditForm({ ...editForm, professional_id: e.target.value || null })}
-                        style={{ padding: '9px 10px', borderRadius: '9px', border: '1px solid #e5e7eb', fontSize: '13px' }}>
+                        className="py-[9px] px-2.5 rounded-[9px] border border-outline-variant text-[13px]">
                         <option value="">— Sem profissional —</option>
                         {pros.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                       <select value={editForm.room_id || ''} onChange={e => setEditForm({ ...editForm, room_id: e.target.value || null })}
-                        style={{ padding: '9px 10px', borderRadius: '9px', border: '1px solid #e5e7eb', fontSize: '13px' }}>
+                        className="py-[9px] px-2.5 rounded-[9px] border border-outline-variant text-[13px]">
                         <option value="">— Todos os cômodos —</option>
                         {rooms.map(r => <option key={r.id} value={r.id}>{r.icon || '📍'} {r.name}</option>)}
                       </select>
                       <select value={editForm.quote_id || ''} onChange={e => setEditForm({ ...editForm, quote_id: e.target.value || null })}
-                        style={{ padding: '9px 10px', borderRadius: '9px', border: '1px solid #e5e7eb', fontSize: '13px' }}>
+                        className="py-[9px] px-2.5 rounded-[9px] border border-outline-variant text-[13px]">
                         <option value="">— Sem orçamento —</option>
                         {quotes.map(q => {
                           const proName = q.professional_id ? proById[q.professional_id]?.name : ''
@@ -614,44 +597,47 @@ export default function DocumentsPanel({
                       value={(editForm.tags || []).join(', ')}
                       onChange={e => setEditForm({ ...editForm, tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })}
                       placeholder="Tags (separadas por vírgula)"
-                      style={{ padding: '9px 12px', borderRadius: '9px', border: '1px solid #e5e7eb', fontSize: '13px' }}
+                      className="py-[9px] px-3 rounded-[9px] border border-outline-variant text-[13px]"
                     />
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <div className="flex gap-2 justify-end">
                       <button onClick={cancelEdit}
-                        style={{ padding: '8px 16px', borderRadius: '9px', border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
-                        <X size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} /> Cancelar
+                        className="px-4 py-2 rounded-[9px] border border-outline-variant bg-surface-lowest cursor-pointer text-[13px] font-semibold">
+                        <X size={13} className="inline mr-1 align-middle" /> Cancelar
                       </button>
                       <button onClick={saveEdit} disabled={savingEdit}
-                        style={{ padding: '8px 16px', borderRadius: '9px', border: 'none', background: '#10b981', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 700, opacity: savingEdit ? 0.6 : 1 }}>
-                        <Check size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+                        className={`px-4 py-2 rounded-[9px] border-none bg-success text-white cursor-pointer text-[13px] font-bold ${savingEdit ? 'opacity-60' : 'opacity-100'}`}>
+                        <Check size={13} className="inline mr-1 align-middle" />
                         {savingEdit ? 'Salvando...' : 'Salvar'}
                       </button>
                     </div>
                   </div>
                 ) : (
                   // --- Display ---
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                  <div className="flex gap-3 items-start">
                     <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(d.id)}
-                      style={{ marginTop: '4px', width: '16px', height: '16px', accentColor: meta.color, cursor: 'pointer', flexShrink: 0 }} />
+                      className="mt-1 w-4 h-4 cursor-pointer shrink-0"
+                      style={{ accentColor: meta.color }} />
 
-                    <div style={{ fontSize: '28px', flexShrink: 0, lineHeight: 1 }}>{meta.emoji}</div>
+                    <div className="text-[28px] shrink-0 leading-none">{meta.emoji}</div>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#111827' }}>{d.title}</h4>
-                        <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: `${meta.color}15`, color: meta.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h4 className="m-0 text-sm font-bold text-[#111827]">{d.title}</h4>
+                        <span
+                          className="text-[10px] px-2 py-0.5 rounded-[10px] font-bold uppercase tracking-[0.3px]"
+                          style={{ background: `${meta.color}15`, color: meta.color }}>
                           {meta.label}
                         </span>
                       </div>
                       {d.description && (
-                        <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 6px' }}>{d.description}</p>
+                        <p className="text-xs text-on-surface-variant mt-0 mb-1.5">{d.description}</p>
                       )}
                       {parsedTotal != null && (
-                        <p style={{ fontSize: '12px', color: '#059669', margin: '0 0 6px', fontWeight: 700 }}>
+                        <p className="text-xs text-success mt-0 mb-1.5 font-bold">
                           💰 {fmtMoney(parsedTotal)}{parsedItens > 0 ? ` · ${parsedItens} iten${parsedItens !== 1 ? 's' : ''}` : ''}
                         </p>
                       )}
-                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                      <div className="flex gap-1 flex-wrap mb-1.5">
                         {pro && (
                           <Badge color="#2563eb" icon={<UserIcon size={10} />} label={pro.name} />
                         )}
@@ -665,30 +651,27 @@ export default function DocumentsPanel({
                           <Badge key={t} color="#6b7280" icon={<TagIcon size={10} />} label={t} />
                         ))}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#9ca3af' }}>
+                      <div className="text-[11px] text-[#9ca3af]">
                         {d.file_size ? `${fmtFileSize(d.file_size)} · ` : ''}
                         {d.created_by || '—'} · {new Date(d.created_at).toLocaleDateString('pt-BR')}
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0, flexDirection: 'column' }}>
+                    <div className="flex gap-1.5 shrink-0 flex-col">
                       {d.url && (
                         <a href={d.url} target="_blank" rel="noopener noreferrer"
-                          style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '4px',
-                            padding: '6px 10px', borderRadius: '8px', background: meta.color, color: 'white',
-                            textDecoration: 'none', fontSize: '11px', fontWeight: 700,
-                          }}>
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-white no-underline text-[11px] font-bold"
+                          style={{ background: meta.color }}>
                           <ExternalLink size={11} /> Abrir
                         </a>
                       )}
                       <button onClick={() => openEdit(d)}
-                        style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #e5e7eb', background: 'white', color: '#374151', cursor: 'pointer', fontSize: '11px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        className="px-2.5 py-1.5 rounded-sm border border-outline-variant bg-surface-lowest text-[#374151] cursor-pointer text-[11px] font-semibold inline-flex items-center gap-1">
                         <Edit3 size={11} /> Editar
                       </button>
                       {(currentUser !== 'mari' || d.created_by === 'mari') && (
                         <button onClick={() => deleteDoc(d.id)}
-                          style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontSize: '11px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          className="px-2.5 py-1.5 rounded-sm border border-[#fecaca] bg-danger-light text-danger cursor-pointer text-[11px] font-semibold inline-flex items-center gap-1">
                           <Trash2 size={11} /> Excluir
                         </button>
                       )}
@@ -704,38 +687,38 @@ export default function DocumentsPanel({
       {/* Upload modal */}
       {uploadOpen && (
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget && !uploading) setUploadOpen(false) }}>
-          <div className="modal-content" style={{ maxWidth: '560px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>📁 Enviar documento</h3>
-            <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 16px' }}>
+          <div className="modal-content max-w-[560px]">
+            <h3 className="text-lg font-bold mb-1">📁 Enviar documento</h3>
+            <p className="text-xs text-on-surface-variant mt-0 mb-4">
               Vincule o documento a um profissional, cômodo ou deixe no hub central.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="flex flex-col gap-2.5">
               <input
                 placeholder="Título do documento *"
                 value={uploadForm.title}
                 onChange={e => setUploadForm({ ...uploadForm, title: e.target.value })}
                 autoFocus
-                style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '14px', boxSizing: 'border-box' }}
+                className="py-2.5 px-3 rounded-[10px] border border-outline-variant text-sm box-border"
               />
               <textarea
                 placeholder="Descrição (opcional)"
                 value={uploadForm.description}
                 onChange={e => setUploadForm({ ...uploadForm, description: e.target.value })}
                 rows={2}
-                style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '13px', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+                className="py-2.5 px-3 rounded-[10px] border border-outline-variant text-[13px] font-[inherit] resize-y box-border"
               />
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px' }}>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2">
                 <select value={uploadForm.doc_type} onChange={e => setUploadForm({ ...uploadForm, doc_type: e.target.value as DocTypeKey })}
-                  style={{ padding: '10px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '13px', boxSizing: 'border-box' }}>
+                  className="p-2.5 rounded-[10px] border border-outline-variant text-[13px] box-border">
                   {DOC_TYPES.map(t => <option key={t.key} value={t.key}>{t.emoji} {t.label}</option>)}
                 </select>
                 <select value={uploadForm.professional_id} onChange={e => setUploadForm({ ...uploadForm, professional_id: e.target.value })}
-                  style={{ padding: '10px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '13px', boxSizing: 'border-box' }}>
+                  className="p-2.5 rounded-[10px] border border-outline-variant text-[13px] box-border">
                   <option value="">— Sem profissional —</option>
                   {pros.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
                 <select value={uploadForm.room_id} onChange={e => setUploadForm({ ...uploadForm, room_id: e.target.value })}
-                  style={{ padding: '10px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '13px', boxSizing: 'border-box' }}>
+                  className="p-2.5 rounded-[10px] border border-outline-variant text-[13px] box-border">
                   <option value="">— Todos os cômodos —</option>
                   {rooms.map(r => <option key={r.id} value={r.id}>{r.icon || '📍'} {r.name}</option>)}
                 </select>
@@ -744,42 +727,32 @@ export default function DocumentsPanel({
                 placeholder="Tags (separadas por vírgula, ex: elétrica, urgente)"
                 value={uploadForm.tagsInput}
                 onChange={e => setUploadForm({ ...uploadForm, tagsInput: e.target.value })}
-                style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '13px', boxSizing: 'border-box' }}
+                className="py-2.5 px-3 rounded-[10px] border border-outline-variant text-[13px] box-border"
               />
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: '10px', padding: '14px',
-                border: '2px dashed #d1d5db', borderRadius: '12px', cursor: 'pointer',
-                background: uploadForm.file ? '#f0fdf4' : '#fafafa',
-                borderColor: uploadForm.file ? '#10b981' : '#d1d5db',
-              }}>
-                <Upload size={20} color={uploadForm.file ? '#10b981' : '#6b7280'} />
-                <span style={{ fontSize: '13px', color: uploadForm.file ? '#065f46' : '#6b7280', fontWeight: 600, flex: 1 }}>
+              <label className={`flex items-center gap-2.5 p-3.5 border-2 border-dashed rounded-md cursor-pointer ${uploadForm.file ? 'bg-[#f0fdf4] border-success' : 'bg-[#fafafa] border-[#d1d5db]'}`}>
+                <Upload size={20} className={uploadForm.file ? 'text-success' : 'text-on-surface-variant'} />
+                <span className={`text-[13px] font-semibold flex-1 ${uploadForm.file ? 'text-[#065f46]' : 'text-on-surface-variant'}`}>
                   {uploadForm.file ? uploadForm.file.name : 'Selecionar arquivo (PDF, imagem, doc...)'}
                 </span>
                 <input
                   type="file"
                   accept=".pdf,application/pdf,image/*,.doc,.docx,.xls,.xlsx"
                   onChange={e => setUploadForm({ ...uploadForm, file: e.target.files?.[0] || null })}
-                  style={{ display: 'none' }}
+                  className="hidden"
                 />
               </label>
             </div>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '18px', justifyContent: 'flex-end' }}>
+            <div className="flex gap-2 mt-[18px] justify-end">
               <button
                 onClick={() => setUploadOpen(false)}
                 disabled={uploading}
-                style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>
+                className="px-5 py-2.5 border border-outline-variant rounded-[10px] bg-surface-lowest cursor-pointer font-semibold text-sm">
                 Cancelar
               </button>
               <button
                 onClick={handleUpload}
                 disabled={!uploadForm.title.trim() || !uploadForm.file || uploading}
-                style={{
-                  padding: '10px 24px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                  fontWeight: 700, fontSize: '14px', color: 'white',
-                  background: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)',
-                  opacity: (!uploadForm.title.trim() || !uploadForm.file || uploading) ? 0.5 : 1,
-                }}>
+                className={`px-6 py-2.5 rounded-[10px] border-none cursor-pointer font-bold text-sm text-white bg-gradient-to-br from-[#7c3aed] to-[#2563eb] ${(!uploadForm.title.trim() || !uploadForm.file || uploading) ? 'opacity-50' : 'opacity-100'}`}>
                 {uploading ? 'Enviando...' : 'Enviar documento'}
               </button>
             </div>
@@ -796,12 +769,9 @@ export default function DocumentsPanel({
 
 function KpiTile({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div style={{
-      background: 'white', borderRadius: '12px', padding: '12px 14px', border: '1px solid #e5e7eb',
-      display: 'flex', flexDirection: 'column', gap: '2px',
-    }}>
-      <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: 600 }}>{label}</span>
-      <span style={{ fontSize: '22px', fontWeight: 800, color, lineHeight: 1 }}>{value}</span>
+    <div className="bg-surface-lowest rounded-md px-3.5 py-3 border border-outline-variant flex flex-col gap-0.5">
+      <span className="text-[11px] text-on-surface-variant font-semibold">{label}</span>
+      <span className="text-[22px] font-extrabold leading-none" style={{ color }}>{value}</span>
     </div>
   )
 }
@@ -810,10 +780,11 @@ function TypeChip({ label, active, onClick, color }: { label: string; active: bo
   return (
     <button
       onClick={onClick}
+      className="px-3 py-1.5 rounded-[18px] text-xs font-bold cursor-pointer whitespace-nowrap"
       style={{
-        padding: '6px 12px', borderRadius: '18px', border: `1.5px solid ${active ? color : '#e5e7eb'}`,
-        background: active ? `${color}15` : 'white', color: active ? color : '#6b7280',
-        fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+        border: `1.5px solid ${active ? color : '#e5e7eb'}`,
+        background: active ? `${color}15` : 'white',
+        color: active ? color : '#6b7280',
       }}>
       {label}
     </button>
@@ -828,9 +799,9 @@ function FilterSelect({ label, value, onChange, options }: {
 }) {
   return (
     <div>
-      <label style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: '4px' }}>{label}</label>
+      <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">{label}</label>
       <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ width: '100%', padding: '9px 10px', borderRadius: '9px', border: '1px solid #e5e7eb', fontSize: '13px', boxSizing: 'border-box', background: 'white' }}>
+        className="w-full py-[9px] px-2.5 rounded-[9px] border border-outline-variant text-[13px] box-border bg-surface-lowest">
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </div>
@@ -839,11 +810,9 @@ function FilterSelect({ label, value, onChange, options }: {
 
 function Badge({ color, icon, label }: { color: string; icon: React.ReactNode; label: string }) {
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: '3px',
-      padding: '3px 8px', borderRadius: '8px',
-      background: `${color}15`, color, fontSize: '10px', fontWeight: 700, whiteSpace: 'nowrap',
-    }}>
+    <span
+      className="inline-flex items-center gap-[3px] px-2 py-[3px] rounded-sm text-[10px] font-bold whitespace-nowrap"
+      style={{ background: `${color}15`, color }}>
       {icon} {label}
     </span>
   )

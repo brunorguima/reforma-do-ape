@@ -97,42 +97,29 @@ export default function PromotionSearch({ itemId, itemName, suggestions, onRefre
   const usedLinks = searchLinks.filter(l => l.isUsed)
 
   return (
-    <div style={{ marginTop: '16px', padding: '16px', background: '#fefce8', borderRadius: '12px', border: '1px solid #fde68a' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-        <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#92400e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+    <div className="mt-4 p-4 bg-[#fefce8] rounded-md border border-[#fde68a]">
+      <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
+        <h4 className="text-sm font-bold text-[#92400e] flex items-center gap-1.5">
           <TrendingDown size={16} /> Precos e Promocoes
         </h4>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        <div className="flex gap-1.5 flex-wrap">
           <button
             onClick={handleSearch}
             disabled={searching}
-            style={{
-              fontSize: '12px', padding: '4px 12px', borderRadius: '8px', border: 'none',
-              cursor: searching ? 'not-allowed' : 'pointer',
-              background: '#f59e0b', color: 'white', fontWeight: 600,
-              display: 'flex', alignItems: 'center', gap: '4px', opacity: searching ? 0.7 : 1
-            }}
+            className={`text-xs px-3 py-1 rounded-sm border-none font-semibold flex items-center gap-1 bg-[#f59e0b] text-white ${searching ? 'cursor-not-allowed opacity-70' : 'cursor-pointer opacity-100'}`}
           >
             {searching ? <Loader2 size={12} /> : <Search size={12} />}
             {searching ? 'Buscando...' : 'Buscar precos'}
           </button>
           <button
             onClick={handleGetLinks}
-            style={{
-              fontSize: '12px', padding: '4px 12px', borderRadius: '8px', border: 'none',
-              cursor: 'pointer', background: '#e0e7ff', color: '#4338ca', fontWeight: 600,
-              display: 'flex', alignItems: 'center', gap: '4px'
-            }}
+            className="text-xs px-3 py-1 rounded-sm border-none cursor-pointer bg-[#e0e7ff] text-[#4338ca] font-semibold flex items-center gap-1"
           >
             <Globe size={12} /> Links diretos
           </button>
           <button
             onClick={() => setShowManualAdd(!showManualAdd)}
-            style={{
-              fontSize: '12px', padding: '4px 12px', borderRadius: '8px', border: 'none',
-              cursor: 'pointer', background: '#fde68a', color: '#92400e', fontWeight: 600,
-              display: 'flex', alignItems: 'center', gap: '4px'
-            }}
+            className="text-xs px-3 py-1 rounded-sm border-none cursor-pointer bg-[#fde68a] text-[#92400e] font-semibold flex items-center gap-1"
           >
             <Plus size={12} /> Manual
           </button>
@@ -141,42 +128,38 @@ export default function PromotionSearch({ itemId, itemName, suggestions, onRefre
 
       {/* Search stats */}
       {searchStats && (
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', fontSize: '12px' }}>
-          <span style={{ color: '#059669', fontWeight: 600 }}>
+        <div className="flex gap-3 mb-3 text-xs">
+          <span className="text-success font-semibold">
             {searchStats.found} resultados encontrados
           </span>
-          <span style={{ color: '#2563eb' }}>
-            <ShoppingBag size={11} style={{ display: 'inline', verticalAlign: 'middle' }} /> {searchStats.new_items} novos
+          <span className="text-[#2563eb]">
+            <ShoppingBag size={11} className="inline align-middle" /> {searchStats.new_items} novos
           </span>
-          <span style={{ color: '#9333ea' }}>
-            <Recycle size={11} style={{ display: 'inline', verticalAlign: 'middle' }} /> {searchStats.used_items} usados
+          <span className="text-[#9333ea]">
+            <Recycle size={11} className="inline align-middle" /> {searchStats.used_items} usados
           </span>
         </div>
       )}
 
       {/* Search links for manual browsing */}
       {showSearchLinks && searchLinks.length > 0 && (
-        <div style={{ marginBottom: '12px', padding: '12px', background: 'white', borderRadius: '8px' }}>
-          <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', fontWeight: 600 }}>
+        <div className="mb-3 p-3 bg-white rounded-sm">
+          <p className="text-xs text-[#6b7280] mb-2 font-semibold">
             Buscar manualmente nas lojas:
           </p>
           {newLinks.length > 0 && (
-            <div style={{ marginBottom: '8px' }}>
-              <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+            <div className="mb-2">
+              <span className="text-[11px] text-[#2563eb] font-bold flex items-center gap-1 mb-1">
                 <ShoppingBag size={11} /> NOVOS
               </span>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <div className="flex gap-1.5 flex-wrap">
                 {newLinks.map((link, i) => (
                   <a
                     key={i}
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{
-                      fontSize: '11px', padding: '3px 8px', background: '#eff6ff',
-                      borderRadius: '6px', color: '#2563eb', textDecoration: 'none',
-                      display: 'flex', alignItems: 'center', gap: '3px'
-                    }}
+                    className="text-[11px] px-2 py-[3px] bg-[#eff6ff] rounded-[6px] text-[#2563eb] no-underline flex items-center gap-[3px]"
                   >
                     <ExternalLink size={9} /> {link.store}
                   </a>
@@ -186,21 +169,17 @@ export default function PromotionSearch({ itemId, itemName, suggestions, onRefre
           )}
           {usedLinks.length > 0 && (
             <div>
-              <span style={{ fontSize: '11px', color: '#9333ea', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+              <span className="text-[11px] text-[#9333ea] font-bold flex items-center gap-1 mb-1">
                 <Recycle size={11} /> USADOS / SEMINOVOS
               </span>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <div className="flex gap-1.5 flex-wrap">
                 {usedLinks.map((link, i) => (
                   <a
                     key={i}
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{
-                      fontSize: '11px', padding: '3px 8px', background: '#f5f3ff',
-                      borderRadius: '6px', color: '#7c3aed', textDecoration: 'none',
-                      display: 'flex', alignItems: 'center', gap: '3px'
-                    }}
+                    className="text-[11px] px-2 py-[3px] bg-[#f5f3ff] rounded-[6px] text-[#7c3aed] no-underline flex items-center gap-[3px]"
                   >
                     <ExternalLink size={9} /> {link.store}
                   </a>
@@ -213,14 +192,14 @@ export default function PromotionSearch({ itemId, itemName, suggestions, onRefre
 
       {/* Manual add form */}
       {showManualAdd && (
-        <form onSubmit={handleManualAdd} style={{ marginBottom: '12px', padding: '12px', background: 'white', borderRadius: '8px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+        <form onSubmit={handleManualAdd} className="mb-3 p-3 bg-white rounded-sm">
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <input
               value={manualStore}
               onChange={e => setManualStore(e.target.value)}
               placeholder="Nome da loja (ex: OLX, Enjoei...)"
               required
-              style={{ fontSize: '13px' }}
+              className="text-[13px]"
             />
             <input
               type="number"
@@ -229,7 +208,7 @@ export default function PromotionSearch({ itemId, itemName, suggestions, onRefre
               onChange={e => setManualPrice(e.target.value)}
               placeholder="Preco (R$)"
               required
-              style={{ fontSize: '13px' }}
+              className="text-[13px]"
             />
           </div>
           <input
@@ -237,19 +216,19 @@ export default function PromotionSearch({ itemId, itemName, suggestions, onRefre
             onChange={e => setManualUrl(e.target.value)}
             placeholder="URL do produto ou post do Instagram"
             required
-            style={{ fontSize: '13px', marginBottom: '8px' }}
+            className="text-[13px] mb-2"
           />
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <label style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div className="flex justify-between items-center">
+            <label className="text-xs text-[#6b7280] flex items-center gap-1">
               <input
                 type="checkbox"
                 checked={manualIsPromo}
                 onChange={e => setManualIsPromo(e.target.checked)}
-                style={{ width: 'auto' }}
+                className="w-auto"
               />
               Em promocao
             </label>
-            <button type="submit" style={{ fontSize: '12px', padding: '6px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: '#f59e0b', color: 'white', fontWeight: 600 }}>
+            <button type="submit" className="text-xs px-4 py-1.5 rounded-sm border-none cursor-pointer bg-[#f59e0b] text-white font-semibold">
               Salvar
             </button>
           </div>
@@ -258,43 +237,39 @@ export default function PromotionSearch({ itemId, itemName, suggestions, onRefre
 
       {/* Suggestions list */}
       {sortedSuggestions.length === 0 ? (
-        <p style={{ fontSize: '13px', color: '#92400e', textAlign: 'center', padding: '12px' }}>
+        <p className="text-[13px] text-[#92400e] text-center p-3">
           Nenhum preco cadastrado. Use "Buscar precos" para crawler automatico,
           "Links diretos" para buscar manualmente, ou "Manual" para adicionar um preco.
         </p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div className="flex flex-col gap-1.5">
           {sortedSuggestions.map((s) => {
             const isUsed = s.store_name.includes('usado') || s.store_name.includes('OLX') ||
               s.store_name.includes('Enjoei') || s.store_name.includes('FB ')
             return (
               <div
                 key={s.id}
-                style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '8px 12px', background: 'white', borderRadius: '8px',
-                  border: s.price === bestPrice ? '2px solid #10b981' : '1px solid #e5e7eb'
-                }}
+                className={`flex justify-between items-center px-3 py-2 bg-white rounded-sm ${s.price === bestPrice ? 'border-2 border-[#10b981]' : 'border border-[#e5e7eb]'}`}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {s.price === bestPrice && (
-                    <span style={{ fontSize: '10px', background: '#d1fae5', color: '#059669', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                    <span className="text-[10px] bg-success-light text-success px-1.5 py-0.5 rounded-[4px] font-bold">
                       MELHOR
                     </span>
                   )}
                   {s.is_promotion && <span className="promo-tag">PROMO</span>}
                   {isUsed && (
-                    <span style={{ fontSize: '10px', background: '#f5f3ff', color: '#7c3aed', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                    <span className="text-[10px] bg-[#f5f3ff] text-[#7c3aed] px-1.5 py-0.5 rounded-[4px] font-semibold">
                       USADO
                     </span>
                   )}
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>{s.store_name}</span>
+                  <span className="text-[13px] font-semibold text-[#374151]">{s.store_name}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: s.price === bestPrice ? '#059669' : '#374151' }}>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-bold ${s.price === bestPrice ? 'text-success' : 'text-[#374151]'}`}>
                     {formatCurrency(s.price)}
                   </span>
-                  <a href={s.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-[#2563eb]">
                     <ExternalLink size={14} />
                   </a>
                 </div>

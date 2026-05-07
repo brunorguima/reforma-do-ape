@@ -58,10 +58,10 @@ function ToastNotification({ item, onDismiss }: { item: ToastItem; onDismiss: (i
   }
 
   const colors: Record<ToastType, string> = {
-    success: 'var(--success)',
-    error: 'var(--danger)',
-    warning: 'var(--warning)',
-    info: 'var(--info)',
+    success: 'var(--color-success)',
+    error: 'var(--color-danger)',
+    warning: 'var(--color-warning)',
+    info: 'var(--color-secondary)',
   }
 
   return (

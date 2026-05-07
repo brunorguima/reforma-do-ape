@@ -93,46 +93,37 @@ export default function RoomManager({ rooms, projectId, onRoomsChange, onClose }
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="modal-content" style={{ maxWidth: 480 }}>
+      <div className="modal-content max-w-[480px]">
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Settings size={18} color="var(--accent)" />
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Gerenciar Cômodos</h2>
+        <div className="flex justify-between items-center mb-5">
+          <div className="flex items-center gap-2">
+            <Settings size={18} className="text-secondary" />
+            <h2 className="text-[17px] font-bold text-on-surface m-0">Gerenciar Cômodos</h2>
           </div>
-          <button onClick={onClose} className="btn-ghost" style={{ padding: 6 }}>
+          <button onClick={onClose} className="btn-ghost p-1.5">
             <X size={18} />
           </button>
         </div>
 
         {/* Existing rooms list */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+        <div className="flex flex-col gap-1.5 mb-5">
           {rooms.map((room) => (
             <div
               key={room.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '10px 12px',
-                background: editingId === room.id ? 'var(--accent-light)' : 'var(--bg-subtle)',
-                borderRadius: 'var(--radius-md)',
-                border: editingId === room.id ? '1.5px solid var(--accent)' : '1.5px solid transparent',
-                transition: 'all var(--transition)',
-              }}
+              className={`flex items-center gap-2.5 py-2.5 px-3 rounded-md transition-all ${
+                editingId === room.id
+                  ? 'bg-secondary-container border-[1.5px] border-secondary'
+                  : 'bg-surface-container-low border-[1.5px] border-transparent'
+              }`}
             >
-              <GripVertical size={14} color="var(--text-muted)" style={{ flexShrink: 0, cursor: 'grab' }} />
+              <GripVertical size={14} className="text-on-surface-variant shrink-0 cursor-grab" />
 
               {editingId === room.id ? (
                 <>
                   {/* Icon picker button */}
                   <button
                     onClick={() => setShowIconPicker(showIconPicker === room.id ? null : room.id)}
-                    style={{
-                      fontSize: 22, background: 'white', border: '1.5px solid var(--border)',
-                      borderRadius: 'var(--radius-sm)', padding: '4px 8px', cursor: 'pointer',
-                      flexShrink: 0,
-                    }}
+                    className="text-[22px] bg-surface-lowest border-[1.5px] border-outline-variant rounded-sm px-2 py-1 cursor-pointer shrink-0"
                   >
                     {editIcon}
                   </button>
@@ -141,35 +132,35 @@ export default function RoomManager({ rooms, projectId, onRoomsChange, onClose }
                     onChange={e => setEditName(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit() }}
                     autoFocus
-                    style={{ flex: 1, padding: '6px 10px', fontSize: 14 }}
+                    className="flex-1 py-1.5 px-2.5 text-sm"
                   />
-                  <button onClick={saveEdit} disabled={saving} className="btn-ghost" style={{ color: 'var(--success)', padding: 4 }}>
+                  <button onClick={saveEdit} disabled={saving} className="btn-ghost text-success p-1">
                     <Check size={18} />
                   </button>
-                  <button onClick={cancelEdit} className="btn-ghost" style={{ color: 'var(--text-muted)', padding: 4 }}>
+                  <button onClick={cancelEdit} className="btn-ghost text-on-surface-variant p-1">
                     <X size={18} />
                   </button>
                 </>
               ) : (
                 <>
-                  <span style={{ fontSize: 22, flexShrink: 0 }}>{room.icon}</span>
-                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{room.name}</span>
-                  <button onClick={() => startEdit(room)} className="btn-ghost" style={{ padding: 4 }}>
+                  <span className="text-[22px] shrink-0">{room.icon}</span>
+                  <span className="flex-1 text-sm font-semibold text-on-surface">{room.name}</span>
+                  <button onClick={() => startEdit(room)} className="btn-ghost p-1">
                     <Pencil size={14} />
                   </button>
                   {confirmDelete === room.id ? (
-                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                      <span style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 600 }}>Excluir?</span>
-                      <button onClick={() => deleteRoom(room.id)} disabled={saving} className="btn-ghost" style={{ color: 'var(--danger)', padding: 4 }}>
+                    <div className="flex gap-1 items-center">
+                      <span className="text-[11px] text-danger font-semibold">Excluir?</span>
+                      <button onClick={() => deleteRoom(room.id)} disabled={saving} className="btn-ghost text-danger p-1">
                         <Check size={14} />
                       </button>
-                      <button onClick={() => setConfirmDelete(null)} className="btn-ghost" style={{ padding: 4 }}>
+                      <button onClick={() => setConfirmDelete(null)} className="btn-ghost p-1">
                         <X size={14} />
                       </button>
                     </div>
                   ) : (
-                    <button onClick={() => { setConfirmDelete(room.id); setEditingId(null) }} className="btn-ghost" style={{ padding: 4 }}>
-                      <Trash2 size={14} color="var(--text-muted)" />
+                    <button onClick={() => { setConfirmDelete(room.id); setEditingId(null) }} className="btn-ghost p-1">
+                      <Trash2 size={14} className="text-on-surface-variant" />
                     </button>
                   )}
                 </>
@@ -179,20 +170,16 @@ export default function RoomManager({ rooms, projectId, onRoomsChange, onClose }
 
           {/* Inline icon picker dropdown */}
           {showIconPicker && editingId && (
-            <div style={{
-              display: 'flex', flexWrap: 'wrap', gap: 6, padding: 10,
-              background: 'white', borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)',
-            }}>
+            <div className="flex flex-wrap gap-1.5 p-2.5 bg-surface-lowest rounded-md border border-outline-variant shadow-md">
               {ROOM_ICONS.map(icon => (
                 <button
                   key={icon}
                   onClick={() => { setEditIcon(icon); setShowIconPicker(null) }}
-                  style={{
-                    fontSize: 20, padding: '6px 8px', background: editIcon === icon ? 'var(--accent-light)' : 'transparent',
-                    border: editIcon === icon ? '1.5px solid var(--accent)' : '1.5px solid transparent',
-                    borderRadius: 'var(--radius-sm)', cursor: 'pointer', transition: 'all var(--transition)',
-                  }}
+                  className={`text-xl py-1.5 px-2 rounded-sm cursor-pointer transition-all ${
+                    editIcon === icon
+                      ? 'bg-secondary-container border-[1.5px] border-secondary'
+                      : 'bg-transparent border-[1.5px] border-transparent'
+                  }`}
                 >
                   {icon}
                 </button>
@@ -201,46 +188,33 @@ export default function RoomManager({ rooms, projectId, onRoomsChange, onClose }
           )}
 
           {rooms.length === 0 && (
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: '16px 0' }}>
+            <p className="text-center text-on-surface-variant text-[13px] py-4">
               Nenhum cômodo cadastrado. Adicione o primeiro abaixo.
             </p>
           )}
         </div>
 
         {/* Add new room */}
-        <div style={{
-          display: 'flex', gap: 8, alignItems: 'center',
-          padding: 12, background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)',
-          border: '1.5px dashed var(--border)',
-        }}>
+        <div className="flex gap-2 items-center p-3 bg-surface-container-low rounded-md border-[1.5px] border-dashed border-outline-variant">
           {/* New room icon picker */}
-          <div style={{ position: 'relative' }}>
+          <div className="relative">
             <button
               onClick={() => setShowIconPicker(showIconPicker === 'new' ? null : 'new')}
-              style={{
-                fontSize: 22, background: 'white', border: '1.5px solid var(--border)',
-                borderRadius: 'var(--radius-sm)', padding: '4px 8px', cursor: 'pointer',
-              }}
+              className="text-[22px] bg-surface-lowest border-[1.5px] border-outline-variant rounded-sm px-2 py-1 cursor-pointer"
             >
               {newIcon}
             </button>
             {showIconPicker === 'new' && (
-              <div style={{
-                position: 'absolute', bottom: '100%', left: 0, marginBottom: 6,
-                display: 'flex', flexWrap: 'wrap', gap: 4, padding: 8,
-                background: 'white', borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)',
-                width: 220, zIndex: 10,
-              }}>
+              <div className="absolute bottom-full left-0 mb-1.5 flex flex-wrap gap-1 p-2 bg-surface-lowest rounded-md border border-outline-variant shadow-lg w-[220px] z-10">
                 {ROOM_ICONS.map(icon => (
                   <button
                     key={icon}
                     onClick={() => { setNewIcon(icon); setShowIconPicker(null) }}
-                    style={{
-                      fontSize: 18, padding: '4px 6px', background: newIcon === icon ? 'var(--accent-light)' : 'transparent',
-                      border: newIcon === icon ? '1.5px solid var(--accent)' : '1.5px solid transparent',
-                      borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                    }}
+                    className={`text-lg py-1 px-1.5 rounded-sm cursor-pointer ${
+                      newIcon === icon
+                        ? 'bg-secondary-container border-[1.5px] border-secondary'
+                        : 'bg-transparent border-[1.5px] border-transparent'
+                    }`}
                   >
                     {icon}
                   </button>
@@ -254,13 +228,12 @@ export default function RoomManager({ rooms, projectId, onRoomsChange, onClose }
             onChange={e => setNewName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') addRoom() }}
             placeholder="Nome do novo cômodo..."
-            style={{ flex: 1, padding: '8px 10px', fontSize: 14 }}
+            className="flex-1 py-2 px-2.5 text-sm"
           />
           <button
             onClick={addRoom}
             disabled={saving || !newName.trim()}
-            className="btn-primary"
-            style={{ padding: '8px 14px', opacity: !newName.trim() ? 0.5 : 1 }}
+            className={`btn-primary py-2 px-3.5 ${!newName.trim() ? 'opacity-50' : ''}`}
           >
             <Plus size={16} />
             Adicionar

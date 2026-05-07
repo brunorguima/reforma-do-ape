@@ -29,129 +29,74 @@ export default function WelcomeScreen({ userRole, userId, onDismiss }: WelcomeSc
   if (userRole !== 'designer') return null
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      zIndex: 100,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 30%, #4c1d95 60%, #581c87 100%)',
-      opacity: visible ? 1 : 0,
-      transition: 'opacity 0.5s ease',
-    }}>
+    <div
+      className="fixed inset-0 z-100 flex items-center justify-center bg-[linear-gradient(135deg,#1e1b4b_0%,#312e81_30%,#4c1d95_60%,#581c87_100%)] transition-opacity duration-500 ease-in-out"
+      style={{ opacity: visible ? 1 : 0 }}
+    >
       {/* Decorative circles */}
-      <div style={{
-        position: 'absolute', top: '-100px', right: '-100px',
-        width: '400px', height: '400px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(139,92,246,0.3), transparent)',
-      }} />
-      <div style={{
-        position: 'absolute', bottom: '-80px', left: '-80px',
-        width: '300px', height: '300px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(59,130,246,0.2), transparent)',
-      }} />
+      <div className="absolute -top-[100px] -right-[100px] w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.3),transparent)]" />
+      <div className="absolute -bottom-[80px] -left-[80px] w-[300px] h-[300px] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.2),transparent)]" />
 
-      <div style={{
-        maxWidth: '440px',
-        width: '90%',
-        textAlign: 'center',
-        color: 'white',
-        padding: '40px 32px',
-        position: 'relative',
-      }}>
+      <div className="max-w-[440px] w-[90%] text-center text-white px-8 py-10 relative">
         {/* Logo */}
-        <div style={{
-          width: '72px', height: '72px',
-          borderRadius: '20px',
-          background: 'rgba(255,255,255,0.15)',
-          backdropFilter: 'blur(10px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 32px',
-          opacity: step >= 0 ? 1 : 0,
-          transform: step >= 0 ? 'translateY(0)' : 'translateY(20px)',
-          transition: 'all 0.6s ease',
-        }}>
+        <div
+          className="w-[72px] h-[72px] rounded-xl bg-white/15 backdrop-blur-[10px] flex items-center justify-center mx-auto mb-8 transition-all duration-[600ms] ease-in-out"
+          style={{
+            opacity: step >= 0 ? 1 : 0,
+            transform: step >= 0 ? 'translateY(0)' : 'translateY(20px)',
+          }}
+        >
           <Home size={36} color="white" />
         </div>
 
         {/* Invite text */}
-        <div style={{
-          opacity: step >= 1 ? 1 : 0,
-          transform: step >= 1 ? 'translateY(0)' : 'translateY(20px)',
-          transition: 'all 0.6s ease',
-        }}>
-          <p style={{
-            fontSize: '13px',
-            textTransform: 'uppercase',
-            letterSpacing: '3px',
-            color: 'rgba(196,181,253,0.9)',
-            marginBottom: '12px',
-            fontWeight: 600,
-          }}>
+        <div
+          className="transition-all duration-[600ms] ease-in-out"
+          style={{
+            opacity: step >= 1 ? 1 : 0,
+            transform: step >= 1 ? 'translateY(0)' : 'translateY(20px)',
+          }}
+        >
+          <p className="text-[13px] uppercase tracking-[3px] text-[rgba(196,181,253,0.9)] mb-3 font-semibold">
             Convite exclusivo
           </p>
         </div>
 
-        <div style={{
-          opacity: step >= 2 ? 1 : 0,
-          transform: step >= 2 ? 'translateY(0)' : 'translateY(20px)',
-          transition: 'all 0.6s ease',
-        }}>
-          <h1 style={{
-            fontSize: '28px',
-            fontWeight: 800,
-            lineHeight: 1.3,
-            margin: '0 0 16px',
-          }}>
+        <div
+          className="transition-all duration-[600ms] ease-in-out"
+          style={{
+            opacity: step >= 2 ? 1 : 0,
+            transform: step >= 2 ? 'translateY(0)' : 'translateY(20px)',
+          }}
+        >
+          <h1 className="text-[28px] font-extrabold leading-[1.3] mb-4">
             Bem-vinda ao Diário de Obra
             <br />
-            <span style={{ color: '#c4b5fd' }}>Reforma Ap 62</span>
+            <span className="text-[#c4b5fd]">Reforma Ap 62</span>
           </h1>
 
-          <p style={{
-            fontSize: '15px',
-            color: 'rgba(255,255,255,0.7)',
-            lineHeight: 1.6,
-            margin: '0 0 8px',
-          }}>
+          <p className="text-[15px] text-white/70 leading-[1.6] mb-2">
             Bruno e Graziela te convidaram para
             <br />
             fazer parte dessa jornada!
           </p>
 
-          <p style={{
-            fontSize: '13px',
-            color: 'rgba(255,255,255,0.5)',
-            margin: '0 0 32px',
-            fontStyle: 'italic',
-          }}>
+          <p className="text-[13px] text-white/50 mb-8 italic">
             Baggio Primo - Ap 62
           </p>
         </div>
 
         {/* Features preview */}
-        <div style={{
-          opacity: step >= 3 ? 1 : 0,
-          transform: step >= 3 ? 'translateY(0)' : 'translateY(20px)',
-          transition: 'all 0.6s ease',
-        }}>
-          <div style={{
-            display: 'flex',
-            gap: '12px',
-            justifyContent: 'center',
-            marginBottom: '32px',
-            flexWrap: 'wrap',
-          }}>
+        <div
+          className="transition-all duration-[600ms] ease-in-out"
+          style={{
+            opacity: step >= 3 ? 1 : 0,
+            transform: step >= 3 ? 'translateY(0)' : 'translateY(20px)',
+          }}
+        >
+          <div className="flex gap-3 justify-center mb-8 flex-wrap">
             {['Mobília', 'Orçamentos', 'Cômodos'].map((label) => (
-              <span key={label} style={{
-                padding: '6px 14px',
-                borderRadius: '20px',
-                background: 'rgba(255,255,255,0.1)',
-                fontSize: '12px',
-                color: 'rgba(255,255,255,0.8)',
-                fontWeight: 500,
-              }}>
+              <span key={label} className="px-3.5 py-1.5 rounded-xl bg-white/10 text-xs text-white/80 font-medium">
                 {label}
               </span>
             ))}
@@ -159,27 +104,7 @@ export default function WelcomeScreen({ userRole, userId, onDismiss }: WelcomeSc
 
           <button
             onClick={handleEnter}
-            style={{
-              background: 'white',
-              color: '#4c1d95',
-              border: 'none',
-              padding: '14px 32px',
-              borderRadius: '14px',
-              fontSize: '16px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-            }}
-            onMouseOver={e => {
-              (e.target as HTMLElement).style.transform = 'translateY(-2px)'
-            }}
-            onMouseOut={e => {
-              (e.target as HTMLElement).style.transform = 'translateY(0)'
-            }}
+            className="bg-white text-[#4c1d95] border-none py-3.5 px-8 rounded-[14px] text-base font-bold cursor-pointer inline-flex items-center gap-2 transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:-translate-y-0.5"
           >
             <Sparkles size={18} />
             Entrar no Projeto
@@ -188,13 +113,10 @@ export default function WelcomeScreen({ userRole, userId, onDismiss }: WelcomeSc
         </div>
 
         {/* Footer */}
-        <p style={{
-          marginTop: '40px',
-          fontSize: '11px',
-          color: 'rgba(255,255,255,0.3)',
-          opacity: step >= 3 ? 1 : 0,
-          transition: 'opacity 0.6s ease',
-        }}>
+        <p
+          className="mt-10 text-[11px] text-white/30 transition-opacity duration-[600ms] ease-in-out"
+          style={{ opacity: step >= 3 ? 1 : 0 }}
+        >
           Seu acesso exclusivo como Designer do projeto
         </p>
       </div>

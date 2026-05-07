@@ -19,10 +19,10 @@ export default function ItemCard({ item, onEdit, onDelete, onStatusChange }: Ite
   const hasPromo = item.price_suggestions?.some(p => p.is_promotion)
 
   return (
-    <div className="card" style={{ padding: '20px', position: 'relative' }}>
+    <div className="card p-5 relative">
       {/* Status badge */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <span
             className="status-badge"
             style={{ backgroundColor: statusConfig.bg, color: statusConfig.color }}
@@ -30,45 +30,45 @@ export default function ItemCard({ item, onEdit, onDelete, onStatusChange }: Ite
             {statusConfig.label}
           </span>
           {item.category && (
-            <span style={{ fontSize: '12px', color: '#6b7280' }}>
+            <span className="text-xs text-on-surface-variant">
               {item.category.icon} {item.category.name}
             </span>
           )}
           {hasPromo && <span className="promo-tag">🔥 PROMOÇÃO</span>}
         </div>
-        <div style={{ display: 'flex', gap: '4px' }}>
+        <div className="flex gap-1">
           <button
             onClick={() => onEdit(item)}
-            style={{ padding: '6px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: '#f3f4f6' }}
+            className="p-1.5 rounded-lg border-none cursor-pointer bg-surface-container-low hover:bg-surface-container-high transition-colors"
             title="Editar"
           >
-            <Pencil size={14} color="#6b7280" />
+            <Pencil size={14} className="text-on-surface-variant" />
           </button>
           <button
             onClick={() => onDelete(item.id)}
-            style={{ padding: '6px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: '#fef2f2' }}
+            className="p-1.5 rounded-lg border-none cursor-pointer bg-danger-light hover:bg-danger/10 transition-colors"
             title="Excluir"
           >
-            <Trash2 size={14} color="#ef4444" />
+            <Trash2 size={14} className="text-danger" />
           </button>
         </div>
       </div>
 
       {/* Item name and quantity */}
-      <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#1f2937', marginBottom: '4px' }}>
+      <h3 className="text-lg font-bold text-on-surface mb-1">
         {item.name}
         {item.quantity > 1 && (
-          <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 400 }}> (x{item.quantity})</span>
+          <span className="text-sm text-on-surface-variant font-normal"> (x{item.quantity})</span>
         )}
       </h3>
 
       {item.description && (
-        <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '8px' }}>{item.description}</p>
+        <p className="text-[13px] text-on-surface-variant mb-2">{item.description}</p>
       )}
 
       {/* Images */}
       {item.images && item.images.length > 0 && (
-        <div className="image-grid" style={{ marginBottom: '12px' }}>
+        <div className="image-grid mb-3">
           {item.images.map((img) => (
             <img key={img.id} src={img.url} alt={img.caption || item.name} />
           ))}
@@ -76,14 +76,14 @@ export default function ItemCard({ item, onEdit, onDelete, onStatusChange }: Ite
       )}
 
       {/* Price section */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
         {item.estimated_price && (
           <span className="price-tag">
             {formatCurrency(item.estimated_price * item.quantity)}
           </span>
         )}
         {bestPrice && bestPrice < (item.estimated_price || Infinity) && (
-          <span style={{ fontSize: '12px', color: '#059669', fontWeight: 600 }}>
+          <span className="text-xs text-success font-semibold">
             Melhor: {formatCurrency(bestPrice)}
           </span>
         )}
@@ -91,18 +91,14 @@ export default function ItemCard({ item, onEdit, onDelete, onStatusChange }: Ite
 
       {/* Reference links */}
       {item.reference_links && item.reference_links.length > 0 && (
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+        <div className="flex gap-1.5 flex-wrap mb-2">
           {item.reference_links.map((link, i) => (
             <a
               key={i}
               href={link}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                display: 'flex', alignItems: 'center', gap: '4px',
-                fontSize: '12px', color: '#2563eb', textDecoration: 'none',
-                padding: '2px 8px', background: '#eff6ff', borderRadius: '6px'
-              }}
+              className="flex items-center gap-1 text-xs text-secondary no-underline px-2 py-0.5 bg-secondary-container/20 rounded-md hover:bg-secondary-container/30 transition-colors"
             >
               <ExternalLink size={10} /> Ref {i + 1}
             </a>
@@ -111,18 +107,18 @@ export default function ItemCard({ item, onEdit, onDelete, onStatusChange }: Ite
       )}
 
       {/* Footer: suggested by + status actions */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f3f4f6' }}>
-        <span style={{ fontSize: '11px', color: '#9ca3af' }}>
+      <div className="flex justify-between items-center mt-3 pt-3 border-t border-outline-variant/30">
+        <span className="text-[11px] text-outline">
           Sugerido por{' '}
-          <span style={{ color: suggestedByUser?.color || '#6b7280', fontWeight: 600 }}>
+          <span style={{ color: suggestedByUser?.color || '#6b7280' }} className="font-semibold">
             {suggestedByUser?.name || item.suggested_by}
           </span>
         </span>
-        <div style={{ display: 'flex', gap: '4px' }}>
+        <div className="flex gap-1">
           {item.status !== 'ja_temos' && item.status !== 'aprovado' && (
             <button
               onClick={() => onStatusChange(item.id, 'aprovado')}
-              style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: '#d1fae5', color: '#059669', fontWeight: 600 }}
+              className="text-[11px] px-2.5 py-1 rounded-md border-none cursor-pointer bg-success-light text-success font-semibold hover:bg-success/20 transition-colors"
             >
               ✓ Aprovar
             </button>
@@ -130,9 +126,9 @@ export default function ItemCard({ item, onEdit, onDelete, onStatusChange }: Ite
           {item.status !== 'ja_temos' && item.status !== 'comprado' && (
             <button
               onClick={() => onStatusChange(item.id, 'comprado')}
-              style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: '#dbeafe', color: '#2563eb', fontWeight: 600 }}
+              className="text-[11px] px-2.5 py-1 rounded-md border-none cursor-pointer bg-secondary-container/20 text-secondary font-semibold hover:bg-secondary-container/30 transition-colors"
             >
-              <ShoppingCart size={10} style={{ display: 'inline', marginRight: '2px' }} /> Comprado
+              <ShoppingCart size={10} className="inline mr-0.5" /> Comprado
             </button>
           )}
         </div>

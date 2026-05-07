@@ -705,12 +705,12 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
     return { status: 'Cadastrado', emoji: '👤' }
   }
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '40px' }}><p style={{ color: '#6b7280' }}>Carregando orçamentos...</p></div>
+  if (loading) return <div className="text-center p-10"><p className="text-[#6b7280]">Carregando orçamentos...</p></div>
 
   return (
     <div>
       {/* KPI Cards */}
-      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="kpi-grid grid-cols-4">
         <div className="kpi-card" data-accent="indigo">
           <p className="kpi-label">Orçado</p>
           <p className="kpi-value">{formatCurrency(totalOrcado)}</p>
@@ -731,22 +731,21 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
       </div>
 
       {/* Action Buttons */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      <div className="flex gap-3 mb-5 flex-wrap">
         <button className="btn-primary" onClick={() => setShowAddQuote(!showAddQuote)}>
-          <Plus size={16} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+          <Plus size={16} className="inline mr-1 align-middle" />
           Novo Orçamento
         </button>
         <button
           onClick={() => setShowOcrProSelect(true)}
-          className="btn-primary"
-          style={{ fontSize: '13px' }}
+          className="btn-primary text-[13px]"
           title="Subir PDF de orçamento e extrair itens automaticamente com Gemini OCR"
         >
           📄 Subir Orçamento (OCR)
         </button>
         <button onClick={() => setShowAddProfessional(!showAddProfessional)}
           className="btn-secondary">
-          <User size={16} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+          <User size={16} className="inline mr-1 align-middle" />
           Novo Profissional
         </button>
       </div>
@@ -757,32 +756,32 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
           className="modal-overlay"
           onClick={(e) => { if (e.target === e.currentTarget) setShowOcrProSelect(false) }}
         >
-          <div className="modal-content" style={{ maxWidth: '520px', width: '95%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+          <div className="modal-content max-w-[520px] w-[95%]">
+            <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>📄 Subir Orçamento (OCR)</h3>
-                <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>
+                <h3 className="text-lg font-bold m-0">📄 Subir Orçamento (OCR)</h3>
+                <p className="text-xs text-[#6b7280] mt-1 mb-0">
                   Escolha o profissional pra vincular o PDF. O Gemini vai ler tudo e extrair itens + valores.
                 </p>
               </div>
               <button
                 onClick={() => setShowOcrProSelect(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                className="bg-transparent border-none cursor-pointer p-1"
               >
                 <X size={20} color="#6b7280" />
               </button>
             </div>
             {professionals.length === 0 ? (
-              <div style={{ padding: '24px', textAlign: 'center', background: '#fef3c7', borderRadius: '10px', border: '1px solid #fde68a' }}>
-                <p style={{ fontSize: '14px', color: '#92400e', margin: 0, fontWeight: 600 }}>
+              <div className="p-6 text-center bg-[#fef3c7] rounded-[10px] border border-[#fde68a]">
+                <p className="text-sm text-[#92400e] m-0 font-semibold">
                   Nenhum profissional cadastrado ainda.
                 </p>
-                <p style={{ fontSize: '12px', color: '#b45309', margin: '6px 0 0' }}>
+                <p className="text-xs text-[#b45309] mt-1.5 mb-0">
                   Clique em &ldquo;Novo Profissional&rdquo; primeiro e volte aqui.
                 </p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gap: '8px', maxHeight: '420px', overflowY: 'auto', padding: '4px' }}>
+              <div className="grid gap-2 max-h-[420px] overflow-y-auto p-1">
                 {professionals.map(pro => {
                   const proQuotes = quotes.filter(q => q.professional_id === pro.id)
                   return (
@@ -792,18 +791,11 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                         setShowOcrProSelect(false)
                         openOrcamentoFlow(pro.id)
                       }}
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '12px 14px', border: '1.5px solid #e5e7eb', borderRadius: '10px',
-                        background: 'white', cursor: 'pointer', textAlign: 'left', width: '100%',
-                        transition: 'all 0.15s'
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.background = '#faf5ff' }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.background = 'white' }}
+                      className="flex items-center justify-between px-3.5 py-3 border-[1.5px] border-[#e5e7eb] rounded-[10px] bg-white cursor-pointer text-left w-full transition-all hover:border-[#7c3aed] hover:bg-[#faf5ff]"
                     >
                       <div>
-                        <p style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: '#111827' }}>{pro.name}</p>
-                        <p style={{ fontSize: '12px', color: '#6b7280', margin: '2px 0 0' }}>
+                        <p className="text-sm font-bold m-0 text-[#111827]">{pro.name}</p>
+                        <p className="text-xs text-[#6b7280] mt-0.5 mb-0">
                           {pro.specialty || 'Profissional'} · {proQuotes.length} orçamento{proQuotes.length !== 1 ? 's' : ''}
                         </p>
                       </div>
@@ -818,49 +810,42 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
       )}
 
       {/* Memoriais & Documentos de Orçamento */}
-      <div style={{ marginBottom: '20px', background: 'white', borderRadius: '14px', padding: '16px', border: '1px solid #e5e7eb' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="mb-5 bg-white rounded-[14px] p-4 border border-[#e5e7eb]">
+        <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
             <FileText size={18} color="#7c3aed" />
-            <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: '#111827' }}>Memoriais & Documentos</h3>
+            <h3 className="text-[15px] font-bold m-0 text-[#111827]">Memoriais & Documentos</h3>
             {orcamentoDocs.length > 0 && (
-              <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#ede9fe', color: '#7c3aed', fontWeight: 600 }}>
+              <span className="text-[11px] px-2 py-0.5 rounded-[10px] bg-[#ede9fe] text-[#7c3aed] font-semibold">
                 {orcamentoDocs.length}
               </span>
             )}
           </div>
           <button
             onClick={() => setShowAddDoc(true)}
-            style={{
-              fontSize: '12px', padding: '6px 12px', border: '1.5px solid #7c3aed', borderRadius: '8px',
-              background: 'white', color: '#7c3aed', cursor: 'pointer', fontWeight: 600,
-              display: 'inline-flex', alignItems: 'center', gap: '4px'
-            }}>
+            className="text-xs px-3 py-1.5 border-[1.5px] border-[#7c3aed] rounded-lg bg-white text-[#7c3aed] cursor-pointer font-semibold inline-flex items-center gap-1">
             <Upload size={13} /> Enviar PDF
           </button>
         </div>
         {orcamentoDocs.length === 0 ? (
-          <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0, padding: '12px 0', textAlign: 'center' }}>
+          <p className="text-[13px] text-[#9ca3af] m-0 py-3 text-center">
             Nenhum memorial ou documento. Envie PDFs de escopo para solicitar orçamentos competitivos.
           </p>
         ) : (
-          <div style={{ display: 'grid', gap: '8px' }}>
+          <div className="grid gap-2">
             {orcamentoDocs.map(doc => (
-              <div key={doc.id} style={{
-                display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px',
-                background: '#faf5ff', borderRadius: '10px', border: '1px solid #e9d5ff'
-              }}>
-                <div style={{ fontSize: '20px', flexShrink: 0 }}>📄</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: '13px', fontWeight: 700, margin: 0, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div key={doc.id} className="flex items-center gap-3 px-3 py-2.5 bg-[#faf5ff] rounded-[10px] border border-[#e9d5ff]">
+                <div className="text-xl shrink-0">📄</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold m-0 text-[#111827] whitespace-nowrap overflow-hidden text-ellipsis">
                     {doc.title}
                   </p>
                   {doc.description && (
-                    <p style={{ fontSize: '11px', color: '#6b7280', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <p className="text-[11px] text-[#6b7280] mt-0.5 mb-0 whitespace-nowrap overflow-hidden text-ellipsis">
                       {doc.description}
                     </p>
                   )}
-                  <p style={{ fontSize: '10px', color: '#9ca3af', margin: '2px 0 0' }}>
+                  <p className="text-[10px] text-[#9ca3af] mt-0.5 mb-0">
                     {doc.file_size ? fmtFileSize(doc.file_size) + ' · ' : ''}{USERS.find(u => u.id === doc.created_by)?.name || doc.created_by} · {new Date(doc.created_at).toLocaleDateString('pt-BR')}
                   </p>
                 </div>
@@ -869,11 +854,7 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                     href={doc.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '4px',
-                      padding: '6px 10px', borderRadius: '8px', background: '#7c3aed', color: 'white',
-                      textDecoration: 'none', fontSize: '11px', fontWeight: 600, flexShrink: 0
-                    }}>
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#7c3aed] text-white no-underline text-[11px] font-semibold shrink-0">
                     <ExternalLink size={12} /> Abrir
                   </a>
                 )}
@@ -881,10 +862,7 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                   <button
                     onClick={() => handleDeleteDoc(doc.id)}
                     title="Excluir"
-                    style={{
-                      padding: '6px', border: 'none', borderRadius: '8px', background: '#fee2e2',
-                      color: '#dc2626', cursor: 'pointer', flexShrink: 0
-                    }}>
+                    className="p-1.5 border-none rounded-lg bg-danger-light text-danger cursor-pointer shrink-0">
                     <Trash2 size={13} />
                   </button>
                 )}
@@ -898,8 +876,8 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
       {showAddDoc && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowAddDoc(false) }}>
           <div className="modal-content">
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Enviar Memorial / Documento</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h3 className="text-lg font-bold mb-4">Enviar Memorial / Documento</h3>
+            <div className="flex flex-col gap-3">
               <input
                 placeholder="Título do documento *"
                 value={newDoc.title}
@@ -912,36 +890,30 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                 onChange={e => setNewDoc({ ...newDoc, description: e.target.value })}
                 rows={2}
               />
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: '8px', padding: '12px',
-                border: '2px dashed #d1d5db', borderRadius: '10px', cursor: 'pointer',
-                background: newDoc.file ? '#f0fdf4' : '#fafafa',
-                borderColor: newDoc.file ? '#10b981' : '#d1d5db',
-              }}>
+              <label className={`flex items-center gap-2 p-3 border-2 border-dashed rounded-[10px] cursor-pointer ${newDoc.file ? 'bg-[#f0fdf4] border-[#10b981]' : 'bg-[#fafafa] border-[#d1d5db]'}`}>
                 <Upload size={18} color={newDoc.file ? '#10b981' : '#6b7280'} />
-                <span style={{ fontSize: '13px', color: newDoc.file ? '#065f46' : '#6b7280', fontWeight: 600 }}>
+                <span className={`text-[13px] font-semibold ${newDoc.file ? 'text-[#065f46]' : 'text-[#6b7280]'}`}>
                   {newDoc.file ? newDoc.file.name : 'Selecionar arquivo PDF...'}
                 </span>
                 <input
                   type="file"
                   accept=".pdf,application/pdf"
                   onChange={e => setNewDoc({ ...newDoc, file: e.target.files?.[0] || null })}
-                  style={{ display: 'none' }}
+                  className="hidden"
                 />
               </label>
             </div>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
+            <div className="flex gap-2 mt-4 justify-end">
               <button
                 onClick={() => { setShowAddDoc(false); setNewDoc({ title: '', description: '', file: null }) }}
-                style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>
+                className="px-5 py-2.5 border border-[#e5e7eb] rounded-[10px] bg-white cursor-pointer font-semibold text-sm">
                 Cancelar
               </button>
               <button
-                className="btn-primary"
+                className="btn-primary px-5 py-2.5"
                 onClick={handleUploadDoc}
                 disabled={!newDoc.title.trim() || !newDoc.file || uploadingDoc}
                 style={{
-                  padding: '10px 20px',
                   opacity: (!newDoc.title.trim() || !newDoc.file || uploadingDoc) ? 0.5 : 1,
                 }}>
                 {uploadingDoc ? 'Enviando...' : 'Enviar'}
@@ -952,25 +924,17 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
       )}
 
       {/* Tab Toggle: Orçamentos / Profissionais */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+      <div className="flex gap-2 mb-5">
         <button
           onClick={() => setShowProfessionalsList(false)}
-          style={{
-            padding: '8px 16px', borderRadius: '20px', border: 'none', fontSize: '13px', fontWeight: 600,
-            background: !showProfessionalsList ? '#2563EB' : '#f3f4f6', color: !showProfessionalsList ? 'white' : '#6b7280',
-            cursor: 'pointer', transition: 'all 0.2s'
-          }}>
-          <BookOpen size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+          className={`px-4 py-2 rounded-[20px] border-none text-[13px] font-semibold cursor-pointer transition-all ${!showProfessionalsList ? 'bg-[#2563EB] text-white' : 'bg-[#f3f4f6] text-[#6b7280]'}`}>
+          <BookOpen size={14} className="inline mr-1.5 align-middle" />
           Orçamentos
         </button>
         <button
           onClick={() => setShowProfessionalsList(true)}
-          style={{
-            padding: '8px 16px', borderRadius: '20px', border: 'none', fontSize: '13px', fontWeight: 600,
-            background: showProfessionalsList ? '#2563EB' : '#f3f4f6', color: showProfessionalsList ? 'white' : '#6b7280',
-            cursor: 'pointer', transition: 'all 0.2s'
-          }}>
-          <Users size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+          className={`px-4 py-2 rounded-[20px] border-none text-[13px] font-semibold cursor-pointer transition-all ${showProfessionalsList ? 'bg-[#2563EB] text-white' : 'bg-[#f3f4f6] text-[#6b7280]'}`}>
+          <Users size={14} className="inline mr-1.5 align-middle" />
           Profissionais
         </button>
       </div>
@@ -979,13 +943,13 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
       {showAddProfessional && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowAddProfessional(false) }}>
           <div className="modal-content">
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Cadastrar Profissional</h3>
+            <h3 className="text-lg font-bold mb-4">Cadastrar Profissional</h3>
             {formError && (
-              <div style={{ padding: '10px 14px', borderRadius: '8px', background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: '13px', marginBottom: '12px' }}>
+              <div className="px-3.5 py-2.5 rounded-lg bg-[#FEF2F2] border border-[#FECACA] text-danger text-[13px] mb-3">
                 {formError}
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="flex flex-col gap-3">
               <input placeholder="Nome do profissional *" value={newProfessional.name} onChange={e => setNewProfessional({...newProfessional, name: e.target.value})} autoFocus style={{ borderColor: formError && !newProfessional.name.trim() ? '#DC2626' : undefined }} />
               <input placeholder="Telefone" type="tel" value={newProfessional.phone} onChange={e => setNewProfessional({...newProfessional, phone: e.target.value})} />
               <input placeholder="Email" type="email" value={newProfessional.email} onChange={e => setNewProfessional({...newProfessional, email: e.target.value})} />
@@ -993,9 +957,9 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
               <input placeholder="Indicado por" value={newProfessional.recommended_by} onChange={e => setNewProfessional({...newProfessional, recommended_by: e.target.value})} />
               <textarea placeholder="Observações" value={newProfessional.notes} onChange={e => setNewProfessional({...newProfessional, notes: e.target.value})} rows={2} />
             </div>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
-              <button onClick={() => { setShowAddProfessional(false); setFormError('') }} style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>Cancelar</button>
-              <button className="btn-primary" onClick={handleAddProfessional} disabled={saving} style={{ padding: '10px 20px', opacity: saving ? 0.6 : 1 }}>{saving ? 'Salvando...' : 'Salvar'}</button>
+            <div className="flex gap-2 mt-4 justify-end">
+              <button onClick={() => { setShowAddProfessional(false); setFormError('') }} className="px-5 py-2.5 border border-[#e5e7eb] rounded-[10px] bg-white cursor-pointer font-semibold text-sm">Cancelar</button>
+              <button className="btn-primary px-5 py-2.5" onClick={handleAddProfessional} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>{saving ? 'Salvando...' : 'Salvar'}</button>
             </div>
           </div>
         </div>
@@ -1005,21 +969,21 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
       {showAddQuote && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowAddQuote(false) }}>
           <div className="modal-content">
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Novo Orçamento</h3>
+            <h3 className="text-lg font-bold mb-4">Novo Orçamento</h3>
             {formError && (
-              <div style={{ padding: '10px 14px', borderRadius: '8px', background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: '13px', marginBottom: '12px' }}>
+              <div className="px-3.5 py-2.5 rounded-lg bg-[#FEF2F2] border border-[#FECACA] text-danger text-[13px] mb-3">
                 {formError}
               </div>
             )}
             {professionals.length === 0 && (
-              <div style={{ padding: '12px 14px', borderRadius: '8px', background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', fontSize: '13px', marginBottom: '12px' }}>
+              <div className="px-3.5 py-3 rounded-lg bg-[#FFFBEB] border border-[#FDE68A] text-[#92400E] text-[13px] mb-3">
                 Cadastre um profissional primeiro antes de criar um orçamento.
-                <button onClick={() => { setShowAddQuote(false); setShowAddProfessional(true); setFormError('') }} style={{ display: 'block', marginTop: '8px', color: '#2563EB', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '13px' }}>
+                <button onClick={() => { setShowAddQuote(false); setShowAddProfessional(true); setFormError('') }} className="block mt-2 text-[#2563EB] font-semibold bg-transparent border-none cursor-pointer p-0 text-[13px]">
                   + Cadastrar Profissional
                 </button>
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="flex flex-col gap-3">
               <select value={newQuote.professional_id} onChange={e => setNewQuote({...newQuote, professional_id: e.target.value})} style={{ borderColor: formError && !newQuote.professional_id ? '#DC2626' : undefined }}>
                 <option value="">Selecione o Profissional *</option>
                 {professionals.map(p => <option key={p.id} value={p.id}>{p.name} {p.specialty ? `(${p.specialty})` : ''}</option>)}
@@ -1037,9 +1001,9 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
               <input type="date" placeholder="Data prevista" value={newQuote.scheduled_date} onChange={e => setNewQuote({...newQuote, scheduled_date: e.target.value})} />
               <textarea placeholder="Observações" value={newQuote.notes} onChange={e => setNewQuote({...newQuote, notes: e.target.value})} rows={2} />
             </div>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
-              <button onClick={() => { setShowAddQuote(false); setFormError('') }} style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>Cancelar</button>
-              <button className="btn-primary" onClick={handleAddQuote} disabled={saving} style={{ padding: '10px 20px', opacity: saving ? 0.6 : 1 }}>{saving ? 'Salvando...' : 'Salvar Orçamento'}</button>
+            <div className="flex gap-2 mt-4 justify-end">
+              <button onClick={() => { setShowAddQuote(false); setFormError('') }} className="px-5 py-2.5 border border-[#e5e7eb] rounded-[10px] bg-white cursor-pointer font-semibold text-sm">Cancelar</button>
+              <button className="btn-primary px-5 py-2.5" onClick={handleAddQuote} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>{saving ? 'Salvando...' : 'Salvar Orçamento'}</button>
             </div>
           </div>
         </div>
@@ -1049,27 +1013,21 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
       {paymentModal && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setPaymentModal(null) }}>
           <div className="modal-content">
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>
+            <h3 className="text-lg font-bold mb-1">
               🤝 Confirmar Contratação
             </h3>
-            <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 16px' }}>
+            <p className="text-[13px] text-[#6B7280] mt-0 mb-4">
               Como será feito o pagamento?
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="flex flex-col gap-3">
               {/* Payment Method Chips */}
               <div>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '8px', display: 'block' }}>Forma de Pagamento</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                <label className="text-[13px] font-semibold text-[#374151] mb-2 block">Forma de Pagamento</label>
+                <div className="flex flex-wrap gap-2">
                   {PAYMENT_METHODS.map(m => (
                     <button key={m.value} onClick={() => setPaymentForm({ ...paymentForm, payment_method: m.value })}
-                      style={{
-                        padding: '8px 14px', borderRadius: '20px', border: '2px solid',
-                        borderColor: paymentForm.payment_method === m.value ? '#2563EB' : '#E5E7EB',
-                        background: paymentForm.payment_method === m.value ? '#DBEAFE' : 'white',
-                        color: paymentForm.payment_method === m.value ? '#1D4ED8' : '#374151',
-                        fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s',
-                      }}>
+                      className={`px-3.5 py-2 rounded-[20px] border-2 font-semibold text-[13px] cursor-pointer transition-all ${paymentForm.payment_method === m.value ? 'border-[#2563EB] bg-[#DBEAFE] text-[#1D4ED8]' : 'border-[#E5E7EB] bg-white text-[#374151]'}`}>
                       {m.emoji} {m.label}
                     </button>
                   ))}
@@ -1078,7 +1036,7 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
               {/* Negotiated Amount */}
               <div>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px', display: 'block' }}>
+                <label className="text-[13px] font-semibold text-[#374151] mb-1.5 block">
                   Valor Negociado (R$)
                 </label>
                 <input
@@ -1087,7 +1045,7 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                   onChange={e => setPaymentForm({ ...paymentForm, negotiated_amount: e.target.value })}
                 />
                 {paymentModal.currentAmount > 0 && (
-                  <p style={{ fontSize: '11px', color: '#6B7280', margin: '4px 0 0' }}>
+                  <p className="text-[11px] text-[#6B7280] mt-1 mb-0">
                     Valor original do orçamento: {formatCurrency(paymentModal.currentAmount)}
                   </p>
                 )}
@@ -1095,7 +1053,7 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
               {/* Payment Details */}
               <div>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px', display: 'block' }}>
+                <label className="text-[13px] font-semibold text-[#374151] mb-1.5 block">
                   Detalhes do Pagamento
                 </label>
                 <textarea
@@ -1107,13 +1065,13 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
+            <div className="flex gap-2 mt-4 justify-end">
               <button onClick={() => setPaymentModal(null)}
-                style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>
+                className="px-5 py-2.5 border border-[#e5e7eb] rounded-[10px] bg-white cursor-pointer font-semibold text-sm">
                 Cancelar
               </button>
-              <button className="btn-primary" onClick={handlePaymentConfirm} disabled={saving}
-                style={{ padding: '10px 20px', opacity: saving ? 0.6 : 1 }}>
+              <button className="btn-primary px-5 py-2.5" onClick={handlePaymentConfirm} disabled={saving}
+                style={{ opacity: saving ? 0.6 : 1 }}>
                 {saving ? 'Salvando...' : '🤝 Contratar'}
               </button>
             </div>
@@ -1124,14 +1082,14 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
       {!showProfessionalsList && (
         <>
           {/* Filters */}
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
-            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ minWidth: '140px' }}>
+          <div className="flex gap-3 mb-4 flex-wrap">
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="min-w-[140px]">
               <option value="">Todos os status</option>
               {['recebido', 'avaliando', 'aprovado', 'recusado'].map(key => (
                 <option key={key} value={key}>{STATUS_CONFIG[key].emoji} {STATUS_CONFIG[key].label}</option>
               ))}
             </select>
-            <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ minWidth: '160px' }}>
+            <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="min-w-[160px]">
               <option value="">Todos os serviços</option>
               {serviceCategories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
             </select>
@@ -1139,13 +1097,13 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
           {/* Quotes List */}
           {filteredQuotes.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>👷</div>
-              <h3 style={{ fontSize: '18px', color: '#374151', marginBottom: '8px' }}>Nenhum orçamento ainda</h3>
-              <p style={{ color: '#6b7280' }}>Adicione profissionais e orçamentos para controlar os custos da reforma!</p>
+            <div className="text-center p-10">
+              <div className="text-5xl mb-4">👷</div>
+              <h3 className="text-lg text-[#374151] mb-2">Nenhum orçamento ainda</h3>
+              <p className="text-[#6b7280]">Adicione profissionais e orçamentos para controlar os custos da reforma!</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="flex flex-col gap-3">
               {filteredQuotes.map(quote => {
                 const statusCfg = STATUS_CONFIG[quote.status] || STATUS_CONFIG.recebido
                 const isExpanded = expandedQuote === quote.id
@@ -1154,53 +1112,51 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                 const userColor = USERS.find(u => u.id === quote.created_by)?.color || '#6b7280'
 
                 return (
-                  <div key={quote.id} className="card" style={{ padding: '16px', transition: 'all 0.2s' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                          <span style={{
-                            padding: '2px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 600,
+                  <div key={quote.id} className="card p-4 transition-all">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className="px-2.5 py-0.5 rounded-xl text-xs font-semibold" style={{
                             background: statusCfg.bg, color: statusCfg.color
                           }}>
                             {statusCfg.emoji} {statusCfg.label}
                           </span>
                           {quote.service_category && (
-                            <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                            <span className="text-xs text-[#6b7280]">
                               {quote.service_category.icon} {quote.service_category.name}
                             </span>
                           )}
                           {quote.room && (
-                            <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                            <span className="text-xs text-[#6b7280]">
                               📍 {quote.room.name}
                             </span>
                           )}
                         </div>
-                        <h4 style={{ fontSize: '15px', fontWeight: 600, margin: '0 0 4px', color: '#1f2937' }}>
+                        <h4 className="text-[15px] font-semibold mb-1 mt-0 text-[#1f2937]">
                           {quote.description}
                         </h4>
-                        <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
-                          <User size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                        <p className="text-[13px] text-[#6b7280] m-0">
+                          <User size={12} className="inline align-middle mr-1" />
                           {quote.professional?.name || 'Profissional'}
                           {quote.professional?.phone && (
-                            <span style={{ marginLeft: '8px' }}>
-                              <Phone size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '2px' }} />
+                            <span className="ml-2">
+                              <Phone size={12} className="inline align-middle mr-0.5" />
                               {quote.professional.phone}
                             </span>
                           )}
                         </p>
                       </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <p style={{ fontSize: '15px', fontWeight: 800, color: '#1f2937', margin: '0 0 4px' }}>
+                      <div className="text-right shrink-0">
+                        <p className="text-[15px] font-extrabold text-[#1f2937] mt-0 mb-1">
                           {formatCurrency(Number(quote.amount))}
                         </p>
-                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <div className="flex gap-1 justify-end items-center flex-wrap">
                           <select
                             value={quote.status}
                             onChange={e => handleStatusChange(quote.id, e.target.value)}
+                            className="px-2 py-[5px] rounded-lg border border-[#E5E7EB] cursor-pointer text-xs font-semibold appearance-auto"
                             style={{
-                              padding: '5px 8px', borderRadius: '8px', border: '1px solid #E5E7EB', cursor: 'pointer',
                               background: statusCfg.bg, color: statusCfg.color,
-                              fontSize: '12px', fontWeight: 600, appearance: 'auto',
                             }}
                           >
                             {Object.entries(STATUS_CONFIG)
@@ -1210,7 +1166,7 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                             ))}
                           </select>
                           <button onClick={() => setExpandedQuote(isExpanded ? null : quote.id)}
-                            style={{ padding: '4px 8px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: '#f3f4f6' }}>
+                            className="px-2 py-1 rounded-lg border-none cursor-pointer bg-[#f3f4f6]">
                             {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                           </button>
                         </div>
@@ -1218,33 +1174,33 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                     </div>
 
                     {isExpanded && (
-                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f3f4f6', fontSize: '13px', color: '#6b7280' }}>
+                      <div className="mt-3 pt-3 border-t border-[#f3f4f6] text-[13px] text-[#6b7280]">
                         {quote.payment_method && (
-                          <p style={{ margin: '0 0 8px' }}>
+                          <p className="mt-0 mb-2">
                             {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.emoji || '💳'}{' '}
-                            Pagamento: <strong style={{ color: '#1F2937' }}>{PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.label || quote.payment_method}</strong>
+                            Pagamento: <strong className="text-[#1F2937]">{PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.label || quote.payment_method}</strong>
                             {quote.payment_details && <span> — {quote.payment_details}</span>}
                           </p>
                         )}
                         {quote.negotiated_amount && quote.negotiated_amount !== Number(quote.amount) && (
-                          <p style={{ margin: '0 0 8px', color: '#059669' }}>
+                          <p className="mt-0 mb-2 text-success">
                             💰 Valor negociado: <strong>{formatCurrency(quote.negotiated_amount)}</strong>
-                            <span style={{ fontSize: '11px', marginLeft: '6px', textDecoration: 'line-through', color: '#9CA3AF' }}>{formatCurrency(Number(quote.amount))}</span>
+                            <span className="text-[11px] ml-1.5 line-through text-[#9CA3AF]">{formatCurrency(Number(quote.amount))}</span>
                           </p>
                         )}
-                        {quote.notes && <p style={{ margin: '0 0 8px' }}>📝 {quote.notes}</p>}
-                        {quote.scheduled_date && <p style={{ margin: '0 0 8px' }}>📅 Previsão: {new Date(quote.scheduled_date).toLocaleDateString('pt-BR')}</p>}
-                        {quote.paid_date && <p style={{ margin: '0 0 8px' }}>💰 Pago em: {new Date(quote.paid_date).toLocaleDateString('pt-BR')}</p>}
-                        {quote.professional?.email && <p style={{ margin: '0 0 8px' }}><Mail size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {quote.professional.email}</p>}
-                        {quote.professional?.recommended_by && <p style={{ margin: '0 0 8px' }}>👤 Indicado por: {quote.professional.recommended_by}</p>}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                          <span style={{ fontSize: '11px' }}>
-                            Adicionado por <span style={{ color: userColor, fontWeight: 600 }}>{USERS.find(u => u.id === quote.created_by)?.name || quote.created_by}</span>
+                        {quote.notes && <p className="mt-0 mb-2">📝 {quote.notes}</p>}
+                        {quote.scheduled_date && <p className="mt-0 mb-2">📅 Previsão: {new Date(quote.scheduled_date).toLocaleDateString('pt-BR')}</p>}
+                        {quote.paid_date && <p className="mt-0 mb-2">💰 Pago em: {new Date(quote.paid_date).toLocaleDateString('pt-BR')}</p>}
+                        {quote.professional?.email && <p className="mt-0 mb-2"><Mail size={12} className="inline align-middle" /> {quote.professional.email}</p>}
+                        {quote.professional?.recommended_by && <p className="mt-0 mb-2">👤 Indicado por: {quote.professional.recommended_by}</p>}
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-[11px]">
+                            Adicionado por <span style={{ color: userColor }} className="font-semibold">{USERS.find(u => u.id === quote.created_by)?.name || quote.created_by}</span>
                             {' em '}{new Date(quote.created_at).toLocaleDateString('pt-BR')}
                           </span>
                           <button onClick={() => handleDeleteQuote(quote.id)}
-                            style={{ padding: '4px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: '#fee2e2', color: '#dc2626', fontSize: '12px' }}>
-                            <Trash2 size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                            className="px-2 py-1 rounded-md border-none cursor-pointer bg-danger-light text-danger text-xs">
+                            <Trash2 size={12} className="inline align-middle mr-1" />
                             Excluir
                           </button>
                         </div>
@@ -1260,11 +1216,11 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
       {/* Contratos Fechados Section - Merged from contracts table AND contratado/pago quotes */}
       {(contracts.length > 0 || contratadoQuotes.length > 0) && (
-        <div style={{ marginTop: '28px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#374151', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="mt-7">
+          <h3 className="text-base font-bold text-[#374151] mb-3.5 flex items-center gap-2">
             <FileText size={18} /> Contratos Fechados
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div className="flex flex-col gap-3.5">
             {/* Contracts from contracts table */}
             {contracts.map(contract => {
               const cBudgetItems = budgetItems.filter(b => b.professional === contract.professional)
@@ -1278,54 +1234,51 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
               const daysUntilNext = nextPayment ? Math.ceil((new Date(nextPayment.due_date + 'T12:00:00').getTime() - Date.now()) / 86400000) : null
 
               return (
-                <div key={contract.id} style={{ borderRadius: '14px', border: '1px solid #D1FAE5', overflow: 'hidden', background: 'white' }}>
+                <div key={contract.id} className="rounded-[14px] border border-[#D1FAE5] overflow-hidden bg-white">
                   {/* Contract Header */}
                   <button
                     onClick={() => setExpandedContract(isExpanded ? null : contract.id)}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '16px', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #065F4615, #04785715)',
-                    }}
+                    className="w-full flex items-center justify-between p-4 border-none cursor-pointer bg-gradient-to-br from-[#065F4615] to-[#04785715]"
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#065F46' }}>👷 {contract.professional}</span>
-                        <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '6px', background: '#D1FAE5', color: '#065F46', fontWeight: 600 }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                        <span className="text-sm font-bold text-[#065F46]">👷 {contract.professional}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#D1FAE5] text-[#065F46] font-semibold">
                           🤝 Contratado
                         </span>
                       </div>
-                      <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#6B7280', flexWrap: 'wrap' }}>
+                      <div className="flex gap-2 text-[11px] text-[#6B7280] flex-wrap">
                         <span>Fechado: {fmtBRL(contract.negotiated_total)}</span>
-                        <span style={{ color: '#059669' }}>
-                          <TrendingDown size={11} style={{ display: 'inline', verticalAlign: 'middle' }} /> {fmtBRL(economia)}
+                        <span className="text-success">
+                          <TrendingDown size={11} className="inline align-middle" /> {fmtBRL(economia)}
                         </span>
                         <span>Pago: {percentPaid}%</span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                      <span style={{ fontSize: '15px', fontWeight: 800, color: '#065F46' }}>{fmtBRL(contract.negotiated_total)}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[15px] font-extrabold text-[#065F46]">{fmtBRL(contract.negotiated_total)}</span>
                       {isExpanded ? <ChevronUp size={18} color="#9CA3AF" /> : <ChevronDown size={18} color="#9CA3AF" />}
                     </div>
                   </button>
 
                   {isExpanded && (
-                    <div style={{ padding: '16px' }}>
+                    <div className="p-4">
                       {/* Edit Button */}
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                      <div className="flex justify-end mb-3">
                         {editingContract === contract.id ? (
-                          <div style={{ display: 'flex', gap: '6px' }}>
+                          <div className="flex gap-1.5">
                             <button onClick={handleSaveContract}
-                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#10B981', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-md border-none bg-[#10B981] text-white text-xs font-semibold cursor-pointer">
                               <Check size={12} /> Salvar
                             </button>
                             <button onClick={() => { setEditingContract(null); setEditContractForm({}) }}
-                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#E5E7EB', color: '#6B7280', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-md border-none bg-[#E5E7EB] text-[#6B7280] text-xs font-semibold cursor-pointer">
                               <X size={12} /> Cancelar
                             </button>
                           </div>
                         ) : (
                           <button onClick={() => handleEditContract(contract)}
-                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', background: 'white', color: '#374151', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-[#D1D5DB] bg-white text-[#374151] text-xs font-semibold cursor-pointer">
                             <Edit3 size={12} /> Editar Contrato
                           </button>
                         )}
@@ -1333,61 +1286,61 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
                       {/* Contract Details - Editable */}
                       {editingContract === contract.id ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', padding: '14px', background: '#F0FDF4', borderRadius: '10px' }}>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Profissional</label>
+                        <div className="flex flex-col gap-2 mb-4 p-3.5 bg-[#F0FDF4] rounded-[10px]">
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Profissional</label>
                               <input value={editContractForm.professional || ''} onChange={e => setEditContractForm({ ...editContractForm, professional: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                             </div>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Função</label>
+                            <div className="flex-1">
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Função</label>
                               <input value={editContractForm.role || ''} onChange={e => setEditContractForm({ ...editContractForm, role: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                             </div>
                           </div>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Valor Original</label>
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Valor Original</label>
                               <input type="number" value={editContractForm.original_total || ''} onChange={e => setEditContractForm({ ...editContractForm, original_total: Number(e.target.value) })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                             </div>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Valor Negociado</label>
+                            <div className="flex-1">
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Valor Negociado</label>
                               <input type="number" value={editContractForm.negotiated_total || ''} onChange={e => setEditContractForm({ ...editContractForm, negotiated_total: Number(e.target.value) })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                             </div>
                           </div>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Início</label>
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Início</label>
                               <input type="date" value={editContractForm.start_date || ''} onChange={e => setEditContractForm({ ...editContractForm, start_date: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                             </div>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>1º Pagamento</label>
+                            <div className="flex-1">
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">1º Pagamento</label>
                               <input type="date" value={editContractForm.first_payment_date || ''} onChange={e => setEditContractForm({ ...editContractForm, first_payment_date: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                             </div>
                           </div>
                           <div>
-                            <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Observações</label>
+                            <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Observações</label>
                             <textarea value={editContractForm.notes || ''} onChange={e => setEditContractForm({ ...editContractForm, notes: e.target.value })}
-                              rows={2} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                              rows={2} className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                           </div>
                         </div>
                       ) : (
                         <>
                           {/* Payment Progress */}
-                          <div style={{ background: '#F0FDF4', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 600, color: '#065F46' }}>Progresso de Pagamento</span>
-                              <span style={{ fontSize: '13px', fontWeight: 700, color: '#065F46' }}>{fmtBRL(totalPaidC)} / {fmtBRL(contract.negotiated_total)}</span>
+                          <div className="bg-[#F0FDF4] rounded-[10px] p-3.5 mb-4">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-[13px] font-semibold text-[#065F46]">Progresso de Pagamento</span>
+                              <span className="text-[13px] font-bold text-[#065F46]">{fmtBRL(totalPaidC)} / {fmtBRL(contract.negotiated_total)}</span>
                             </div>
-                            <div style={{ background: '#BBF7D0', borderRadius: '6px', height: '8px', overflow: 'hidden' }}>
-                              <div style={{ width: `${percentPaid}%`, height: '100%', background: '#10B981', borderRadius: '6px', transition: 'width 0.5s' }} />
+                            <div className="bg-[#BBF7D0] rounded-md h-2 overflow-hidden">
+                              <div className="h-full bg-[#10B981] rounded-md transition-[width] duration-500" style={{ width: `${percentPaid}%` }} />
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#6B7280' }}>
+                            <div className="flex justify-between mt-1.5 text-[11px] text-[#6B7280]">
                               <span>Início: {contract.start_date ? fmtDate(contract.start_date) : '—'}</span>
                               <span>Orçado: {fmtBRL(contract.original_total)}</span>
                             </div>
@@ -1397,23 +1350,20 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
                       {/* Next Payment Alert */}
                       {nextPayment && !editingContract && (
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', marginBottom: '16px',
-                          background: daysUntilNext !== null && daysUntilNext <= 3 ? '#FEF2F2' : '#FFFBEB',
-                          border: `1px solid ${daysUntilNext !== null && daysUntilNext <= 3 ? '#FECACA' : '#FDE68A'}`,
-                        }}>
+                        <div className={`flex items-center gap-2.5 p-3 rounded-[10px] mb-4 border ${daysUntilNext !== null && daysUntilNext <= 3 ? 'bg-[#FEF2F2] border-[#FECACA]' : 'bg-[#FFFBEB] border-[#FDE68A]'}`}>
                           <Clock size={18} color={daysUntilNext !== null && daysUntilNext <= 3 ? '#DC2626' : '#D97706'} />
-                          <div style={{ flex: 1 }}>
-                            <p style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937', margin: 0 }}>
+                          <div className="flex-1">
+                            <p className="text-[13px] font-semibold text-[#1F2937] m-0">
                               Próxima: {fmtBRL(nextPayment.amount)} em {fmtDate(nextPayment.due_date)}
                             </p>
-                            <p style={{ fontSize: '11px', color: '#6B7280', margin: '2px 0 0' }}>
+                            <p className="text-[11px] text-[#6B7280] mt-0.5 mb-0">
                               {daysUntilNext !== null && daysUntilNext > 0 ? `${daysUntilNext} dias` : daysUntilNext === 0 ? 'HOJE!' : `Vencida há ${Math.abs(daysUntilNext!)} dias`}
                               {' · '}Parcela {nextPayment.installment_number}/{cPayments.length}
                             </p>
                           </div>
                           <button onClick={() => handleMarkPaid(nextPayment)} disabled={markingPaid === nextPayment.id}
-                            style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: '#10B981', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', opacity: markingPaid === nextPayment.id ? 0.5 : 1 }}>
+                            className="px-3 py-1.5 rounded-lg border-none bg-[#10B981] text-white text-xs font-semibold cursor-pointer"
+                            style={{ opacity: markingPaid === nextPayment.id ? 0.5 : 1 }}>
                             ✓ Paguei
                           </button>
                         </div>
@@ -1421,29 +1371,23 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
                       {/* Parcelas Timeline */}
                       {!editingContract && (
-                        <div style={{ marginBottom: '16px' }}>
-                          <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div className="mb-4">
+                          <h4 className="text-[13px] font-bold text-[#374151] mb-2 flex items-center gap-1.5">
                             <CreditCard size={14} /> Parcelas
                           </h4>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div className="flex flex-col gap-1.5">
                             {cPayments.map(p => {
                               const isPaid = p.status === 'pago'
                               return (
-                                <div key={p.id} style={{
-                                  display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', borderRadius: '8px',
-                                  background: isPaid ? '#F0FDF4' : '#F9FAFB', border: `1px solid ${isPaid ? '#BBF7D0' : '#F3F4F6'}`,
-                                }}>
-                                  <div style={{
-                                    width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    background: isPaid ? '#10B981' : '#E5E7EB', color: isPaid ? 'white' : '#9CA3AF', fontSize: '11px', fontWeight: 700, flexShrink: 0,
-                                  }}>
+                                <div key={p.id} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border ${isPaid ? 'bg-[#F0FDF4] border-[#BBF7D0]' : 'bg-[#F9FAFB] border-[#F3F4F6]'}`}>
+                                  <div className={`w-[26px] h-[26px] rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${isPaid ? 'bg-[#10B981] text-white' : 'bg-[#E5E7EB] text-[#9CA3AF]'}`}>
                                     {isPaid ? <CheckCircle2 size={14} /> : p.installment_number}
                                   </div>
-                                  <div style={{ flex: 1 }}>
-                                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#1F2937' }}>{fmtBRL(p.amount)}</span>
-                                    <span style={{ fontSize: '11px', color: '#6B7280', marginLeft: '8px' }}>{fmtDate(p.due_date)}</span>
+                                  <div className="flex-1">
+                                    <span className="text-[13px] font-semibold text-[#1F2937]">{fmtBRL(p.amount)}</span>
+                                    <span className="text-[11px] text-[#6B7280] ml-2">{fmtDate(p.due_date)}</span>
                                   </div>
-                                  {isPaid && <span style={{ fontSize: '10px', fontWeight: 600, color: '#10B981', background: '#DCFCE7', padding: '2px 6px', borderRadius: '4px' }}>Pago</span>}
+                                  {isPaid && <span className="text-[10px] font-semibold text-[#10B981] bg-[#DCFCE7] px-1.5 py-0.5 rounded">Pago</span>}
                                 </div>
                               )
                             })}
@@ -1454,25 +1398,25 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                       {/* Budget Breakdown */}
                       {!editingContract && (
                         <>
-                          <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <h4 className="text-[13px] font-bold text-[#374151] mb-2 flex items-center gap-1.5">
                             <FileText size={14} /> Itens do Orçamento
                           </h4>
                           {categories.map(cat => {
                             const items = cBudgetItems.filter(b => b.category === cat)
                             const catTotal = items.reduce((s, b) => s + (b.original_value || 0), 0)
                             return (
-                              <div key={cat} style={{ marginBottom: '8px', borderRadius: '8px', border: '1px solid #F3F4F6', overflow: 'hidden' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#F9FAFB' }}>
-                                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>{cat}</span>
-                                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#047857' }}>{fmtBRL(catTotal)}</span>
+                              <div key={cat} className="mb-2 rounded-lg border border-[#F3F4F6] overflow-hidden">
+                                <div className="flex justify-between px-3 py-2.5 bg-[#F9FAFB]">
+                                  <span className="text-xs font-bold text-[#374151]">{cat}</span>
+                                  <span className="text-xs font-bold text-[#047857]">{fmtBRL(catTotal)}</span>
                                 </div>
                                 {items.map(item => (
-                                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 12px', borderTop: '1px solid #F3F4F6', fontSize: '12px' }}>
+                                  <div key={item.id} className="flex justify-between px-3 py-1.5 border-t border-[#F3F4F6] text-xs">
                                     <div>
-                                      <span style={{ color: '#1F2937' }}>{item.service}</span>
-                                      {item.location && <span style={{ color: '#9CA3AF', marginLeft: '6px' }}>· {item.location}</span>}
+                                      <span className="text-[#1F2937]">{item.service}</span>
+                                      {item.location && <span className="text-[#9CA3AF] ml-1.5">· {item.location}</span>}
                                     </div>
-                                    <span style={{ fontWeight: 600, color: item.original_value ? '#1F2937' : '#9CA3AF', flexShrink: 0, marginLeft: '8px' }}>
+                                    <span className={`font-semibold shrink-0 ml-2 ${item.original_value ? 'text-[#1F2937]' : 'text-[#9CA3AF]'}`}>
                                       {item.original_value ? fmtBRL(item.original_value) : (item.notes || '—')}
                                     </span>
                                   </div>
@@ -1484,7 +1428,7 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                       )}
 
                       {!editingContract && contract.notes && (
-                        <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'italic', marginTop: '8px' }}>📝 {contract.notes}</p>
+                        <p className="text-[11px] text-[#9CA3AF] italic mt-2">📝 {contract.notes}</p>
                       )}
                     </div>
                   )}
@@ -1498,23 +1442,20 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
               const amount = quote.negotiated_amount || Number(quote.amount)
 
               return (
-                <div key={`quote-${quote.id}`} style={{ borderRadius: '14px', border: '1px solid #D1FAE5', overflow: 'hidden', background: 'white' }}>
+                <div key={`quote-${quote.id}`} className="rounded-[14px] border border-[#D1FAE5] overflow-hidden bg-white">
                   {/* Quote Header */}
                   <button
                     onClick={() => setExpandedContract(isExpanded ? null : `quote-${quote.id}`)}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '16px', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #065F4615, #04785715)',
-                    }}
+                    className="w-full flex items-center justify-between p-4 border-none cursor-pointer bg-gradient-to-br from-[#065F4615] to-[#04785715]"
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#065F46' }}>👷 {quote.professional?.name || 'Profissional'}</span>
-                        <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '6px', background: '#D1FAE5', color: '#065F46', fontWeight: 600 }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                        <span className="text-sm font-bold text-[#065F46]">👷 {quote.professional?.name || 'Profissional'}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#D1FAE5] text-[#065F46] font-semibold">
                           {STATUS_CONFIG[quote.status]?.emoji} {STATUS_CONFIG[quote.status]?.label}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#6B7280', flexWrap: 'wrap' }}>
+                      <div className="flex gap-2 text-[11px] text-[#6B7280] flex-wrap">
                         <span>{quote.description}</span>
                         {quote.payment_method && (
                           <span>
@@ -1523,30 +1464,30 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                         )}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                      <span style={{ fontSize: '15px', fontWeight: 800, color: '#065F46' }}>{formatCurrency(amount)}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[15px] font-extrabold text-[#065F46]">{formatCurrency(amount)}</span>
                       {isExpanded ? <ChevronUp size={18} color="#9CA3AF" /> : <ChevronDown size={18} color="#9CA3AF" />}
                     </div>
                   </button>
 
                   {isExpanded && (
-                    <div style={{ padding: '16px', borderTop: '1px solid #E5E7EB' }}>
+                    <div className="p-4 border-t border-[#E5E7EB]">
                       {/* Edit Button */}
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                      <div className="flex justify-end mb-3">
                         {editingQuote === quote.id ? (
-                          <div style={{ display: 'flex', gap: '6px' }}>
+                          <div className="flex gap-1.5">
                             <button onClick={handleSaveQuote}
-                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#10B981', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-md border-none bg-[#10B981] text-white text-xs font-semibold cursor-pointer">
                               <Check size={12} /> Salvar
                             </button>
                             <button onClick={() => { setEditingQuote(null); setEditQuoteForm({}) }}
-                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#E5E7EB', color: '#6B7280', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-md border-none bg-[#E5E7EB] text-[#6B7280] text-xs font-semibold cursor-pointer">
                               <X size={12} /> Cancelar
                             </button>
                           </div>
                         ) : (
                           <button onClick={() => handleEditQuote(quote)}
-                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', background: 'white', color: '#374151', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-[#D1D5DB] bg-white text-[#374151] text-xs font-semibold cursor-pointer">
                             <Edit3 size={12} /> Editar Orçamento
                           </button>
                         )}
@@ -1554,37 +1495,37 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
                       {/* Editable Quote Form */}
                       {editingQuote === quote.id ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', padding: '14px', background: '#F0FDF4', borderRadius: '10px' }}>
+                        <div className="flex flex-col gap-2 mb-4 p-3.5 bg-[#F0FDF4] rounded-[10px]">
                           <div>
-                            <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Descrição</label>
+                            <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Descrição</label>
                             <input value={editQuoteForm.description || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, description: e.target.value })}
-                              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                              className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                           </div>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Valor Original</label>
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Valor Original</label>
                               <input type="number" value={editQuoteForm.amount || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, amount: Number(e.target.value) })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                             </div>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Valor Negociado</label>
+                            <div className="flex-1">
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Valor Negociado</label>
                               <input type="number" value={editQuoteForm.negotiated_amount || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, negotiated_amount: Number(e.target.value) })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                             </div>
                           </div>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Forma de Pagamento</label>
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Forma de Pagamento</label>
                               <select value={editQuoteForm.payment_method || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, payment_method: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }}>
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border">
                                 <option value="">Selecione...</option>
                                 {PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.emoji} {m.label}</option>)}
                               </select>
                             </div>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Status</label>
+                            <div className="flex-1">
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Status</label>
                               <select value={editQuoteForm.status || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, status: e.target.value as any })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }}>
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border">
                                 <option value="recebido">Recebido</option>
                                 <option value="avaliando">Avaliando</option>
                                 <option value="aprovado">Aprovado</option>
@@ -1594,64 +1535,64 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                             </div>
                           </div>
                           <div>
-                            <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Detalhes de Pagamento</label>
+                            <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Detalhes de Pagamento</label>
                             <textarea value={editQuoteForm.payment_details || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, payment_details: e.target.value })}
-                              rows={2} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                              rows={2} className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                           </div>
                           <div>
-                            <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Observações</label>
+                            <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Observações</label>
                             <textarea value={editQuoteForm.notes || ''} onChange={e => setEditQuoteForm({ ...editQuoteForm, notes: e.target.value })}
-                              rows={2} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                              rows={2} className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                           </div>
                         </div>
                       ) : (
                         <>
                           {/* Professional Info */}
-                          <div style={{ marginBottom: '16px' }}>
-                            <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>👤 Informações do Profissional</h4>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: '#6B7280' }}>
+                          <div className="mb-4">
+                            <h4 className="text-[13px] font-bold text-[#374151] mb-2">👤 Informações do Profissional</h4>
+                            <div className="flex flex-col gap-1 text-[13px] text-[#6B7280]">
                               {quote.professional?.phone && (
-                                <p style={{ margin: 0 }}>
-                                  <Phone size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} />
+                                <p className="m-0">
+                                  <Phone size={12} className="inline align-middle mr-1.5" />
                                   {quote.professional.phone}
                                 </p>
                               )}
                               {quote.professional?.email && (
-                                <p style={{ margin: 0 }}>
-                                  <Mail size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} />
+                                <p className="m-0">
+                                  <Mail size={12} className="inline align-middle mr-1.5" />
                                   {quote.professional.email}
                                 </p>
                               )}
                               {quote.professional?.specialty && (
-                                <p style={{ margin: 0 }}>📋 Especialidade: {quote.professional.specialty}</p>
+                                <p className="m-0">📋 Especialidade: {quote.professional.specialty}</p>
                               )}
                               {quote.professional?.recommended_by && (
-                                <p style={{ margin: 0 }}>👤 Indicado por: {quote.professional.recommended_by}</p>
+                                <p className="m-0">👤 Indicado por: {quote.professional.recommended_by}</p>
                               )}
                             </div>
                           </div>
 
                           {/* Payment Details */}
                           {quote.payment_method && (
-                            <div style={{ marginBottom: '16px' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>💳 Forma de Pagamento</h4>
-                              <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#1F2937', fontWeight: 600 }}>
+                            <div className="mb-4">
+                              <h4 className="text-[13px] font-bold text-[#374151] mb-2">💳 Forma de Pagamento</h4>
+                              <p className="mt-0 mb-1 text-[13px] text-[#1F2937] font-semibold">
                                 {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.emoji || '💳'} {PAYMENT_METHODS.find(m => m.value === quote.payment_method)?.label || quote.payment_method}
                               </p>
                               {quote.payment_details && (
-                                <p style={{ margin: 0, fontSize: '12px', color: '#6B7280', whiteSpace: 'pre-wrap' }}>{quote.payment_details}</p>
+                                <p className="m-0 text-xs text-[#6B7280] whitespace-pre-wrap">{quote.payment_details}</p>
                               )}
                             </div>
                           )}
 
                           {/* Amount Info */}
-                          <div style={{ marginBottom: '16px', padding: '12px', background: '#F0FDF4', borderRadius: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
-                              <span style={{ color: '#6B7280' }}>Valor Original:</span>
-                              <span style={{ color: '#1F2937', fontWeight: 600 }}>{formatCurrency(Number(quote.amount))}</span>
+                          <div className="mb-4 p-3 bg-[#F0FDF4] rounded-lg">
+                            <div className="flex justify-between text-[13px] mb-1">
+                              <span className="text-[#6B7280]">Valor Original:</span>
+                              <span className="text-[#1F2937] font-semibold">{formatCurrency(Number(quote.amount))}</span>
                             </div>
                             {quote.negotiated_amount && quote.negotiated_amount !== Number(quote.amount) && (
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#059669', fontWeight: 600 }}>
+                              <div className="flex justify-between text-[13px] text-success font-semibold">
                                 <span>Valor Negociado:</span>
                                 <span>{formatCurrency(quote.negotiated_amount)}</span>
                               </div>
@@ -1660,14 +1601,14 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
                           {/* Notes */}
                           {quote.notes && (
-                            <div style={{ marginBottom: '16px' }}>
-                              <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '4px' }}>📝 Observações</h4>
-                              <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>{quote.notes}</p>
+                            <div className="mb-4">
+                              <h4 className="text-[13px] font-bold text-[#374151] mb-1">📝 Observações</h4>
+                              <p className="m-0 text-xs text-[#6B7280]">{quote.notes}</p>
                             </div>
                           )}
 
                           {/* Metadata */}
-                          <div style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                          <div className="text-[11px] text-[#9CA3AF]">
                             Adicionado em {new Date(quote.created_at).toLocaleDateString('pt-BR')}
                           </div>
                         </>
@@ -1688,48 +1629,41 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
         const totalCalc = orcamentoFlow.editedItems.reduce((s, it) => s + (Number(it.valor_total) || 0), 0)
         return (
           <div
-            className="modal-overlay"
+            className="modal-overlay items-start pt-6 pb-6 overflow-y-auto"
             onClick={(e) => { if (e.target === e.currentTarget && !orcamentoFlow.saving && orcamentoFlow.step !== 'parsing') closeOrcamentoFlow() }}
-            style={{ alignItems: 'flex-start', paddingTop: '24px', paddingBottom: '24px', overflowY: 'auto' }}
           >
-            <div className="modal-content" style={{ maxWidth: '900px', width: '95%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div className="modal-content max-w-[900px] w-[95%]">
+              <div className="flex justify-between items-center mb-3">
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>
+                  <h3 className="text-lg font-bold m-0">
                     📄 Subir Orçamento (OCR)
                   </h3>
-                  <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>
+                  <p className="text-xs text-[#6b7280] mt-1 mb-0">
                     {pro?.name} — Gemini vai ler o PDF e extrair itens e valores automaticamente
                   </p>
                 </div>
                 <button
                   onClick={closeOrcamentoFlow}
                   disabled={orcamentoFlow.saving || orcamentoFlow.step === 'parsing'}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                  className="bg-transparent border-none cursor-pointer p-1"
                 >
                   <X size={20} color="#6b7280" />
                 </button>
               </div>
 
               {/* Step indicator */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <div className="flex gap-2 mb-4">
                 {(['select', 'parsing', 'review'] as const).map((s, i) => {
                   const active = orcamentoFlow.step === s
                   const done = (['select', 'parsing', 'review'] as const).indexOf(orcamentoFlow.step) > i
                   return (
-                    <div key={s} style={{
-                      flex: 1, height: '4px', borderRadius: '2px',
-                      background: active ? '#7c3aed' : done ? '#a78bfa' : '#e5e7eb',
-                    }} />
+                    <div key={s} className={`flex-1 h-1 rounded-sm ${active ? 'bg-[#7c3aed]' : done ? 'bg-[#a78bfa]' : 'bg-[#e5e7eb]'}`} />
                   )
                 })}
               </div>
 
               {orcamentoFlow.error && (
-                <div style={{
-                  padding: '10px 12px', background: '#fee2e2', color: '#991b1b',
-                  borderRadius: '8px', fontSize: '12px', marginBottom: '12px', border: '1px solid #fecaca',
-                }}>
+                <div className="px-3 py-2.5 bg-danger-light text-[#991b1b] rounded-lg text-xs mb-3 border border-[#fecaca]">
                   ⚠️ {orcamentoFlow.error}
                 </div>
               )}
@@ -1737,42 +1671,36 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
               {/* STEP: SELECT FILE */}
               {orcamentoFlow.step === 'select' && (
                 <div>
-                  <label style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    gap: '8px', padding: '32px', border: '2px dashed #d1d5db', borderRadius: '12px',
-                    cursor: 'pointer',
-                    background: orcamentoFlow.file ? '#f0fdf4' : '#fafafa',
-                    borderColor: orcamentoFlow.file ? '#10b981' : '#d1d5db',
-                  }}>
+                  <label className={`flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-xl cursor-pointer ${orcamentoFlow.file ? 'bg-[#f0fdf4] border-[#10b981]' : 'bg-[#fafafa] border-[#d1d5db]'}`}>
                     <Upload size={32} color={orcamentoFlow.file ? '#10b981' : '#9ca3af'} />
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: orcamentoFlow.file ? '#065f46' : '#374151' }}>
+                    <span className={`text-sm font-bold ${orcamentoFlow.file ? 'text-[#065f46]' : 'text-[#374151]'}`}>
                       {orcamentoFlow.file ? orcamentoFlow.file.name : 'Clique para selecionar o PDF do orçamento'}
                     </span>
                     {orcamentoFlow.file ? (
-                      <span style={{ fontSize: '12px', color: '#059669' }}>
+                      <span className="text-xs text-success">
                         {fmtFileSize(orcamentoFlow.file.size)} · pronto pra analisar
                       </span>
                     ) : (
-                      <span style={{ fontSize: '12px', color: '#6b7280' }}>PDF até 20MB (nativo ou escaneado)</span>
+                      <span className="text-xs text-[#6b7280]">PDF até 20MB (nativo ou escaneado)</span>
                     )}
                     <input
                       type="file"
                       accept=".pdf,application/pdf"
                       onChange={e => setOrcamentoFlow({ ...orcamentoFlow, file: e.target.files?.[0] || null, error: null })}
-                      style={{ display: 'none' }}
+                      className="hidden"
                     />
                   </label>
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
+                  <div className="flex gap-2 mt-4 justify-end">
                     <button
                       onClick={closeOrcamentoFlow}
-                      style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>
+                      className="px-5 py-2.5 border border-[#e5e7eb] rounded-[10px] bg-white cursor-pointer font-semibold text-sm">
                       Cancelar
                     </button>
                     <button
-                      className="btn-primary"
+                      className="btn-primary px-5 py-2.5"
                       onClick={handleParseOrcamento}
                       disabled={!orcamentoFlow.file}
-                      style={{ padding: '10px 20px', opacity: orcamentoFlow.file ? 1 : 0.5 }}>
+                      style={{ opacity: orcamentoFlow.file ? 1 : 0.5 }}>
                       🤖 Analisar com Gemini OCR
                     </button>
                   </div>
@@ -1781,20 +1709,16 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
               {/* STEP: PARSING */}
               {orcamentoFlow.step === 'parsing' && (
-                <div style={{ padding: '48px 16px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>🤖</div>
-                  <h4 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 8px', color: '#111827' }}>
+                <div className="px-4 py-12 text-center">
+                  <div className="text-5xl mb-4">🤖</div>
+                  <h4 className="text-base font-bold mt-0 mb-2 text-[#111827]">
                     Analisando PDF com Gemini...
                   </h4>
-                  <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
+                  <p className="text-[13px] text-[#6b7280] m-0">
                     Lendo itens, valores, datas e cômodos. Pode levar 10-30 segundos.
                   </p>
-                  <div style={{
-                    marginTop: '20px', height: '4px', background: '#e5e7eb', borderRadius: '2px', overflow: 'hidden', position: 'relative'
-                  }}>
-                    <div style={{
-                      position: 'absolute', top: 0, left: 0, height: '100%', width: '30%',
-                      background: 'linear-gradient(90deg, #7c3aed, #2563eb)',
+                  <div className="mt-5 h-1 bg-[#e5e7eb] rounded-sm overflow-hidden relative">
+                    <div className="absolute top-0 left-0 h-full w-[30%] bg-gradient-to-r from-[#7c3aed] to-[#2563eb]" style={{
                       animation: 'progress 1.5s ease-in-out infinite',
                     }} />
                   </div>
@@ -1806,33 +1730,29 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
               {orcamentoFlow.step === 'review' && orcamentoFlow.parsed && (
                 <div>
                   {/* Header: parsed metadata */}
-                  <div style={{
-                    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                    gap: '8px', marginBottom: '12px', padding: '12px', background: '#faf5ff',
-                    borderRadius: '10px', border: '1px solid #e9d5ff',
-                  }}>
+                  <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 mb-3 p-3 bg-[#faf5ff] rounded-[10px] border border-[#e9d5ff]">
                     <div>
-                      <p style={{ fontSize: '10px', color: '#7c3aed', margin: 0, fontWeight: 700 }}>CONFIANÇA</p>
-                      <p style={{ fontSize: '13px', margin: '2px 0 0', fontWeight: 600, color: '#111827' }}>
+                      <p className="text-[10px] text-[#7c3aed] m-0 font-bold">CONFIANÇA</p>
+                      <p className="text-[13px] mt-0.5 mb-0 font-semibold text-[#111827]">
                         {orcamentoFlow.parsed.confidence === 'alta' ? '🟢 Alta' : orcamentoFlow.parsed.confidence === 'media' ? '🟡 Média' : '🔴 Baixa'}
                       </p>
                     </div>
                     <div>
-                      <p style={{ fontSize: '10px', color: '#7c3aed', margin: 0, fontWeight: 700 }}>TOTAL DECLARADO</p>
-                      <p style={{ fontSize: '13px', margin: '2px 0 0', fontWeight: 600, color: '#111827' }}>
+                      <p className="text-[10px] text-[#7c3aed] m-0 font-bold">TOTAL DECLARADO</p>
+                      <p className="text-[13px] mt-0.5 mb-0 font-semibold text-[#111827]">
                         {fmtBRL(orcamentoFlow.parsed.total)}
                       </p>
                     </div>
                     <div>
-                      <p style={{ fontSize: '10px', color: '#7c3aed', margin: 0, fontWeight: 700 }}>TOTAL CALCULADO</p>
-                      <p style={{ fontSize: '13px', margin: '2px 0 0', fontWeight: 600, color: totalCalc > 0 && Math.abs(totalCalc - orcamentoFlow.parsed.total) / (orcamentoFlow.parsed.total || 1) > 0.02 ? '#dc2626' : '#111827' }}>
+                      <p className="text-[10px] text-[#7c3aed] m-0 font-bold">TOTAL CALCULADO</p>
+                      <p className={`text-[13px] mt-0.5 mb-0 font-semibold ${totalCalc > 0 && Math.abs(totalCalc - orcamentoFlow.parsed.total) / (orcamentoFlow.parsed.total || 1) > 0.02 ? 'text-danger' : 'text-[#111827]'}`}>
                         {fmtBRL(totalCalc)}
                       </p>
                     </div>
                     {orcamentoFlow.parsed.data_orcamento && (
                       <div>
-                        <p style={{ fontSize: '10px', color: '#7c3aed', margin: 0, fontWeight: 700 }}>DATA</p>
-                        <p style={{ fontSize: '13px', margin: '2px 0 0', fontWeight: 600, color: '#111827' }}>
+                        <p className="text-[10px] text-[#7c3aed] m-0 font-bold">DATA</p>
+                        <p className="text-[13px] mt-0.5 mb-0 font-semibold text-[#111827]">
                           {orcamentoFlow.parsed.data_orcamento}
                         </p>
                       </div>
@@ -1841,84 +1761,77 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
                   {/* Warnings */}
                   {orcamentoFlow.parsed.warnings.length > 0 && (
-                    <div style={{
-                      padding: '10px 12px', background: '#fef3c7', border: '1px solid #fde68a',
-                      borderRadius: '8px', marginBottom: '12px',
-                    }}>
-                      <p style={{ fontSize: '11px', fontWeight: 700, color: '#92400e', margin: '0 0 4px' }}>⚠️ Avisos do OCR</p>
+                    <div className="px-3 py-2.5 bg-warning-light border border-[#fde68a] rounded-lg mb-3">
+                      <p className="text-[11px] font-bold text-[#92400e] mt-0 mb-1">⚠️ Avisos do OCR</p>
                       {orcamentoFlow.parsed.warnings.map((w, i) => (
-                        <p key={i} style={{ fontSize: '11px', color: '#92400e', margin: '2px 0' }}>• {w}</p>
+                        <p key={i} className="text-[11px] text-[#92400e] my-0.5">• {w}</p>
                       ))}
                     </div>
                   )}
 
                   {/* Description */}
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#374151', display: 'block', marginBottom: '4px' }}>
+                  <div className="mb-3">
+                    <label className="text-[11px] font-bold text-[#374151] block mb-1">
                       DESCRIÇÃO DO ORÇAMENTO *
                     </label>
                     <input
                       value={orcamentoFlow.description}
                       onChange={e => setOrcamentoFlow({ ...orcamentoFlow, description: e.target.value })}
                       placeholder="Ex: Elétrica completa da cozinha"
-                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '13px', boxSizing: 'border-box' }}
+                      className="w-full p-2.5 rounded-lg border border-[#d1d5db] text-[13px] box-border"
                     />
                   </div>
 
                   {/* Items table (editable) */}
-                  <div style={{ marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#374151' }}>
+                  <div className="mb-3">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <label className="text-[11px] font-bold text-[#374151]">
                         ITENS EXTRAÍDOS ({orcamentoFlow.editedItems.length})
                       </label>
                       <button
                         onClick={addOrcItem}
-                        style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 600, border: '1px solid #7c3aed', background: 'white', color: '#7c3aed', borderRadius: '6px', cursor: 'pointer' }}>
+                        className="px-2.5 py-1 text-[11px] font-semibold border border-[#7c3aed] bg-white text-[#7c3aed] rounded-md cursor-pointer">
                         + Novo Item
                       </button>
                     </div>
-                    <div style={{ border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden', maxHeight: '360px', overflowY: 'auto' }}>
+                    <div className="border border-[#e5e7eb] rounded-[10px] overflow-hidden max-h-[360px] overflow-y-auto">
                       {orcamentoFlow.editedItems.length === 0 ? (
-                        <p style={{ padding: '16px', textAlign: 'center', fontSize: '12px', color: '#9ca3af', margin: 0 }}>
+                        <p className="p-4 text-center text-xs text-[#9ca3af] m-0">
                           Nenhum item extraído. Adicione manualmente.
                         </p>
                       ) : orcamentoFlow.editedItems.map((item, i) => (
-                        <div key={i} style={{
-                          padding: '10px 12px',
-                          borderBottom: i < orcamentoFlow.editedItems.length - 1 ? '1px solid #f3f4f6' : 'none',
-                          background: i % 2 === 0 ? 'white' : '#fafafa',
-                        }}>
-                          <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', alignItems: 'flex-start' }}>
-                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#7c3aed', minWidth: '18px', paddingTop: '8px' }}>
+                        <div key={i} className={`px-3 py-2.5 ${i < orcamentoFlow.editedItems.length - 1 ? 'border-b border-[#f3f4f6]' : ''} ${i % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]'}`}>
+                          <div className="flex gap-1.5 mb-1.5 items-start">
+                            <span className="text-[10px] font-bold text-[#7c3aed] min-w-[18px] pt-2">
                               #{item.numero}
                             </span>
                             <input
                               value={item.descricao}
                               onChange={e => updateOrcItem(i, { descricao: e.target.value })}
                               placeholder="Descrição"
-                              style={{ flex: 1, padding: '6px 8px', fontSize: '12px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box' }}
+                              className="flex-1 px-2 py-1.5 text-xs border border-[#e5e7eb] rounded-md box-border"
                             />
                             <button
                               onClick={() => removeOrcItem(i)}
                               title="Remover"
-                              style={{ padding: '6px', border: 'none', background: '#fee2e2', color: '#dc2626', borderRadius: '6px', cursor: 'pointer' }}>
+                              className="p-1.5 border-none bg-danger-light text-danger rounded-md cursor-pointer">
                               <Trash2 size={12} />
                             </button>
                           </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '60px 70px 100px 100px 1fr 1fr', gap: '6px', marginLeft: '24px' }}>
+                          <div className="grid grid-cols-[60px_70px_100px_100px_1fr_1fr] gap-1.5 ml-6">
                             <input
                               type="number"
                               step="0.01"
                               value={item.quantidade}
                               onChange={e => updateOrcItem(i, { quantidade: Number(e.target.value) || 0 })}
                               placeholder="Qtd"
-                              style={{ padding: '6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box' }}
+                              className="p-1.5 text-[11px] border border-[#e5e7eb] rounded-md box-border"
                             />
                             <input
                               value={item.unidade ?? ''}
                               onChange={e => updateOrcItem(i, { unidade: e.target.value || null })}
                               placeholder="un"
-                              style={{ padding: '6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box' }}
+                              className="p-1.5 text-[11px] border border-[#e5e7eb] rounded-md box-border"
                             />
                             <input
                               type="number"
@@ -1926,7 +1839,7 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                               value={item.valor_unitario}
                               onChange={e => updateOrcItem(i, { valor_unitario: Number(e.target.value) || 0 })}
                               placeholder="V. Unit"
-                              style={{ padding: '6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box' }}
+                              className="p-1.5 text-[11px] border border-[#e5e7eb] rounded-md box-border"
                             />
                             <input
                               type="number"
@@ -1934,19 +1847,19 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                               value={item.valor_total}
                               onChange={e => updateOrcItem(i, { valor_total: Number(e.target.value) || 0 })}
                               placeholder="Total"
-                              style={{ padding: '6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box', fontWeight: 600 }}
+                              className="p-1.5 text-[11px] border border-[#e5e7eb] rounded-md box-border font-semibold"
                             />
                             <select
                               value={item.categoria ?? ''}
                               onChange={e => updateOrcItem(i, { categoria: e.target.value || null })}
-                              style={{ padding: '6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box' }}>
+                              className="p-1.5 text-[11px] border border-[#e5e7eb] rounded-md box-border">
                               <option value="">Categoria</option>
                               {orcCategories.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
                             <select
                               value={item.room_id ?? ''}
                               onChange={e => updateOrcItem(i, { room_id: e.target.value || null })}
-                              style={{ padding: '6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', boxSizing: 'border-box' }}>
+                              className="p-1.5 text-[11px] border border-[#e5e7eb] rounded-md box-border">
                               <option value="">{item.ambiente_sugerido ?? 'Cômodo'}</option>
                               {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                             </select>
@@ -1957,19 +1870,18 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                   </div>
 
                   {/* Action buttons */}
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', paddingTop: '8px', borderTop: '1px solid #e5e7eb' }}>
+                  <div className="flex gap-2 justify-end pt-2 border-t border-[#e5e7eb]">
                     <button
                       onClick={closeOrcamentoFlow}
                       disabled={orcamentoFlow.saving}
-                      style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '10px', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}>
+                      className="px-5 py-2.5 border border-[#e5e7eb] rounded-[10px] bg-white cursor-pointer font-semibold text-sm">
                       Cancelar
                     </button>
                     <button
-                      className="btn-primary"
+                      className="btn-primary px-5 py-2.5"
                       onClick={handleSaveOrcamento}
                       disabled={orcamentoFlow.saving || !orcamentoFlow.description.trim()}
                       style={{
-                        padding: '10px 20px',
                         opacity: (orcamentoFlow.saving || !orcamentoFlow.description.trim()) ? 0.6 : 1,
                       }}>
                       {orcamentoFlow.saving ? 'Salvando...' : `💾 Salvar Orçamento (${fmtBRL(totalCalc || orcamentoFlow.parsed.total)})`}
@@ -1984,44 +1896,41 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
       {/* Profissionais Cadastrados Section */}
       {showProfessionalsList && (
-        <div style={{ marginTop: '28px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#374151', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="mt-7">
+          <h3 className="text-base font-bold text-[#374151] mb-3.5 flex items-center gap-2">
             <Users size={18} /> Profissionais Cadastrados
           </h3>
           {professionals.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>👤</div>
-              <h3 style={{ fontSize: '18px', color: '#374151', marginBottom: '8px' }}>Nenhum profissional cadastrado</h3>
-              <p style={{ color: '#6b7280' }}>Comece adicionando profissionais para seus orçamentos.</p>
+            <div className="text-center p-10">
+              <div className="text-5xl mb-4">👤</div>
+              <h3 className="text-lg text-[#374151] mb-2">Nenhum profissional cadastrado</h3>
+              <p className="text-[#6b7280]">Comece adicionando profissionais para seus orçamentos.</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3">
               {professionals.map(pro => {
                 const isExpanded = expandedProfessional === pro.id
                 const status = getProfessionalStatus(pro.id)
                 const proQuotes = quotes.filter(q => q.professional_id === pro.id)
 
                 return (
-                  <div key={pro.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                  <div key={pro.id} className="card p-0 overflow-hidden">
                     {/* Header */}
                     <div
                       onClick={() => setExpandedProfessional(isExpanded ? null : pro.id)}
-                      style={{
-                        padding: '14px', cursor: 'pointer', background: '#F9FAFB', borderBottom: isExpanded ? '1px solid #E5E7EB' : 'none',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px'
-                      }}
+                      className={`p-3.5 cursor-pointer bg-[#F9FAFB] flex justify-between items-start gap-3 ${isExpanded ? 'border-b border-[#E5E7EB]' : ''}`}
                     >
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1F2937' }}>{pro.name}</h4>
-                          <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', background: '#E5E7EB', color: '#374151', fontWeight: 600 }}>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="m-0 text-sm font-bold text-[#1F2937]">{pro.name}</h4>
+                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-[#E5E7EB] text-[#374151] font-semibold">
                             {status.emoji} {status.status}
                           </span>
                         </div>
                         {pro.specialty && (
-                          <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>{pro.specialty}</p>
+                          <p className="m-0 text-xs text-[#6B7280]">{pro.specialty}</p>
                         )}
-                        <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#9CA3AF' }}>
+                        <p className="mt-1 mb-0 text-xs text-[#9CA3AF]">
                           {proQuotes.length} orçamento{proQuotes.length !== 1 ? 's' : ''}
                         </p>
                       </div>
@@ -2030,33 +1939,28 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
                     {/* Expanded Details */}
                     {isExpanded && (
-                      <div style={{ padding: '14px', borderTop: '1px solid #E5E7EB' }}>
+                      <div className="p-3.5 border-t border-[#E5E7EB]">
                         {/* Action Row: Subir Orçamento OCR + Edit */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '8px', flexWrap: 'wrap' }}>
+                        <div className="flex justify-between items-center mb-3 gap-2 flex-wrap">
                           <button
                             onClick={() => openOrcamentoFlow(pro.id)}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px',
-                              border: 'none', background: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)',
-                              color: 'white', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                              boxShadow: '0 2px 4px rgba(124, 58, 237, 0.2)',
-                            }}>
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border-none bg-gradient-to-br from-[#7c3aed] to-[#2563eb] text-white text-xs font-bold cursor-pointer shadow-[0_2px_4px_rgba(124,58,237,0.2)]">
                             <Upload size={13} /> Subir Orçamento (OCR)
                           </button>
                           {editingProfessional === pro.id ? (
-                            <div style={{ display: 'flex', gap: '6px' }}>
+                            <div className="flex gap-1.5">
                               <button onClick={handleSaveProfessional}
-                                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#10B981', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-md border-none bg-[#10B981] text-white text-xs font-semibold cursor-pointer">
                                 <Check size={12} /> Salvar
                               </button>
                               <button onClick={() => { setEditingProfessional(null); setEditProfessionalForm({}) }}
-                                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#E5E7EB', color: '#6B7280', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-md border-none bg-[#E5E7EB] text-[#6B7280] text-xs font-semibold cursor-pointer">
                                 <X size={12} /> Cancelar
                               </button>
                             </div>
                           ) : (
                             <button onClick={() => handleEditProfessional(pro)}
-                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', background: 'white', color: '#374151', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-[#D1D5DB] bg-white text-[#374151] text-xs font-semibold cursor-pointer">
                               <Edit3 size={12} /> Editar
                             </button>
                           )}
@@ -2064,60 +1968,60 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
 
                         {/* Editable Professional Form */}
                         {editingProfessional === pro.id ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', padding: '12px', background: '#F0FDF4', borderRadius: '10px' }}>
+                          <div className="flex flex-col gap-2 mb-4 p-3 bg-[#F0FDF4] rounded-[10px]">
                             <div>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Nome</label>
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Nome</label>
                               <input value={editProfessionalForm.name || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, name: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                             </div>
                             <div>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Telefone</label>
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Telefone</label>
                               <input value={editProfessionalForm.phone || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, phone: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                             </div>
                             <div>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Email</label>
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Email</label>
                               <input type="email" value={editProfessionalForm.email || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, email: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                             </div>
                             <div>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Especialidade</label>
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Especialidade</label>
                               <input value={editProfessionalForm.specialty || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, specialty: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                             </div>
                             <div>
-                              <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '2px' }}>Indicado por</label>
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Indicado por</label>
                               <input value={editProfessionalForm.recommended_by || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, recommended_by: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', boxSizing: 'border-box' }} />
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
                             </div>
                           </div>
                         ) : (
                           <>
                             {/* Contact Info */}
-                            <div style={{ marginBottom: '12px' }}>
-                              <h5 style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 700, color: '#374151' }}>📞 Contato</h5>
+                            <div className="mb-3">
+                              <h5 className="mt-0 mb-2 text-xs font-bold text-[#374151]">📞 Contato</h5>
                               {pro.phone && (
-                                <p style={{ margin: '0 0 4px', fontSize: '12px', color: '#6B7280' }}>
-                                  <Phone size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                                <p className="mt-0 mb-1 text-xs text-[#6B7280]">
+                                  <Phone size={12} className="inline align-middle mr-1" />
                                   {pro.phone}
                                 </p>
                               )}
                               {pro.email && (
-                                <p style={{ margin: '0 0 4px', fontSize: '12px', color: '#6B7280' }}>
-                                  <Mail size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                                <p className="mt-0 mb-1 text-xs text-[#6B7280]">
+                                  <Mail size={12} className="inline align-middle mr-1" />
                                   {pro.email}
                                 </p>
                               )}
                               {!pro.phone && !pro.email && (
-                                <p style={{ margin: 0, fontSize: '12px', color: '#9CA3AF', fontStyle: 'italic' }}>Sem informações de contato</p>
+                                <p className="m-0 text-xs text-[#9CA3AF] italic">Sem informações de contato</p>
                               )}
                             </div>
 
                             {/* Recommended By */}
                             {pro.recommended_by && (
-                              <div style={{ marginBottom: '12px' }}>
-                                <h5 style={{ margin: '0 0 4px', fontSize: '12px', fontWeight: 700, color: '#374151' }}>👤 Indicado por</h5>
-                                <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>{pro.recommended_by}</p>
+                              <div className="mb-3">
+                                <h5 className="mt-0 mb-1 text-xs font-bold text-[#374151]">👤 Indicado por</h5>
+                                <p className="m-0 text-xs text-[#6B7280]">{pro.recommended_by}</p>
                               </div>
                             )}
                           </>
@@ -2126,24 +2030,24 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                         {/* Notes - Editable */}
                         {!editingProfessional && (
                           <div>
-                            <h5 style={{ margin: '0 0 4px', fontSize: '12px', fontWeight: 700, color: '#374151' }}>📝 Observações</h5>
+                            <h5 className="mt-0 mb-1 text-xs font-bold text-[#374151]">📝 Observações</h5>
                             {editingNotes[pro.id] !== undefined ? (
-                              <div style={{ display: 'flex', gap: '6px' }}>
+                              <div className="flex gap-1.5">
                                 <textarea
                                   value={editingNotes[pro.id]}
                                   onChange={e => setEditingNotes({ ...editingNotes, [pro.id]: e.target.value })}
                                   rows={2}
-                                  style={{ flex: 1, fontSize: '12px', padding: '6px', borderRadius: '6px', border: '1px solid #E5E7EB' }}
+                                  className="flex-1 text-xs p-1.5 rounded-md border border-[#E5E7EB]"
                                 />
-                                <div style={{ display: 'flex', gap: '4px', flexDirection: 'column' }}>
+                                <div className="flex gap-1 flex-col">
                                   <button
                                     onClick={() => handleSaveNotes(pro.id, editingNotes[pro.id])}
-                                    style={{ padding: '4px 8px', borderRadius: '4px', border: 'none', background: '#059669', color: 'white', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+                                    className="px-2 py-1 rounded border-none bg-success text-white text-[11px] font-semibold cursor-pointer">
                                     <Check size={12} />
                                   </button>
                                   <button
                                     onClick={() => { const n = { ...editingNotes }; delete n[pro.id]; setEditingNotes(n) }}
-                                    style={{ padding: '4px 8px', borderRadius: '4px', border: 'none', background: '#E5E7EB', color: '#6B7280', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+                                    className="px-2 py-1 rounded border-none bg-[#E5E7EB] text-[#6B7280] text-[11px] font-semibold cursor-pointer">
                                     <X size={12} />
                                   </button>
                                 </div>
@@ -2151,10 +2055,7 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                             ) : (
                               <p
                                 onClick={() => setEditingNotes({ ...editingNotes, [pro.id]: pro.notes || '' })}
-                                style={{
-                                  margin: 0, fontSize: '12px', color: pro.notes ? '#6B7280' : '#9CA3AF', fontStyle: pro.notes ? 'normal' : 'italic',
-                                  cursor: 'pointer', padding: '6px', borderRadius: '4px', background: '#F9FAFB'
-                                }}>
+                                className={`m-0 text-xs cursor-pointer p-1.5 rounded bg-[#F9FAFB] ${pro.notes ? 'text-[#6B7280]' : 'text-[#9CA3AF] italic'}`}>
                                 {pro.notes || 'Clique para adicionar observações'}
                               </p>
                             )}
