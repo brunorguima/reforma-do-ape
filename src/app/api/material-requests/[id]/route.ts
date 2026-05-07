@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { sendNotification } from '@/lib/notify'
 
 const SELECT_WITH_JOINS = `
   *,
@@ -109,6 +110,46 @@ export async function PATCH(
     .single()
 
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 })
+
+  // Notify on status changes
+  const profName = complete?.professional?.name || 'Profissional'
+  if (updateData.status === 'aprovado') {
+    sendNotification({
+      project_id: complete.project_id,
+      recipient_type: 'professional',
+      recipient_id: complete.professional_id,
+      title: `Pedido de material aprovado`,
+      body: `"${complete.title}" foi aprovado — pode comprar!`,
+      type: 'material_request',
+      reference_id: id,
+      reference_type: 'material_request',
+      url: '#pedidos',
+    })
+  } else if (updateData.status === 'recusado') {
+    sendNotification({
+      project_id: complete.project_id,
+      recipient_type: 'professional',
+      recipient_id: complete.professional_id,
+      title: `Pedido de material recusado`,
+      body: `"${complete.title}" foi recusado${complete.owner_notes ? ': ' + complete.owner_notes : ''}`,
+      type: 'alert',
+      reference_id: id,
+      reference_type: 'material_request',
+      url: '#pedidos',
+    })
+  } else if (updateData.status === 'comprado') {
+    sendNotification({
+      project_id: complete.project_id,
+      recipient_type: 'owner',
+      title: `Material comprado`,
+      body: `${profName} marcou "${complete.title}" como comprado`,
+      type: 'material_request',
+      reference_id: id,
+      reference_type: 'material_request',
+      url: '#pedidos',
+    })
+  }
+
   return NextResponse.json(complete)
 }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { sendNotification } from '@/lib/notify'
 
 const SELECT_WITH_JOINS = `
   *,
@@ -118,5 +119,21 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 })
+
+  // Notify owner about new material request
+  const profName = complete?.professional?.name || 'Profissional'
+  const urgencyLabel = requestData.urgency === 'urgente' ? ' [URGENTE]' : ''
+  const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+  sendNotification({
+    project_id: requestData.project_id,
+    recipient_type: 'owner',
+    title: `Novo pedido de material${urgencyLabel}`,
+    body: `${profName}: ${requestData.title} — ${items?.length || 0} itens, ${fmt(totalEstimated)}`,
+    type: 'material_request',
+    reference_id: request.id,
+    reference_type: 'material_request',
+    url: '#pedidos',
+  })
+
   return NextResponse.json(complete)
 }

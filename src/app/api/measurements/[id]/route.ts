@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { sendNotification } from '@/lib/notify'
 
 // GET /api/measurements/[id] - Get a single measurement with items
 export async function GET(
@@ -118,6 +119,48 @@ export async function PATCH(
     .single()
 
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 })
+
+  // Send notifications on status transitions
+  const profName = complete?.professional?.name || 'Profissional'
+  const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+
+  if (updateData.status === 'enviada') {
+    sendNotification({
+      project_id: complete.project_id,
+      recipient_type: 'owner',
+      title: `Medição enviada para aprovação`,
+      body: `${profName} enviou medição #${complete.measurement_number} — ${fmt(complete.net_amount || 0)}`,
+      type: 'measurement',
+      reference_id: id,
+      reference_type: 'measurement',
+      url: '#medicoes',
+    })
+  } else if (updateData.status === 'aprovada') {
+    sendNotification({
+      project_id: complete.project_id,
+      recipient_type: 'professional',
+      recipient_id: complete.professional_id,
+      title: `Medição #${complete.measurement_number} aprovada`,
+      body: `Sua medição foi aprovada — ${fmt(complete.net_amount || 0)}`,
+      type: 'payment',
+      reference_id: id,
+      reference_type: 'measurement',
+      url: '#medicoes',
+    })
+  } else if (updateData.status === 'paga') {
+    sendNotification({
+      project_id: complete.project_id,
+      recipient_type: 'professional',
+      recipient_id: complete.professional_id,
+      title: `Pagamento realizado`,
+      body: `Medição #${complete.measurement_number} paga — ${fmt(complete.net_amount || 0)}`,
+      type: 'payment',
+      reference_id: id,
+      reference_type: 'measurement',
+      url: '#medicoes',
+    })
+  }
+
   return NextResponse.json(complete)
 }
 

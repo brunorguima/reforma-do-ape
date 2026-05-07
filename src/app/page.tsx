@@ -17,6 +17,7 @@ import MeasurementPanel from '@/components/MeasurementPanel'
 import MeasurementApprovalPanel from '@/components/MeasurementApprovalPanel'
 import MaterialRequestPanel from '@/components/MaterialRequestPanel'
 import DashboardPanel from '@/components/DashboardPanel'
+import NotificationBell from '@/components/NotificationBell'
 import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, ClipboardCheck, LayoutDashboard, Package } from 'lucide-react'
 
 interface Project {
@@ -546,6 +547,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
+              <NotificationBell projectId={activeProjectId} recipientType={userRole === 'professional' ? 'professional' : 'owner'} />
               <button
                 onClick={handleRefresh}
                 className="p-2 rounded-xl bg-white border border-slate-100 hover:bg-slate-50 transition-colors"

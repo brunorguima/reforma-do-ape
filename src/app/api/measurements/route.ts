@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { sendNotification } from '@/lib/notify'
 
 // GET /api/measurements?project_id=xxx&professional_id=xxx
 export async function GET(req: NextRequest) {
@@ -121,5 +122,20 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 })
+
+  // Notify owner about new measurement
+  const profName = complete?.professional?.name || 'Profissional'
+  const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+  sendNotification({
+    project_id: measurementData.project_id,
+    recipient_type: 'owner',
+    title: `Nova medição #${nextNumber}`,
+    body: `${profName} enviou medição de ${fmt(complete?.net_amount || 0)}`,
+    type: 'measurement',
+    reference_id: measurement.id,
+    reference_type: 'measurement',
+    url: '#medicoes',
+  })
+
   return NextResponse.json(complete)
 }
