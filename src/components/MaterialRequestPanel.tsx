@@ -4,7 +4,7 @@ import { formatCurrency } from '@/lib/constants'
 import { useToast } from '@/components/Toast'
 import { KpiCard, KpiGrid } from '@/components/ui'
 import { StatusBadge, getStatusVariant, getStatusLabel } from '@/components/ui'
-import { EmptyState } from '@/components/ui'
+import { EmptyState, PanelSkeleton } from '@/components/ui'
 import { Modal, FormField, Button } from '@/components/ui'
 import {
   ShoppingCart, Package, Clock, CheckCircle2, XCircle,
@@ -140,11 +140,7 @@ export default function MaterialRequestPanel({ projectId }: { projectId?: string
   const urgentes = requests.filter(r => r.urgency === 'urgente' && r.status === 'pendente').length
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 size={32} className="animate-spin text-secondary" />
-      </div>
-    )
+    return <PanelSkeleton />
   }
 
   return (

@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Reforma do Apê",
-  description: "Controle completo da sua obra — orçamentos, medições, materiais e financeiro",
+  description: "Controle completo da sua obra — orçamentos, aprovações, materiais e financeiro",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

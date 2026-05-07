@@ -55,12 +55,22 @@ function getDateGroup(dateStr: string): string {
   return 'Anteriores'
 }
 
+const TYPE_TO_TAB: Record<string, string> = {
+  measurement: 'medicoes',
+  material_request: 'pedidos',
+  payment: 'financeiro',
+  alert: 'home',
+  info: 'home',
+}
+
 export default function NotificationBell({
   projectId,
   recipientType = 'owner',
+  onNavigate,
 }: {
   projectId?: string | null
   recipientType?: string
+  onNavigate?: (tab: string) => void
 }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [isOpen, setIsOpen] = useState(false)
@@ -226,15 +236,20 @@ export default function NotificationBell({
                             key={n.id}
                             onClick={() => {
                               if (!n.is_read) markRead([n.id])
-                              if (n.url) {
-                                window.location.hash = n.url
+                              const targetTab = n.url || TYPE_TO_TAB[n.type]
+                              if (targetTab) {
+                                if (onNavigate) {
+                                  onNavigate(targetTab)
+                                } else {
+                                  window.location.hash = targetTab
+                                }
                                 setIsOpen(false)
                               }
                             }}
                             className={`
                               bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 flex gap-4 shadow-sm
                               transition-colors
-                              ${n.url ? 'cursor-pointer hover:bg-surface-container-low' : ''}
+                              cursor-pointer hover:bg-surface-container-low
                               ${!n.is_read ? 'bg-secondary/[0.03]' : ''}
                             `}
                           >

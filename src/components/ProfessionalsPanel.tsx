@@ -5,6 +5,7 @@ import type { UserID } from '@/lib/constants'
 import { USERS, formatCurrency } from '@/lib/constants'
 import { Plus, User, Users, BookOpen, Upload, Phone, Mail, ChevronDown, ChevronUp, Edit3, Check, X, FileText } from 'lucide-react'
 import { apiUrl, withProjectId } from '@/lib/project-client'
+import { PanelSkeleton } from '@/components/ui'
 
 import type { Professional, Quote, Contract, BudgetItem, Payment, OrcamentoDoc, OrcamentoFlow, OrcamentoParsedItem, ServiceCategory } from './professionals/types'
 import { fmtBRL, fmtFileSize } from './professionals/types'
@@ -380,7 +381,7 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
     recusado: { label: 'Recusado', emoji: '❌' },
   }
 
-  if (loading) return <div className="text-center p-10"><p className="text-[#6b7280]">Carregando orçamentos...</p></div>
+  if (loading) return <PanelSkeleton />
 
   return (
     <div>

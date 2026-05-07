@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { formatCurrency } from '@/lib/constants'
 import { KpiCard, KpiGrid } from '@/components/ui'
 import { StatusBadge, getStatusVariant } from '@/components/ui'
-import { EmptyState } from '@/components/ui'
+import { EmptyState, PanelSkeleton } from '@/components/ui'
 import {
   ClipboardCheck, CheckCircle2, Clock, XCircle, DollarSign,
   ChevronDown, ChevronUp, Send, FileText, Upload, Loader2,
@@ -101,14 +101,7 @@ export default function MeasurementApprovalPanel({ projectId }: { projectId?: st
     total: measurements.length,
   }
 
-  if (loading) {
-    return (
-      <div className="text-center py-15 px-5">
-        <Loader2 size={32} className="animate-spin text-secondary mx-auto" />
-        <p className="text-on-surface-variant mt-3">Carregando medicoes...</p>
-      </div>
-    )
-  }
+  if (loading) return <PanelSkeleton />
 
   return (
     <div>
@@ -158,8 +151,8 @@ export default function MeasurementApprovalPanel({ projectId }: { projectId?: st
       {filteredMeasurements.length === 0 ? (
         <EmptyState
           icon={<ClipboardCheck size={28} />}
-          title={filter !== 'all' ? 'Nenhuma medicao neste status' : 'Nenhuma medicao recebida'}
-          description="As medicoes aparecem aqui quando o profissional envia"
+          title={filter !== 'all' ? 'Nenhuma aprovação neste status' : 'Nenhuma aprovação pendente'}
+          description="As aprovações aparecem aqui quando o profissional envia o serviço"
         />
       ) : (
         <div className="flex flex-col gap-3">

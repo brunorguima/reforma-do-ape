@@ -18,8 +18,9 @@ import MeasurementPanel from '@/components/MeasurementPanel'
 import MeasurementApprovalPanel from '@/components/MeasurementApprovalPanel'
 import MaterialRequestPanel from '@/components/MaterialRequestPanel'
 import DashboardPanel from '@/components/DashboardPanel'
+import FeedPanel from '@/components/FeedPanel'
 import NotificationBell from '@/components/NotificationBell'
-import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, ClipboardCheck, LayoutDashboard, Package } from 'lucide-react'
+import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, ClipboardCheck, LayoutDashboard, Package, Camera } from 'lucide-react'
 
 interface Project {
   id: string
@@ -31,13 +32,14 @@ interface Project {
   is_active: boolean
 }
 
-type TabType = 'home' | 'orcamentos' | 'obra' | 'financeiro' | 'mobilia' | 'medicoes' | 'pedidos'
+type TabType = 'home' | 'orcamentos' | 'obra' | 'financeiro' | 'mobilia' | 'medicoes' | 'pedidos' | 'feed'
 
 const NAV_ITEMS: { key: TabType; label: string; icon: React.ReactNode }[] = [
   { key: 'home', label: 'Home', icon: <LayoutDashboard size={20} /> },
+  { key: 'feed', label: 'Diário', icon: <Camera size={20} /> },
   { key: 'orcamentos', label: 'Orçamentos', icon: <Wrench size={20} /> },
   { key: 'obra', label: 'Obra', icon: <HardHat size={20} /> },
-  { key: 'medicoes', label: 'Medições', icon: <ClipboardCheck size={20} /> },
+  { key: 'medicoes', label: 'Aprovações', icon: <ClipboardCheck size={20} /> },
   { key: 'pedidos', label: 'Pedidos', icon: <Package size={20} /> },
   { key: 'financeiro', label: 'Financeiro', icon: <DollarSign size={20} /> },
   { key: 'mobilia', label: 'Mobília', icon: <Sofa size={20} /> },
@@ -48,7 +50,7 @@ export default function HomePage() {
 
   // Restore tab from URL hash on mount + listen for back/forward
   useEffect(() => {
-    const validTabs: TabType[] = ['home', 'orcamentos', 'obra', 'financeiro', 'mobilia', 'medicoes', 'pedidos']
+    const validTabs: TabType[] = ['home', 'feed', 'orcamentos', 'obra', 'financeiro', 'mobilia', 'medicoes', 'pedidos']
     const readHash = () => {
       const hash = window.location.hash.replace('#', '') as TabType
       if (validTabs.includes(hash)) setActiveTab(hash)
@@ -423,7 +425,7 @@ export default function HomePage() {
               <HardHat size={28} className="text-warning" />
               <div>
                 <h1 className="text-xl font-extrabold text-on-surface m-0">Meus Serviços</h1>
-                <p className="text-xs text-on-surface-variant m-0">Medições e pagamentos</p>
+                <p className="text-xs text-on-surface-variant m-0">Aprovações e pagamentos</p>
               </div>
             </div>
             <button
@@ -548,7 +550,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <NotificationBell projectId={activeProjectId} recipientType={userRole === 'professional' ? 'professional' : 'owner'} />
+              <NotificationBell projectId={activeProjectId} recipientType={userRole === 'professional' ? 'professional' : 'owner'} onNavigate={(tab) => handleTabChange(tab as TabType)} />
               <button
                 onClick={handleRefresh}
                 className="p-2 rounded-xl bg-white border border-slate-100 hover:bg-slate-50 transition-colors"
@@ -576,6 +578,8 @@ export default function HomePage() {
           >
           {activeTab === 'home' ? (
             <DashboardPanel onNavigate={(tab: string) => handleTabChange(tab as TabType)} projectId={activeProjectId || undefined} />
+          ) : activeTab === 'feed' ? (
+            <FeedPanel projectId={activeProjectId} currentUser={currentUser === 'bruno' ? 'Bruno' : currentUser === 'graziela' ? 'Graziela' : currentUser === 'mari' ? 'Mari' : currentUser} />
           ) : activeTab === 'orcamentos' ? (
             <ProfessionalsPanel currentUser={currentUser} rooms={rooms} projectId={activeProjectId} />
           ) : activeTab === 'obra' ? (

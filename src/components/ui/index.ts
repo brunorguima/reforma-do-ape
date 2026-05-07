@@ -2,3 +2,4 @@ export { default as StatusBadge, getStatusVariant, getStatusLabel } from './Stat
 export { default as KpiCard, KpiGrid } from './KpiCard'
 export { default as Card, ExpandableCard, SectionHeader, EmptyState } from './Card'
 export { default as Modal, FormField, Button } from './Modal'
+export { default as Skeleton, KpiSkeleton, CardListSkeleton, DashboardSkeleton, PanelSkeleton } from './Skeleton'

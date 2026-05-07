@@ -19,6 +19,7 @@ import {
 import { motion } from 'motion/react'
 import { KpiCard, KpiGrid } from '@/components/ui'
 import { StatusBadge, getStatusVariant, getStatusLabel } from '@/components/ui'
+import { DashboardSkeleton } from '@/components/ui'
 import Card, { SectionHeader, EmptyState } from '@/components/ui/Card'
 
 interface DashboardProps {
@@ -81,16 +82,7 @@ export default function DashboardPanel({ onNavigate, projectId }: DashboardProps
       .catch(() => setLoading(false))
   }, [projectId])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-pulse text-center">
-          <div className="w-12 h-12 rounded-2xl bg-surface-container mx-auto mb-3" />
-          <p className="text-outline text-sm">Carregando dashboard...</p>
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <DashboardSkeleton />
 
   if (!data?.kpis) return null
 
@@ -202,7 +194,7 @@ export default function DashboardPanel({ onNavigate, projectId }: DashboardProps
         <QuickCard
           icon={<ClipboardCheck className="w-5 h-5" />}
           accent="danger"
-          label="Medições"
+          label="Aprovações"
           onClick={() => onNavigate('medicoes')}
           alert={kpis.pendingMeasurements > 0}
         />

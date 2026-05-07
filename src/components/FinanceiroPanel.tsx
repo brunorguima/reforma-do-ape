@@ -5,7 +5,7 @@ import { apiUrl, withProjectId } from '@/lib/project-client'
 import { DollarSign, TrendingDown, CheckCircle2, Clock, AlertTriangle, Calendar, CreditCard, Users, Plus, Pencil, Trash2, Save, X, ChevronDown, ChevronUp, History, ShoppingCart, FileText } from 'lucide-react'
 import { PieChart as PieChartIcon } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from 'recharts'
-import { KpiCard, KpiGrid } from '@/components/ui'
+import { KpiCard, KpiGrid, PanelSkeleton } from '@/components/ui'
 import NFeImportModal from './NFeImportModal'
 import PaymentMethodsModal from './PaymentMethodsModal'
 
@@ -274,14 +274,7 @@ export default function FinanceiroPanel({ currentUser, projectId }: Props) {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="text-center py-15 px-5">
-        <div className="text-5xl mb-4">💰</div>
-        <p className="text-on-surface-variant">Carregando financeiro...</p>
-      </div>
-    )
-  }
+  if (loading) return <PanelSkeleton />
 
   // === CALCULATIONS ===
   const financialQuotes = quotes.filter(q => ['contratado', 'pago'].includes(q.status))
