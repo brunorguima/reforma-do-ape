@@ -4,7 +4,7 @@ import { formatCurrency } from '@/lib/constants'
 import {
   ClipboardCheck, Plus, Send, Trash2, CheckCircle2, Clock,
   ChevronDown, ChevronUp, Percent, DollarSign, FileText,
-  Loader2, AlertCircle
+  Loader2, AlertCircle, Camera, X, Image
 } from 'lucide-react'
 
 interface MeasurementItem {
@@ -66,6 +66,7 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
   const [showNewForm, setShowNewForm] = useState(false)
   const [newItems, setNewItems] = useState<MeasurementItem[]>([])
   const [newNotes, setNewNotes] = useState('')
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null)
 
   const fetchMeasurements = useCallback(async () => {
     try {
@@ -125,6 +126,25 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
 
   const removeNewItem = (index: number) => {
     setNewItems(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Upload photo for item
+  const handlePhotoUpload = async (index: number, file: File) => {
+    setUploadingIdx(index)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'medicoes')
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      if (!res.ok) throw new Error('Upload failed')
+      const data = await res.json()
+      updateNewItem(index, 'photo_url', data.url)
+    } catch (err) {
+      console.error('Photo upload error:', err)
+      alert('Erro ao enviar foto')
+    } finally {
+      setUploadingIdx(null)
+    }
   }
 
   // Create measurement
@@ -305,6 +325,45 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
                   />
                 </div>
               </div>
+
+              {/* Photo upload */}
+              <div className="mt-2">
+                {item.photo_url ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={item.photo_url}
+                      alt="Foto do item"
+                      className="w-20 h-20 object-cover rounded-lg border border-[#D1D5DB]"
+                    />
+                    <button
+                      onClick={() => updateNewItem(idx, 'photo_url', '')}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#EF4444] text-white rounded-full flex items-center justify-center"
+                      style={{ fontSize: 10, border: 'none', cursor: 'pointer', padding: 0 }}
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed border-[#9CA3AF] cursor-pointer text-[12px] text-[#6B7280] hover:border-[#6366F1] hover:text-[#6366F1] transition-colors">
+                    {uploadingIdx === idx ? (
+                      <><Loader2 size={12} className="spin" /> Enviando...</>
+                    ) : (
+                      <><Camera size={12} /> Adicionar foto</>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={e => {
+                        const file = e.target.files?.[0]
+                        if (file) handlePhotoUpload(idx, file)
+                        e.target.value = ''
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
             </div>
           ))}
 
@@ -448,8 +507,21 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
                         }`}>
                           {item.type === 'extra' ? 'EXT' : item.type === 'discount' ? 'DESC' : `${item.completion_pct}%`}
                         </span>
-                        <span className="flex-1 text-[13px] text-[#374151]">{item.description}</span>
-                        <span className={`font-semibold text-[13px] ${item.type === 'discount' ? 'text-danger' : 'text-success'}`}>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[13px] text-[#374151]">{item.description}</span>
+                          {item.photo_url && (
+                            <div className="mt-1">
+                              <a href={item.photo_url} target="_blank" rel="noopener noreferrer">
+                                <img
+                                  src={item.photo_url}
+                                  alt="Foto"
+                                  className="w-14 h-14 object-cover rounded-lg border border-[#E5E7EB] hover:opacity-80 transition-opacity"
+                                />
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                        <span className={`font-semibold text-[13px] flex-shrink-0 ${item.type === 'discount' ? 'text-danger' : 'text-success'}`}>
                           {item.type === 'discount' ? '-' : ''}{formatCurrency(Number(item.amount))}
                         </span>
                       </div>
@@ -466,6 +538,19 @@ export default function MeasurementPanel({ professionalId, projectId }: Props) {
                         <span className="font-bold text-sm">Líquido:</span>
                         <span className="font-[800] text-base text-success">{formatCurrency(Number(m.net_amount))}</span>
                       </div>
+                    </div>
+
+                    {/* PDF button */}
+                    <div className="mt-3">
+                      <a
+                        href={`/api/measurements/${m.id}/pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 py-2 px-3.5 rounded-lg text-[13px] font-semibold transition-colors"
+                        style={{ background: '#EEF2FF', color: '#4F46E5', textDecoration: 'none' }}
+                      >
+                        <FileText size={14} /> Ver PDF
+                      </a>
                     </div>
 
                     {/* Notes */}

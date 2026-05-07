@@ -4,7 +4,7 @@ import { formatCurrency } from '@/lib/constants'
 import {
   ClipboardCheck, CheckCircle2, Clock, XCircle, DollarSign,
   ChevronDown, ChevronUp, Send, FileText, Upload, Loader2,
-  User, AlertTriangle
+  User, AlertTriangle, Download
 } from 'lucide-react'
 
 interface MeasurementItem {
@@ -14,6 +14,7 @@ interface MeasurementItem {
   completion_pct: number
   original_amount: number
   amount: number
+  photo_url?: string | null
 }
 
 interface Measurement {
@@ -248,8 +249,21 @@ export default function MeasurementApprovalPanel({ projectId }: { projectId?: st
                         }}>
                           {item.type === 'extra' ? 'EXT' : item.type === 'discount' ? 'DESC' : `${item.completion_pct}%`}
                         </span>
-                        <span className="flex-1 text-[13px] text-[#374151]">{item.description}</span>
-                        <span className="font-semibold text-[13px]" style={{ color: item.type === 'discount' ? '#DC2626' : '#059669' }}>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[13px] text-[#374151]">{item.description}</span>
+                          {item.photo_url && (
+                            <div className="mt-1">
+                              <a href={item.photo_url} target="_blank" rel="noopener noreferrer">
+                                <img
+                                  src={item.photo_url}
+                                  alt="Foto"
+                                  className="w-14 h-14 object-cover rounded-lg border border-[#E5E7EB] hover:opacity-80 transition-opacity"
+                                />
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                        <span className="font-semibold text-[13px] flex-shrink-0" style={{ color: item.type === 'discount' ? '#DC2626' : '#059669' }}>
                           {item.type === 'discount' ? '-' : ''}{formatCurrency(Number(item.amount))}
                         </span>
                       </div>
@@ -266,6 +280,19 @@ export default function MeasurementApprovalPanel({ projectId }: { projectId?: st
                         <span className="font-bold text-sm">Total líquido:</span>
                         <span className="font-extrabold text-base text-success">{formatCurrency(Number(m.net_amount))}</span>
                       </div>
+                    </div>
+
+                    {/* PDF button */}
+                    <div className="mt-3">
+                      <a
+                        href={`/api/measurements/${m.id}/pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 py-2 px-3.5 rounded-lg text-[13px] font-semibold transition-colors"
+                        style={{ background: '#EEF2FF', color: '#4F46E5', textDecoration: 'none' }}
+                      >
+                        <Download size={14} /> Gerar PDF
+                      </a>
                     </div>
 
                     {/* Professional notes */}
