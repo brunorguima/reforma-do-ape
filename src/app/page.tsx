@@ -802,22 +802,25 @@ export default function HomePage() {
               </div>
 
               {/* Search and Filter Bar */}
-              <div className="flex gap-3 mb-4 flex-wrap items-center">
-                <div className="flex-1 min-w-[200px] relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
+              <div className="flex gap-3 mb-4 flex-wrap items-center bg-surface-container-lowest rounded-2xl border border-outline-variant px-4 py-3">
+                <div className="flex-1 min-w-[200px] flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
+                  <Search size={16} className="text-on-surface-variant shrink-0" />
                   <input
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                     placeholder="Filtrar itens por nome..."
-                    className="pl-9"
+                    className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
                   />
+                  {searchTerm && (
+                    <button onClick={() => setSearchTerm('')} className="bg-transparent border-none cursor-pointer p-0.5 text-outline">✕</button>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Filter size={16} className="text-on-surface-variant" />
+                <div className="flex items-center gap-2 bg-surface-container-low rounded-xl px-3 py-2 border-2 border-transparent focus-within:border-secondary transition-all">
+                  <Filter size={14} className="text-on-surface-variant shrink-0" />
                   <select
                     value={filterStatus}
                     onChange={e => setFilterStatus(e.target.value)}
-                    className="w-auto min-w-[140px]"
+                    className="bg-transparent border-none outline-none text-sm text-on-surface cursor-pointer min-w-[120px] p-0"
                   >
                     <option value="">Todos os status</option>
                     <option value="ja_temos">Já Temos</option>
@@ -826,10 +829,10 @@ export default function HomePage() {
                     <option value="comprado">Comprado</option>
                   </select>
                 </div>
-                <span className="text-xs text-on-surface-variant font-medium">
+                <span className="text-xs text-on-surface-variant font-bold bg-surface-container-low px-3 py-2 rounded-xl">
                   {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'itens'}
                   {selectedRoom && rooms.find(r => r.id === selectedRoom) && (
-                    <> em <strong>{rooms.find(r => r.id === selectedRoom)?.name}</strong></>
+                    <> em {rooms.find(r => r.id === selectedRoom)?.name}</>
                   )}
                 </span>
               </div>
