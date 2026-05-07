@@ -1,0 +1,344 @@
+@import "tailwindcss";
+
+@theme {
+  /* Design system colors — from telas-app mockups */
+  --color-primary: #022448;
+  --color-primary-light: #1e3a5f;
+  --color-primary-container: #8aa4cf;
+
+  --color-secondary: #0051d5;
+  --color-secondary-light: #316bf3;
+  --color-secondary-container: #adc8f5;
+
+  --color-surface: #faf9fc;
+  --color-surface-dim: #dad9dd;
+  --color-surface-container: #eeedf1;
+  --color-surface-container-low: #f4f3f7;
+  --color-surface-container-high: #e9e7eb;
+  --color-surface-lowest: #ffffff;
+
+  --color-on-surface: #1a1c1e;
+  --color-on-surface-variant: #43474e;
+  --color-outline: #74777f;
+  --color-outline-variant: #c4c6cf;
+
+  --color-success: #059669;
+  --color-success-light: #d1fae5;
+  --color-warning: #d97706;
+  --color-warning-light: #fef3c7;
+  --color-danger: #dc2626;
+  --color-danger-light: #fee2e2;
+
+  /* Spacing & radius tokens */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+}
+
+.app-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 16px 40px;
+}
+
+@media (max-width: 639px) {
+  .app-container {
+    padding: 12px 16px;
+  }
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --accent: #f59e0b;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--color-surface);
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  transition: all 0.2s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  padding: 24px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Desktop: center modal */
+@media (min-width: 640px) {
+  .modal-overlay {
+    align-items: center;
+  }
+  .modal-content {
+    border-radius: 20px;
+    padding: 32px;
+    width: 90%;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+    animation: fadeIn 0.2s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 16px; /* Prevents iOS zoom on focus */
+  transition: border-color 0.2s;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+}
+
+.price-tag {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.promo-tag {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #dc2626;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 11px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.room-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+  text-align: center;
+}
+
+.room-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
+}
+
+.room-card:active {
+  transform: translateY(0);
+}
+
+.room-card.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.total-banner {
+  background: linear-gradient(135deg, #1e40af, #7c3aed);
+  color: white;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.user-selector {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.user-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.user-chip:active {
+  transform: scale(0.95);
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.image-grid img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+
+/* Small screens (phones) */
+@media (max-width: 639px) {
+  .total-banner {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .total-banner h3 {
+    font-size: 15px !important;
+  }
+
+  .room-card {
+    padding: 12px 8px;
+    border-radius: 12px;
+  }
+
+  .card {
+    border-radius: 14px;
+  }
+
+  .user-chip {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+
+  .btn-primary {
+    padding: 12px 16px;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Stack form grids on mobile */
+  .modal-content [style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Safe area padding for notched phones */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Spin animation for loading */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Hide scrollbar but keep scrollable */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
