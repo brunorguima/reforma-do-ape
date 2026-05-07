@@ -19,6 +19,7 @@ import MeasurementApprovalPanel from '@/components/MeasurementApprovalPanel'
 import MaterialRequestPanel from '@/components/MaterialRequestPanel'
 import DashboardPanel from '@/components/DashboardPanel'
 import FeedPanel from '@/components/FeedPanel'
+import ProjectSelector from '@/components/ProjectSelector'
 import NotificationBell from '@/components/NotificationBell'
 import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, ClipboardCheck, LayoutDashboard, Package, Camera } from 'lucide-react'
 
@@ -30,6 +31,9 @@ interface Project {
   project_type: string
   owners: string[]
   is_active: boolean
+  image_url?: string | null
+  location?: string | null
+  status?: string | null
 }
 
 type TabType = 'home' | 'orcamentos' | 'obra' | 'financeiro' | 'mobilia' | 'medicoes' | 'pedidos' | 'feed'
@@ -78,6 +82,9 @@ export default function HomePage() {
   const [projectIds, setProjectIds] = useState<string[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
+
+  const [projectKpis, setProjectKpis] = useState<Record<string, { contracted: number; paid: number; progress: number }>>({})
+  const [showProjectSelector, setShowProjectSelector] = useState(false)
 
   // Quick search bar state
   const [quickSearch, setQuickSearch] = useState('')
@@ -254,6 +261,35 @@ export default function HomePage() {
     }
   }, [])
 
+  // Fetch KPIs for all projects (for ProjectSelector cards)
+  useEffect(() => {
+    if (projects.length < 2) return
+    projects.forEach(p => {
+      fetch(`/api/dashboard?project_id=${p.id}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d?.kpis) {
+            setProjectKpis(prev => ({
+              ...prev,
+              [p.id]: {
+                contracted: d.kpis.totalContracted || 0,
+                paid: d.kpis.totalPaid || 0,
+                progress: d.kpis.progress || 0,
+              }
+            }))
+          }
+        })
+        .catch(() => {})
+    })
+  }, [projects])
+
+  // Show project selector when multiple projects and no active project selected yet
+  useEffect(() => {
+    if (projects.length > 1 && !activeProjectId) {
+      setShowProjectSelector(true)
+    }
+  }, [projects, activeProjectId])
+
   const handleUserChange = (user: UserID) => {
     setCurrentUser(user)
     localStorage.setItem('reforma-current-user', user)
@@ -261,6 +297,7 @@ export default function HomePage() {
 
   const handleProjectChange = (projectId: string) => {
     setActiveProjectId(projectId)
+    setShowProjectSelector(false)
     localStorage.setItem('reforma-active-project', projectId)
   }
 
@@ -449,6 +486,19 @@ export default function HomePage() {
     )
   }
 
+  // Show project selector for multi-project users
+  if (showProjectSelector && projects.length > 1) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <ProjectSelector
+          projects={projects}
+          onSelect={handleProjectChange}
+          kpis={projectKpis}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       {showWelcome && (
@@ -467,23 +517,19 @@ export default function HomePage() {
             <Home size={20} />
           </div>
           <div className="min-w-0 flex-1">
-            {projects.length > 1 ? (
-              <select
-                className="text-sm font-extrabold text-slate-900 bg-transparent border-none outline-none cursor-pointer w-full truncate"
-                value={activeProjectId || ''}
-                onChange={e => handleProjectChange(e.target.value)}
-              >
-                {projects.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            ) : (
-              <h1 className="text-sm font-extrabold text-slate-900 truncate">
-                {projects[0]?.name || APP_NAME}
-              </h1>
-            )}
+            <h1 className="text-sm font-extrabold text-slate-900 truncate">
+              {projects.find(p => p.id === activeProjectId)?.name || projects[0]?.name || APP_NAME}
+            </h1>
             <p className="text-[11px] text-slate-400 truncate">{APP_SUBTITLE}</p>
           </div>
+          {projects.length > 1 && (
+            <button
+              onClick={() => setShowProjectSelector(true)}
+              className="text-[10px] font-bold text-blue-500 uppercase tracking-wider hover:underline shrink-0"
+            >
+              Trocar
+            </button>
+          )}
         </div>
 
         {/* Nav Items */}
@@ -531,18 +577,14 @@ export default function HomePage() {
                   </>
                 ) : (
                   <>
-                    <h2 className="text-lg font-extrabold text-slate-900 truncate md:hidden">
-                      {projects.length > 1 ? (
-                        <select
-                          className="font-extrabold text-slate-900 bg-transparent border-none outline-none cursor-pointer"
-                          value={activeProjectId || ''}
-                          onChange={e => handleProjectChange(e.target.value)}
-                        >
-                          {projects.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                          ))}
-                        </select>
-                      ) : (projects[0]?.name || APP_NAME)}
+                    <h2
+                      className="text-lg font-extrabold text-slate-900 truncate md:hidden cursor-pointer"
+                      onClick={() => projects.length > 1 && setShowProjectSelector(true)}
+                    >
+                      {projects.find(p => p.id === activeProjectId)?.name || projects[0]?.name || APP_NAME}
+                      {projects.length > 1 && (
+                        <span className="ml-1 text-xs text-secondary font-bold">▾</span>
+                      )}
                     </h2>
                     <p className="text-xs text-slate-500 truncate md:hidden">{APP_SUBTITLE}</p>
                   </>
