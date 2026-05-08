@@ -64,6 +64,18 @@ export async function POST(req: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://reforma-app.vercel.app'
 
+    // Audit log
+    await supabase.from('audit_logs').insert({
+      event_type: 'invite_created',
+      actor_id: invited_by,
+      target_type: 'invite',
+      target_id: data.id,
+      project_id,
+      actor_ip: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown',
+      actor_user_agent: req.headers.get('user-agent') || '',
+      metadata: { invitee_name, invitee_email, role: role || 'professional', token },
+    })
+
     return NextResponse.json({
       invite: data,
       link: `${baseUrl}/convite/${token}`,

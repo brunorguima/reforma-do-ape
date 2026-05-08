@@ -161,11 +161,29 @@ export async function POST(
     console.error('Error adding project member:', memberErr)
   }
 
-  // 5. Update profile with invite name (trigger may have set it already)
+  // 5. Update profile with invite name + LGPD consent
   await supabase
     .from('profiles')
-    .update({ name: name || invite.invitee_name })
+    .update({
+      name: name || invite.invitee_name,
+      terms_accepted_at: new Date().toISOString(),
+      terms_version: '1.0',
+      signup_source: 'invite',
+    })
     .eq('id', userId)
+
+  // Audit log
+  await supabase.from('audit_logs').insert({
+    event_type: 'invite_accepted',
+    actor_id: userId,
+    actor_email: email,
+    target_type: 'invite',
+    target_id: invite.id,
+    project_id: invite.project_id,
+    actor_ip: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown',
+    actor_user_agent: req.headers.get('user-agent') || '',
+    metadata: { invite_token: token, role: invite.role },
+  })
 
   // 6. Mark invite as accepted
   await supabase.from('invites').update({

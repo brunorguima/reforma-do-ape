@@ -185,6 +185,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
+    // Log logout event
+    if (user) {
+      try {
+        await fetch('/api/audit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event_type: 'logout', actor_id: user.id, actor_email: user.email }),
+        })
+      } catch { /* non-blocking */ }
+    }
     await supabaseBrowser.auth.signOut()
     // Clear all stored state
     localStorage.removeItem('reforma-access-key')
