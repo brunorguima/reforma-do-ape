@@ -22,8 +22,8 @@ import DashboardPanel from '@/components/DashboardPanel'
 import FeedPanel from '@/components/FeedPanel'
 import ProjectSelector from '@/components/ProjectSelector'
 import NotificationBell from '@/components/NotificationBell'
-import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, ClipboardCheck, LayoutDashboard, Package, Camera, LogOut, User } from 'lucide-react'
-
+import TeamPanel from '@/components/TeamPanel'
+import { Plus, Search, Filter, Home, RefreshCw, Sofa, Wrench, HardHat, DollarSign, ShoppingBag, Loader2, ExternalLink, Check, ClipboardCheck, LayoutDashboard, Package, Camera, LogOut, User, Users } from 'lucide-react'
 interface Project {
   id: string
   name: string
@@ -37,7 +37,7 @@ interface Project {
   status?: string | null
 }
 
-type TabType = 'home' | 'orcamentos' | 'obra' | 'financeiro' | 'mobilia' | 'medicoes' | 'pedidos' | 'feed'
+type TabType = 'home' | 'orcamentos' | 'obra' | 'financeiro' | 'mobilia' | 'medicoes' | 'pedidos' | 'feed' | 'equipe'
 
 const NAV_ITEMS: { key: TabType; label: string; icon: React.ReactNode }[] = [
   { key: 'home', label: 'Home', icon: <LayoutDashboard size={20} /> },
@@ -48,8 +48,8 @@ const NAV_ITEMS: { key: TabType; label: string; icon: React.ReactNode }[] = [
   { key: 'pedidos', label: 'Pedidos', icon: <Package size={20} /> },
   { key: 'financeiro', label: 'Financeiro', icon: <DollarSign size={20} /> },
   { key: 'mobilia', label: 'Mobília', icon: <Sofa size={20} /> },
+  { key: 'equipe', label: 'Equipe', icon: <Users size={20} /> },
 ]
-
 export default function HomePage() {
   const auth = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('home')
@@ -69,7 +69,6 @@ export default function HomePage() {
 
     // Set user info from Supabase profile
     const name = auth.profile.name.toLowerCase() as UserID
-    // Map profile name to legacy user ID for compatibility
     const userIdMap: Record<string, UserID> = {
       'bruno': 'bruno',
       'graziela': 'graziela',
@@ -92,7 +91,6 @@ export default function HomePage() {
     // Set projects from membership data
     const projs = auth.memberships.map(m => m.project) as Project[]
     setProjects(projs)
-
     // Determine allowed users based on role
     if (auth.memberships[0]?.role === 'owner') {
       setAllowedUsers(['bruno', 'graziela', 'mari'])
@@ -105,7 +103,7 @@ export default function HomePage() {
 
   // Restore tab from URL hash on mount + listen for back/forward
   useEffect(() => {
-    const validTabs: TabType[] = ['home', 'feed', 'orcamentos', 'obra', 'financeiro', 'mobilia', 'medicoes', 'pedidos']
+    const validTabs: TabType[] = ['home', 'feed', 'orcamentos', 'obra', 'financeiro', 'mobilia', 'medicoes', 'pedidos', 'equipe']
     const readHash = () => {
       const hash = window.location.hash.replace('#', '') as TabType
       if (validTabs.includes(hash)) setActiveTab(hash)
@@ -125,7 +123,6 @@ export default function HomePage() {
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-
   const [userRole, setUserRole] = useState<string>('owner')
   const [allowedUsers, setAllowedUsers] = useState<UserID[]>(['bruno', 'graziela', 'mari'])
   const [showWelcome, setShowWelcome] = useState(false)
@@ -161,16 +158,14 @@ export default function HomePage() {
     } catch { /* ignore */ }
     finally { setQuickSearching(false) }
   }
-
   const handleQuickSelect = (product: {title:string;price:number;image:string;url:string;store:string}) => {
     setEditingItem(null)
     setIsModalOpen(true)
     setQuickExpanded(false)
-    // Store selected product in sessionStorage so AddItemModal can pick it up
     sessionStorage.setItem('quickProduct', JSON.stringify(product))
   }
 
-  // Legacy: restore saved user from localStorage (will be removed eventually)
+  // Legacy: restore saved user from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('reforma-current-user') as UserID
     if (saved && USERS.some(u => u.id === saved)) {
@@ -178,7 +173,7 @@ export default function HomePage() {
     }
   }, [])
 
-  // Fetch KPIs for all projects (for ProjectSelector cards)
+  // Fetch KPIs for all projects
   useEffect(() => {
     if (projects.length < 2) return
     projects.forEach(p => {
@@ -200,13 +195,11 @@ export default function HomePage() {
     })
   }, [projects])
 
-  // Show project selector when multiple projects and no active project selected yet
   useEffect(() => {
     if (projects.length > 1 && !activeProjectId) {
       setShowProjectSelector(true)
     }
   }, [projects, activeProjectId])
-
   const handleUserChange = (user: UserID) => {
     setCurrentUser(user)
     localStorage.setItem('reforma-current-user', user)
@@ -250,8 +243,6 @@ export default function HomePage() {
     setRefreshing(true)
     fetchData()
   }
-
-  // Tab navigation handler
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab)
     window.location.hash = tab
@@ -284,14 +275,12 @@ export default function HomePage() {
 
   const handleDeleteItem = async (itemId: string) => {
     const item = items.find(i => i.id === itemId)
-    // Mari can only delete her own items
     if (currentUser === 'mari' && item?.created_by !== 'mari') {
       alert('Sem permissão para deletar itens de outros usuários')
       return
     }
     if (!confirm('Tem certeza que deseja excluir este item?')) return
     try {
-      // Log deletion
       await fetch('/api/audit-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -308,7 +297,6 @@ export default function HomePage() {
       console.error('Error deleting item:', err)
     }
   }
-
   const handleStatusChange = async (itemId: string, status: Item['status']) => {
     try {
       await fetch(`/api/items/${itemId}`, {
@@ -360,7 +348,6 @@ export default function HomePage() {
       </div>
     )
   }
-
   const greeting = USER_GREETINGS[currentUser]
   const currentUserObj = USERS.find(u => u.id === currentUser)
 
@@ -369,7 +356,7 @@ export default function HomePage() {
     localStorage.setItem('reforma-welcome-seen', 'true')
   }
 
-  // Professional view — completely different UI
+  // Professional view
   if (userRole === 'professional' && professionalId && projectIds.length > 0) {
     return (
       <div className="app-container">
@@ -415,7 +402,6 @@ export default function HomePage() {
       </div>
     )
   }
-
   return (
     <div className="flex min-h-screen bg-slate-50">
       {showWelcome && (
@@ -469,7 +455,6 @@ export default function HomePage() {
             )
           })}
         </nav>
-
         {/* User Selector at Bottom */}
         <div className="px-4 py-4 border-t border-slate-100">
           <UserSelector currentUser={currentUser} onUserChange={handleUserChange} allowedUsers={allowedUsers} />
@@ -498,11 +483,10 @@ export default function HomePage() {
 
       {/* Main Content Area */}
       <main className="flex-1 md:ml-64 pb-24 md:pb-6">
-        {/* Top Header (inside main content) */}
+        {/* Top Header */}
         <header className="sticky top-0 z-20 bg-slate-50/80 backdrop-blur-xl border-b border-slate-100 px-4 md:px-8 py-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              {/* Mobile logo */}
               <div className="flex md:hidden items-center justify-center w-9 h-9 rounded-lg bg-blue-600 text-white flex-shrink-0">
                 <Home size={18} />
               </div>
@@ -527,8 +511,7 @@ export default function HomePage() {
                   </>
                 )}
               </div>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            </div>            <div className="flex items-center gap-2 flex-shrink-0">
               <NotificationBell projectId={activeProjectId} recipientType={userRole === 'professional' ? 'professional' : 'owner'} onNavigate={(tab) => handleTabChange(tab as TabType)} />
               <button
                 onClick={handleRefresh}
@@ -537,11 +520,9 @@ export default function HomePage() {
               >
                 <RefreshCw size={18} className={`text-slate-500 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
-              {/* Mobile user selector */}
               <div className="md:hidden">
                 <UserSelector currentUser={currentUser} onUserChange={handleUserChange} allowedUsers={allowedUsers} />
               </div>
-              {/* Logout button */}
               {auth.authMode === 'supabase' && (
                 <button
                   onClick={() => auth.signOut().then(() => { window.location.href = '/login' })}
@@ -579,9 +560,10 @@ export default function HomePage() {
             <MaterialRequestPanel projectId={activeProjectId} />
           ) : activeTab === 'financeiro' ? (
             <FinanceiroPanel currentUser={currentUser} projectId={activeProjectId} />
+          ) : activeTab === 'equipe' ? (
+            <TeamPanel projectId={activeProjectId} currentUserRole={userRole} />
           ) : (
-            <>
-              {/* Header com ações */}
+            <>              {/* Header com ações */}
               <div className="flex justify-between items-center mb-5">
                 <div>
                   <h2 className="text-xl font-black text-primary">Mobília & Eletrodomésticos</h2>
@@ -595,7 +577,7 @@ export default function HomePage() {
                 </button>
               </div>
 
-              {/* Comparar preços na internet — seção integrada */}
+              {/* Comparar preços na internet */}
               <div className="mb-6 bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden">
                 <div className="flex items-center gap-3 px-4 py-3">
                   <div className="flex-1 flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
@@ -626,12 +608,10 @@ export default function HomePage() {
                     Buscar
                   </button>
                 </div>
-
                 {/* Expanded results */}
                 {quickExpanded && (
                   <div className="border-t border-outline-variant">
                     <div className="max-h-[50vh] overflow-y-auto px-4 pt-3 pb-3 bg-surface-container-low/50">
-                      {/* Stats badges */}
                       {quickStats && quickStats.total > 0 && (
                         <div className="flex gap-2 mb-2.5 flex-wrap items-center">
                           <span className="px-2.5 py-1 bg-secondary-container/20 rounded-lg text-secondary font-bold text-xs">
@@ -652,7 +632,6 @@ export default function HomePage() {
                         </div>
                       )}
 
-                      {/* Loading */}
                       {quickSearching && (
                         <div className="text-center py-6 text-on-surface-variant">
                           <Loader2 size={22} className="spin inline-block" />
@@ -660,7 +639,6 @@ export default function HomePage() {
                         </div>
                       )}
 
-                      {/* Results grid */}
                       {!quickSearching && quickResults.length > 0 && (
                         <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-2">
                           {quickResults.map((product, i) => (
@@ -691,8 +669,7 @@ export default function HomePage() {
                                     {product.store}
                                   </span>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-1.5 shrink-0">
+                              </div>                              <div className="flex items-center gap-1.5 shrink-0">
                                 {product.url && (
                                   <a
                                     href={product.url}
@@ -712,7 +689,6 @@ export default function HomePage() {
                         </div>
                       )}
 
-                      {/* No results - show manual links */}
                       {!quickSearching && quickResults.length === 0 && quickSearchLinks.length > 0 && (
                         <div className="p-4 text-center">
                           <p className="text-on-surface-variant text-[13px] mb-2.5">Nenhum resultado automático. Busque manualmente:</p>
@@ -735,7 +711,6 @@ export default function HomePage() {
               <div className="mb-6">
                 <CostSummary items={items} />
               </div>
-
               {/* Room Selector */}
               <div className="mb-6">
                 <h3 className="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-3">Cômodos</h3>
@@ -783,7 +758,6 @@ export default function HomePage() {
                   )}
                 </span>
               </div>
-
               {/* Items Grid */}
               {filteredItems.length === 0 ? (
                 <div className="text-center py-15 px-5">
