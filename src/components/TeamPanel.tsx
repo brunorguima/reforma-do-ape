@@ -26,6 +26,7 @@ interface TeamPanelProps {
   projectId: string | null
   currentUserRole?: string
 }
+
 // Module display config
 const MODULES = [
   { key: 'dashboard', label: 'Dashboard', icon: '📊', actions: ['view'] },
@@ -60,6 +61,7 @@ const ROLE_LABELS: Record<string, string> = {
   professional: 'Profissional',
   viewer: 'Visualizador',
 }
+
 const ROLE_COLORS: Record<string, string> = {
   owner: 'bg-amber-100 text-amber-800 border-amber-200',
   admin: 'bg-purple-100 text-purple-800 border-purple-200',
@@ -98,6 +100,7 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
       setLoading(false)
     }
   }, [projectId])
+
   useEffect(() => { fetchMembers() }, [fetchMembers])
 
   const showToast = (msg: string) => {
@@ -131,6 +134,7 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
     const currentPerms = { ...member.permissions }
     if (!currentPerms[moduleKey]) currentPerms[moduleKey] = {}
     currentPerms[moduleKey] = { ...currentPerms[moduleKey], [action]: !currentPerms[moduleKey][action] }
+
     // Optimistic update
     setMembers(prev => prev.map(m =>
       m.id === member.id ? { ...m, permissions: currentPerms, custom_permissions: true } : m
@@ -176,6 +180,7 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
       setSaving(null)
     }
   }
+
   const handleRemoveMember = async (member: Member) => {
     if (!confirm(`Tem certeza que deseja remover ${member.profile.name} do projeto?`)) return
     try {
@@ -188,7 +193,7 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
   }
 
   const handleInvite = async () => {
-    if (!inviteForm.name || !inviteForm.email) return
+    if (!inviteForm.name) return
     setInviteLoading(true)
     try {
       const res = await fetch('/api/invites', {
@@ -198,7 +203,7 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
           project_id: projectId,
           role: inviteForm.role,
           invitee_name: inviteForm.name,
-          invitee_email: inviteForm.email,
+          invitee_email: inviteForm.email || null,
           invited_by: members.find(m => m.role === 'owner')?.user_id || 'system',
         }),
       })
@@ -216,6 +221,7 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
       setInviteLoading(false)
     }
   }
+
   const copyLink = () => {
     if (inviteLink) {
       navigator.clipboard.writeText(inviteLink)
@@ -261,6 +267,7 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
           </button>
         )}
       </div>
+
       {/* Invite Form */}
       <AnimatePresence>
         {showInviteForm && (
@@ -283,7 +290,7 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
               />
               <input
                 type="email"
-                placeholder="Email"
+                placeholder="Email (opcional)"
                 value={inviteForm.email}
                 onChange={e => setInviteForm({ ...inviteForm, email: e.target.value })}
                 className="px-4 py-2.5 rounded-xl border border-blue-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -297,10 +304,11 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
                   <option key={r} value={r}>{ROLE_LABELS[r]}</option>
                 ))}
               </select>
-            </div>            <div className="flex items-center gap-3">
+            </div>
+            <div className="flex items-center gap-3">
               <button
                 onClick={handleInvite}
-                disabled={inviteLoading || !inviteForm.name || !inviteForm.email}
+                disabled={inviteLoading || !inviteForm.name}
                 className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold border-none cursor-pointer hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {inviteLoading ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
@@ -328,6 +336,7 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
           </motion.div>
         )}
       </AnimatePresence>
+
       {/* Members List */}
       <div className="space-y-3">
         {members.map(member => {
@@ -368,6 +377,7 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
                   </div>
                   <p className="text-xs text-slate-400 truncate">{member.profile.email}</p>
                 </div>
+
                 {/* Role Badge */}
                 <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${ROLE_COLORS[member.role] || ROLE_COLORS.viewer}`}>
                   {ROLE_LABELS[member.role] || member.role}
@@ -415,7 +425,8 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
                             {availableRoles.map(r => (
                               <option key={r} value={r}>{ROLE_LABELS[r]}</option>
                             ))}
-                          </select>                          {member.custom_permissions && (
+                          </select>
+                          {member.custom_permissions && (
                             <button
                               onClick={() => handleResetToDefaults(member)}
                               className="flex items-center gap-1 px-3 py-2 text-xs text-orange-600 bg-orange-50 rounded-xl border border-orange-200 font-bold cursor-pointer hover:bg-orange-100 transition-colors"
@@ -446,6 +457,7 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
                               {/* Module label */}
                               <span className="text-lg">{mod.icon}</span>
                               <span className="text-sm font-bold text-slate-700 w-32 shrink-0">{mod.label}</span>
+
                               {/* Action checkboxes */}
                               <div className="flex flex-wrap gap-2 flex-1">
                                 {mod.actions.map(action => {
@@ -476,6 +488,7 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
                                   )
                                 })}
                               </div>
+
                               {/* Quick toggle all */}
                               {canEdit && (
                                 <button
@@ -514,6 +527,7 @@ export default function TeamPanel({ projectId, currentUserRole }: TeamPanelProps
                           )
                         })}
                       </div>
+
                       {saving === member.id && (
                         <div className="flex items-center gap-2 mt-3 text-xs text-blue-500">
                           <Loader2 size={12} className="animate-spin" /> Salvando...

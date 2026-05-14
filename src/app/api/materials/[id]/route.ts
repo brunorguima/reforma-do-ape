@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth-helpers'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   const { id } = await params
   const body = await req.json()
 
@@ -27,7 +31,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return NextResponse.json(data)
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { user: _user2, error: authError2 } = await requireAuth(req)
+  if (authError2) return authError2
+
   const { id } = await params
 
   const { error } = await supabase

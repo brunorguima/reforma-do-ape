@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { crawlPrices, getSearchLinks } from '@/lib/crawler'
+import { requireAuth } from '@/lib/auth-helpers'
 
 export async function POST(request: NextRequest) {
+  const { user: _user, error: authError } = await requireAuth(request)
+  if (authError) return authError
+
   const { item_id, search_query, include_new = true, include_used = true } = await request.json()
 
   if (!search_query) {
@@ -61,6 +65,9 @@ export async function POST(request: NextRequest) {
 
 // Manual price suggestion
 export async function PUT(request: NextRequest) {
+  const { user: _user2, error: authError2 } = await requireAuth(request)
+  if (authError2) return authError2
+
   const body = await request.json()
 
   const { data, error } = await supabase
@@ -81,6 +88,9 @@ export async function PUT(request: NextRequest) {
 
 // Get search links without crawling (fast)
 export async function GET(request: NextRequest) {
+  const { user: _user3, error: authError3 } = await requireAuth(request)
+  if (authError3) return authError3
+
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('q')
 

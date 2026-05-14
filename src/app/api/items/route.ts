@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getProjectId } from '@/lib/project'
+import { requireAuth, hasProjectAccess } from '@/lib/auth-helpers'
 
 export async function GET(request: NextRequest) {
+  const { user, error: authError } = await requireAuth(request)
+  if (authError) return authError
+
   const { searchParams } = new URL(request.url)
   const roomId = searchParams.get('room_id')
   const status = searchParams.get('status')
   const projectId = getProjectId(request)
+  if (projectId && !hasProjectAccess(user, projectId)) {
+    return NextResponse.json({ error: 'Access denied to this project' }, { status: 403 })
+  }
 
   let query = supabase
     .from('items')
@@ -30,6 +37,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const { user: _user2, error: authError2 } = await requireAuth(request)
+  if (authError2) return authError2
+
   const body = await request.json()
   const { images, ...itemData } = body
 

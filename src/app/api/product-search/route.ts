@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth-helpers'
 
 export interface ProductResult {
   title: string
@@ -11,6 +12,9 @@ export interface ProductResult {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://muhjdnpstuxmoivubmyr.supabase.co'
 
 export async function GET(req: NextRequest) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   const query = req.nextUrl.searchParams.get('q')
   if (!query || query.length < 2) {
     return NextResponse.json({ error: 'Query too short' }, { status: 400 })

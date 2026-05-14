@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAuth } from '@/lib/auth-helpers'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -21,7 +22,8 @@ export const ROLE_DEFAULTS: Record<string, Record<string, Record<string, boolean
   admin: {
     dashboard: { view: true },
     orcamentos: { view: true, edit: true, create: true, delete: true },
-    financeiro: { view: true, edit: true, create: true, delete: false },    mobilia: { view: true, edit: true, create: true, delete: true },
+    financeiro: { view: true, edit: true, create: true, delete: false },
+    mobilia: { view: true, edit: true, create: true, delete: true },
     medicoes: { view: true, edit: true, approve: true, create: true },
     materiais: { view: true, edit: true, create: true, delete: true },
     documentos: { view: true, edit: true, upload: true, delete: true },
@@ -48,7 +50,8 @@ export const ROLE_DEFAULTS: Record<string, Record<string, Record<string, boolean
     mobilia: { view: false, edit: false, create: false, delete: false },
     medicoes: { view: true, edit: true, approve: false, create: true },
     materiais: { view: true, edit: false, create: true, delete: false },
-    documentos: { view: true, edit: false, upload: true, delete: false },    feed: { view: true, post: true, delete: false },
+    documentos: { view: true, edit: false, upload: true, delete: false },
+    feed: { view: true, post: true, delete: false },
     equipe: { view: false, invite: false, manage_permissions: false, remove: false },
     configuracoes: { view: false, edit: false },
   },
@@ -68,6 +71,9 @@ export const ROLE_DEFAULTS: Record<string, Record<string, Record<string, boolean
 
 // GET — list members + permissions for a project
 export async function GET(req: NextRequest) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   const projectId = req.nextUrl.searchParams.get('project_id')
   if (!projectId) {
     return NextResponse.json({ error: 'project_id é obrigatório' }, { status: 400 })
@@ -80,7 +86,8 @@ export async function GET(req: NextRequest) {
     .select(`
       id, user_id, role, permissions, custom_permissions, is_active, joined_at,
       profile:profiles!user_id(id, name, email, avatar_url, color)
-    `)    .eq('project_id', projectId)
+    `)
+    .eq('project_id', projectId)
     .eq('is_active', true)
     .order('role', { ascending: true })
 
@@ -98,6 +105,9 @@ export async function GET(req: NextRequest) {
 
 // PATCH — update member role or permissions
 export async function PATCH(req: NextRequest) {
+  const { user: _user2, error: authError2 } = await requireAuth(req)
+  if (authError2) return authError2
+
   try {
     const body = await req.json()
     const { member_id, project_id, role, permissions, custom_permissions } = body
@@ -111,17 +121,20 @@ export async function PATCH(req: NextRequest) {
 
     if (role !== undefined) {
       updates.role = role
+      // If changing role and not custom, reset permissions to role defaults
       if (!custom_permissions) {
         updates.permissions = ROLE_DEFAULTS[role] || ROLE_DEFAULTS.viewer
         updates.custom_permissions = false
       }
     }
+
     if (permissions !== undefined) {
       updates.permissions = permissions
       updates.custom_permissions = true
     }
 
     if (custom_permissions === false) {
+      // Reset to role defaults
       const currentRole = role || 'viewer'
       updates.permissions = ROLE_DEFAULTS[currentRole] || ROLE_DEFAULTS.viewer
       updates.custom_permissions = false
@@ -155,8 +168,12 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Erro ao atualizar membro' }, { status: 500 })
   }
 }
+
 // DELETE — deactivate a member (soft delete)
 export async function DELETE(req: NextRequest) {
+  const { user: _user3, error: authError3 } = await requireAuth(req)
+  if (authError3) return authError3
+
   const memberId = req.nextUrl.searchParams.get('member_id')
   const projectId = req.nextUrl.searchParams.get('project_id')
 
@@ -175,6 +192,7 @@ export async function DELETE(req: NextRequest) {
     .eq('is_active', true)
 
   if (owners && owners.length <= 1) {
+    // Check if the member being removed is an owner
     const { data: member } = await supabase
       .from('project_members')
       .select('role')

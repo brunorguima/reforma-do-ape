@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseNfeXml, parseNfeDanfePdf, parseFromChave, guessCategory, type NfeParsed } from '@/lib/nfe-parser'
+import { requireAuth } from '@/lib/auth-helpers'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -11,6 +12,9 @@ export const maxDuration = 60
  * Returns parsed NF-e structure with category suggestions per item.
  */
 export async function POST(req: NextRequest) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   try {
     const contentType = req.headers.get('content-type') || ''
 

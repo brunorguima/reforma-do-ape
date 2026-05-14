@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAuth } from '@/lib/auth-helpers'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 // POST — log an audit event
 export async function POST(req: NextRequest) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   try {
     const body = await req.json()
     const { event_type, actor_id, actor_email, target_type, target_id, project_id, metadata } = body
@@ -51,6 +55,9 @@ export async function POST(req: NextRequest) {
 
 // GET — query audit logs (owners only)
 export async function GET(req: NextRequest) {
+  const { user: _user2, error: authError2 } = await requireAuth(req)
+  if (authError2) return authError2
+
   const projectId = req.nextUrl.searchParams.get('project_id')
   const eventType = req.nextUrl.searchParams.get('event_type')
   const limit = parseInt(req.nextUrl.searchParams.get('limit') || '50')

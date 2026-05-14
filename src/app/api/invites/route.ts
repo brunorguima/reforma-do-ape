@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
+import { requireAuth } from '@/lib/auth-helpers'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -11,6 +12,9 @@ function generateToken(): string {
 
 // POST — create an invite
 export async function POST(req: NextRequest) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   try {
     const body = await req.json()
     const { project_id, role, invitee_name, invitee_email, invited_by } = body
@@ -88,6 +92,9 @@ export async function POST(req: NextRequest) {
 
 // GET — list invites for a project
 export async function GET(req: NextRequest) {
+  const { user: _user2, error: authError2 } = await requireAuth(req)
+  if (authError2) return authError2
+
   const projectId = req.nextUrl.searchParams.get('project_id')
 
   if (!projectId) {

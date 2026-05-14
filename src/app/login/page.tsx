@@ -2,9 +2,9 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { supabaseBrowser } from '@/lib/supabase-browser'
-import { HardHat, Mail, Lock, Eye, EyeOff, Loader2, User, Shield, ArrowLeft } from 'lucide-react'
+import { HardHat, Mail, Lock, Eye, EyeOff, Loader2, User, Shield } from 'lucide-react'
 
-type Mode = 'login' | 'signup' | 'forgot'
+type Mode = 'login' | 'signup'
 
 export default function LoginPage() {
   const { signIn, session, loading: authLoading } = useAuth()
@@ -14,12 +14,11 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [name, setName] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [signupSuccess, setSignupSuccess] = useState(false)
-  const [resetSent, setResetSent] = useState(false)
+
   useEffect(() => {
     if (!authLoading && session) {
       window.location.href = '/'
@@ -43,6 +42,7 @@ export default function LoginPage() {
       }
       setLoading(false)
     } else {
+      // Log login event
       try {
         await fetch('/api/audit', {
           method: 'POST',
@@ -51,29 +51,6 @@ export default function LoginPage() {
         })
       } catch { /* non-blocking */ }
       window.location.href = '/'
-    }
-  }
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email) {
-      setError('Digite seu email para receber o link de redefinição')
-      return
-    }
-    setError('')
-    setLoading(true)
-    try {
-      const { error } = await supabaseBrowser.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/login`,
-      })
-      if (error) {
-        setError(error.message)
-      } else {
-        setResetSent(true)
-      }
-    } catch {
-      setError('Erro ao enviar email. Tente novamente.')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -115,6 +92,8 @@ export default function LoginPage() {
         setLoading(false)
         return
       }
+
+      // Update profile with LGPD consent
       if (data.user) {
         await supabaseBrowser
           .from('profiles')
@@ -126,8 +105,10 @@ export default function LoginPage() {
           })
           .eq('id', data.user.id)
 
+        // Confirm email immediately (self-service signup)
         await supabaseBrowser.rpc('confirm_user_email', { user_id: data.user.id })
 
+        // Log signup
         try {
           await fetch('/api/audit', {
             method: 'POST',
@@ -142,12 +123,13 @@ export default function LoginPage() {
         } catch { /* non-blocking */ }
       }
 
+      // Auto-login after signup — redirect to onboarding for new users
       const { error: loginErr } = await signIn(email, password)
       if (loginErr) {
         setSignupSuccess(true)
         setLoading(false)
       } else {
-        window.location.href = '/'
+        window.location.href = '/onboarding'
       }
     } catch {
       setError('Erro ao criar conta. Tente novamente.')
@@ -173,11 +155,13 @@ export default function LoginPage() {
         setError('Erro ao conectar com Google. Tente novamente.')
         setLoading(false)
       }
+      // Redirect happens automatically
     } catch {
       setError('Erro ao conectar com Google')
       setLoading(false)
     }
   }
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -220,274 +204,187 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl p-6">
-          {/* Forgot Password Mode */}
-          {mode === 'forgot' ? (
+          {/* Tab Toggle */}
+          <div className="flex gap-1 bg-surface-container-low rounded-xl p-1 mb-5">
+            <button
+              onClick={() => { setMode('login'); setError('') }}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold border-none cursor-pointer transition-all ${
+                mode === 'login'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-transparent text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              Entrar
+            </button>
+            <button
+              onClick={() => { setMode('signup'); setError('') }}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold border-none cursor-pointer transition-all ${
+                mode === 'signup'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-transparent text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              Criar conta
+            </button>
+          </div>
+
+          {/* Google OAuth */}
+          <button
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full py-2.5 rounded-xl bg-white border-2 border-outline-variant/30 text-on-surface font-semibold text-sm cursor-pointer hover:bg-surface-container-low transition-all flex items-center justify-center gap-3 mb-4 disabled:opacity-50"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+              <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.997 8.997 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 2.58 9 3.58z" fill="#EA4335"/>
+            </svg>
+            {mode === 'login' ? 'Entrar com Google' : 'Cadastrar com Google'}
+          </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-px bg-outline-variant/30" />
+            <span className="text-xs text-on-surface-variant">ou</span>
+            <div className="flex-1 h-px bg-outline-variant/30" />
+          </div>
+
+          <form onSubmit={mode === 'login' ? handleEmailLogin : handleSignup} className="flex flex-col gap-3.5">
+            {/* Name (signup only) */}
+            {mode === 'signup' && (
+              <div>
+                <label className="text-xs font-semibold text-on-surface-variant mb-1.5 block">Nome</label>
+                <div className="flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
+                  <User size={16} className="text-on-surface-variant shrink-0" />
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="Seu nome completo"
+                    className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
+                    required={mode === 'signup'}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Email */}
             <div>
-              <button
-                onClick={() => { setMode('login'); setError(''); setResetSent(false) }}
-                className="flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface mb-4 bg-transparent border-none cursor-pointer p-0 font-semibold"
-              >
-                <ArrowLeft size={16} /> Voltar ao login
-              </button>
-
-              <h2 className="text-lg font-bold text-on-surface mb-1">Esqueci minha senha</h2>
-              <p className="text-sm text-on-surface-variant mb-5">
-                Digite seu email e enviaremos um link para redefinir sua senha.
-              </p>
-
-              {resetSent ? (
-                <div className="text-center py-4">
-                  <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
-                    <Mail size={24} className="text-green-600" />
-                  </div>
-                  <p className="text-sm font-semibold text-green-700 mb-1">Email enviado!</p>
-                  <p className="text-xs text-on-surface-variant">
-                    Verifique sua caixa de entrada em <strong>{email}</strong> e clique no link para redefinir sua senha.
-                  </p>
-                  <button
-                    onClick={() => { setMode('login'); setResetSent(false) }}
-                    className="mt-4 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold border-none cursor-pointer hover:bg-primary/90 transition-colors"
-                  >
-                    Voltar ao login
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleForgotPassword} className="flex flex-col gap-3.5">
-                  <div>
-                    <label className="text-xs font-semibold text-on-surface-variant mb-1.5 block">Email</label>
-                    <div className="flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
-                      <Mail size={16} className="text-on-surface-variant shrink-0" />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        placeholder="seu@email.com"
-                        className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
-                        autoComplete="email"
-                        autoFocus
-                      />
-                    </div>
-                  </div>
-
-                  {error && (
-                    <div className="text-sm text-danger bg-danger-light px-3 py-2 rounded-lg">{error}</div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading || !email}
-                    className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm border-none cursor-pointer hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                  >
-                    {loading ? (
-                      <><Loader2 size={16} className="animate-spin" /> Enviando...</>
-                    ) : (
-                      'Enviar link de redefinição'
-                    )}
-                  </button>
-                </form>
-              )}
+              <label className="text-xs font-semibold text-on-surface-variant mb-1.5 block">Email</label>
+              <div className="flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
+                <Mail size={16} className="text-on-surface-variant shrink-0" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
+                  autoComplete="email"
+                  autoFocus
+                />
+              </div>
             </div>
-          ) : (
-            <>
-              {/* Tab Toggle */}
-              <div className="flex gap-1 bg-surface-container-low rounded-xl p-1 mb-5">
+
+            {/* Password */}
+            <div>
+              <label className="text-xs font-semibold text-on-surface-variant mb-1.5 block">Senha</label>
+              <div className="flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
+                <Lock size={16} className="text-on-surface-variant shrink-0" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder={mode === 'signup' ? 'Mínimo 6 caracteres' : 'Sua senha'}
+                  className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  minLength={6}
+                />
                 <button
-                  onClick={() => { setMode('login'); setError('') }}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold border-none cursor-pointer transition-all ${
-                    mode === 'login'
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'bg-transparent text-on-surface-variant hover:text-on-surface'
-                  }`}
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="bg-transparent border-none cursor-pointer p-0.5 text-on-surface-variant hover:text-on-surface transition-colors"
                 >
-                  Entrar
-                </button>
-                <button
-                  onClick={() => { setMode('signup'); setError('') }}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold border-none cursor-pointer transition-all ${
-                    mode === 'signup'
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'bg-transparent text-on-surface-variant hover:text-on-surface'
-                  }`}
-                >
-                  Criar conta
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              {/* Google OAuth */}
-              <button
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="w-full py-2.5 rounded-xl bg-white border-2 border-outline-variant/30 text-on-surface font-semibold text-sm cursor-pointer hover:bg-surface-container-low transition-all flex items-center justify-center gap-3 mb-4 disabled:opacity-50"
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-                  <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
-                  <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.997 8.997 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-                  <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 2.58 9 3.58z" fill="#EA4335"/>
-                </svg>
-                {mode === 'login' ? 'Entrar com Google' : 'Cadastrar com Google'}
-              </button>
+            </div>
 
-              {/* Divider */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px bg-outline-variant/30" />
-                <span className="text-xs text-on-surface-variant">ou</span>
-                <div className="flex-1 h-px bg-outline-variant/30" />
+            {/* Confirm Password (signup only) */}
+            {mode === 'signup' && (
+              <div>
+                <label className="text-xs font-semibold text-on-surface-variant mb-1.5 block">Confirmar senha</label>
+                <div className="flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
+                  <Lock size={16} className="text-on-surface-variant shrink-0" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="Repita a senha"
+                    className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
+                    autoComplete="new-password"
+                    minLength={6}
+                  />
+                </div>
               </div>
+            )}
 
-              <form onSubmit={mode === 'login' ? handleEmailLogin : handleSignup} className="flex flex-col gap-3.5">
-                {/* Name (signup only) */}
-                {mode === 'signup' && (
-                  <div>
-                    <label className="text-xs font-semibold text-on-surface-variant mb-1.5 block">Nome</label>
-                    <div className="flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
-                      <User size={16} className="text-on-surface-variant shrink-0" />
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        placeholder="Seu nome completo"
-                        className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
-                        required={mode === 'signup'}
-                      />
-                    </div>
-                  </div>
-                )}
+            {/* LGPD Terms (signup only) */}
+            {mode === 'signup' && (
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={e => setAcceptedTerms(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded accent-primary cursor-pointer"
+                />
+                <span className="text-xs text-on-surface-variant leading-relaxed">
+                  Aceito os{' '}
+                  <a href="/termos" className="text-secondary font-semibold hover:underline">
+                    Termos de Uso
+                  </a>{' '}
+                  e a{' '}
+                  <a href="/privacidade" className="text-secondary font-semibold hover:underline">
+                    Política de Privacidade
+                  </a>
+                  . Seus dados são protegidos conforme a LGPD.
+                </span>
+              </label>
+            )}
 
-                {/* Email */}
-                <div>
-                  <label className="text-xs font-semibold text-on-surface-variant mb-1.5 block">Email</label>
-                  <div className="flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
-                    <Mail size={16} className="text-on-surface-variant shrink-0" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder="seu@email.com"
-                      className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
-                      autoComplete="email"
-                      autoFocus
-                    />
-                  </div>
-                </div>
-                {/* Password */}
-                <div>
-                  <label className="text-xs font-semibold text-on-surface-variant mb-1.5 block">Senha</label>
-                  <div className="flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
-                    <Lock size={16} className="text-on-surface-variant shrink-0" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      placeholder={mode === 'signup' ? 'Mínimo 6 caracteres' : 'Sua senha'}
-                      className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
-                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="bg-transparent border-none cursor-pointer p-0.5 text-on-surface-variant hover:text-on-surface transition-colors"
-                      title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  {/* Forgot password link */}
-                  {mode === 'login' && (
-                    <button
-                      type="button"
-                      onClick={() => { setMode('forgot'); setError(''); setResetSent(false) }}
-                      className="text-xs text-secondary font-semibold mt-1.5 bg-transparent border-none cursor-pointer p-0 hover:underline"
-                    >
-                      Esqueci minha senha
-                    </button>
-                  )}
-                </div>
+            {/* Error */}
+            {error && (
+              <div className="text-sm text-danger bg-danger-light px-3 py-2 rounded-lg">
+                {error}
+              </div>
+            )}
 
-                {/* Confirm Password (signup only) */}
-                {mode === 'signup' && (
-                  <div>
-                    <label className="text-xs font-semibold text-on-surface-variant mb-1.5 block">Confirmar senha</label>
-                    <div className="flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
-                      <Lock size={16} className="text-on-surface-variant shrink-0" />
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        value={confirmPassword}
-                        onChange={e => setConfirmPassword(e.target.value)}
-                        placeholder="Repita a senha"
-                        className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
-                        autoComplete="new-password"
-                        minLength={6}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="bg-transparent border-none cursor-pointer p-0.5 text-on-surface-variant hover:text-on-surface transition-colors"
-                        title={showConfirmPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                      >
-                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {/* LGPD Terms (signup only) */}
-                {mode === 'signup' && (
-                  <label className="flex items-start gap-2.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={acceptedTerms}
-                      onChange={e => setAcceptedTerms(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded accent-primary cursor-pointer"
-                    />
-                    <span className="text-xs text-on-surface-variant leading-relaxed">
-                      Aceito os{' '}
-                      <a href="/termos" className="text-secondary font-semibold hover:underline">
-                        Termos de Uso
-                      </a>{' '}
-                      e a{' '}
-                      <a href="/privacidade" className="text-secondary font-semibold hover:underline">
-                        Política de Privacidade
-                      </a>
-                      . Seus dados são protegidos conforme a LGPD.
-                    </span>
-                  </label>
-                )}
-
-                {/* Error */}
-                {error && (
-                  <div className="text-sm text-danger bg-danger-light px-3 py-2 rounded-lg">
-                    {error}
-                  </div>
-                )}
-
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={
-                    loading ||
-                    !email ||
-                    !password ||
-                    (mode === 'signup' && (!name || !confirmPassword || !acceptedTerms))
-                  }
-                  className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm border-none cursor-pointer hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      {mode === 'login' ? 'Entrando...' : 'Criando conta...'}
-                    </>
-                  ) : (
-                    mode === 'login' ? 'Entrar' : 'Criar conta'
-                  )}
-                </button>
-              </form>
-            </>
-          )}
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={
+                loading ||
+                !email ||
+                !password ||
+                (mode === 'signup' && (!name || !confirmPassword || !acceptedTerms))
+              }
+              className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm border-none cursor-pointer hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  {mode === 'login' ? 'Entrando...' : 'Criando conta...'}
+                </>
+              ) : (
+                mode === 'login' ? 'Entrar' : 'Criar conta'
+              )}
+            </button>
+          </form>
         </div>
 
         {/* Footer */}
         <p className="text-center text-xs text-white/50 mt-6">
-          Reforma do Apê v4.3 — Seus dados protegidos pela LGPD
+          Reforma do Apê v4.2 — Seus dados protegidos pela LGPD
         </p>
       </div>
     </div>

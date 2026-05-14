@@ -1,22 +1,13 @@
 'use client'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { Room } from '@/lib/supabase'
 import type { UserID } from '@/lib/constants'
 import { USERS, formatCurrency } from '@/lib/constants'
-import {
-  Plus, User, Users, Upload, Phone, Mail,
-  ChevronDown, ChevronUp, Edit3, Check, X, FileText,
-  Search, TrendingDown, Sparkles, ScanLine, Filter,
-  Briefcase, FolderOpen
-} from 'lucide-react'
+import { Plus, User, Users, BookOpen, Upload, Phone, Mail, ChevronDown, ChevronUp, Edit3, Check, X, FileText } from 'lucide-react'
 import { apiUrl, withProjectId } from '@/lib/project-client'
-import { KpiCard, KpiGrid, PanelSkeleton } from '@/components/ui'
-import { motion, AnimatePresence } from 'motion/react'
+import { PanelSkeleton } from '@/components/ui'
 
-import type {
-  Professional, Quote, Contract, BudgetItem, Payment,
-  OrcamentoDoc, OrcamentoFlow, OrcamentoParsedItem, ServiceCategory
-} from './professionals/types'
+import type { Professional, Quote, Contract, BudgetItem, Payment, OrcamentoDoc, OrcamentoFlow, OrcamentoParsedItem, ServiceCategory } from './professionals/types'
 import { fmtBRL, fmtFileSize } from './professionals/types'
 
 import QuoteCard from './professionals/QuoteCard'
@@ -26,111 +17,7 @@ import AddQuoteForm from './professionals/AddQuoteForm'
 import { OcrProSelectModal, OcrModal } from './professionals/OcrModal'
 import PaymentModal from './professionals/PaymentModal'
 import DocumentSection from './professionals/DocumentSection'
-// ─── Collapsible Section ─────────────────────────────────────
-function CollapsibleSection({
-  title,
-  icon: Icon,
-  count,
-  badge,
-  defaultOpen = false,
-  children,
-  actions,
-}: {
-  title: string
-  icon: React.ComponentType<{ size?: number; className?: string }>
-  count?: number
-  badge?: { text: string; variant: 'success' | 'warning' | 'info' | 'default' }
-  defaultOpen?: boolean
-  children: React.ReactNode
-  actions?: React.ReactNode
-}) {
-  const [open, setOpen] = useState(defaultOpen)
-  const badgeColors = {
-    success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    warning: 'bg-amber-50 text-amber-700 border-amber-200',
-    info: 'bg-blue-50 text-blue-700 border-blue-200',
-    default: 'bg-gray-50 text-gray-600 border-gray-200',
-  }
 
-  return (
-    <div className="mb-4">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-white rounded-xl border border-outline-variant/40 hover:border-outline-variant cursor-pointer transition-all group"
-      >
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-            <Icon size={16} className="text-primary" />
-          </div>
-          <span className="text-sm font-bold text-on-surface">{title}</span>
-          {count !== undefined && (
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-semibold">
-              {count}
-            </span>
-          )}
-          {badge && (
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold border ${badgeColors[badge.variant]}`}>
-              {badge.text}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {actions && open && <div onClick={e => e.stopPropagation()}>{actions}</div>}
-          <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <ChevronDown size={18} className="text-outline" />
-          </motion.div>
-        </div>
-      </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="overflow-hidden"
-          >
-            <div className="pt-3">{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
-// ─── Search Bar ──────────────────────────────────────────────
-function SearchBar({
-  value,
-  onChange,
-  placeholder = 'Buscar...',
-}: {
-  value: string
-  onChange: (v: string) => void
-  placeholder?: string
-}) {
-  return (
-    <div className="relative mb-3">
-      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
-      <input
-        type="text"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full pl-10 pr-4 py-2.5 text-sm border border-outline-variant/50 rounded-xl bg-surface-container-low focus:border-secondary outline-none transition-colors"
-      />
-      {value && (
-        <button
-          onClick={() => onChange('')}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 bg-transparent border-none cursor-pointer"
-        >
-          <X size={14} className="text-outline" />
-        </button>
-      )}
-    </div>
-  )
-}
-
-// ─── Main Component ──────────────────────────────────────────
 interface Props {
   currentUser: UserID
   rooms: Room[]
@@ -158,13 +45,9 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
   const [markingPaid, setMarkingPaid] = useState<string | null>(null)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showProfessionalsList, setShowProfessionalsList] = useState(true)
   const [expandedProfessional, setExpandedProfessional] = useState<string | null>(null)
   const [editingNotes, setEditingNotes] = useState<{ [key: string]: string }>({})
-
-  // Search states
-  const [searchQuotes, setSearchQuotes] = useState('')
-  const [searchContracts, setSearchContracts] = useState('')
-  const [searchPros, setSearchPros] = useState('')
 
   // Payment modal
   const [paymentModal, setPaymentModal] = useState<{ quoteId: string; targetStatus: string; currentAmount: number } | null>(null)
@@ -198,13 +81,13 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
   const fetchData = useCallback(async () => {
     try {
       const [quotesRes, prosRes, catsRes, conRes, budRes, payRes, docsRes] = await Promise.all([
-        fetch(apiUrl('/api/quotes', projectId)), fetch(apiUrl('/api/professionals', projectId)),
-        fetch(apiUrl('/api/service-categories', projectId)), fetch(apiUrl('/api/contracts', projectId)),
-        fetch(apiUrl('/api/budget-items', projectId)), fetch(apiUrl('/api/payments', projectId)),
+        fetch(apiUrl('/api/quotes', projectId)), fetch(apiUrl('/api/professionals', projectId)), fetch(apiUrl('/api/service-categories', projectId)),
+        fetch(apiUrl('/api/contracts', projectId)), fetch(apiUrl('/api/budget-items', projectId)), fetch(apiUrl('/api/payments', projectId)),
         fetch(apiUrl('/api/documents', projectId)),
       ])
       const [quotesData, prosData, catsData, conData, budData, payData, docsData] = await Promise.all([
-        quotesRes.json(), prosRes.json(), catsRes.json(), conRes.json(), budRes.json(), payRes.json(), docsRes.json(),
+        quotesRes.json(), prosRes.json(), catsRes.json(), conRes.json(), budRes.json(), payRes.json(),
+        docsRes.json(),
       ])
       setQuotes(Array.isArray(quotesData) ? quotesData : [])
       setProfessionals(Array.isArray(prosData) ? prosData : [])
@@ -213,8 +96,11 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
       setBudgetItems(Array.isArray(budData) ? budData : [])
       setPayments(Array.isArray(payData) ? payData : [])
       setOrcamentoDocs(Array.isArray(docsData) ? docsData.filter((d: OrcamentoDoc) => d.doc_type === 'orcamento' || d.doc_type === 'memorial') : [])
-    } catch (err) { console.error('Error:', err) }
-    finally { setLoading(false) }
+    } catch (err) {
+      console.error('Error:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [projectId])
 
   useEffect(() => { fetchData() }, [fetchData])
@@ -233,58 +119,15 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
   const totalPago = activeQuotes.filter(q => q.status === 'pago').reduce((s, q) => s + Number(q.negotiated_amount || q.amount), 0) + contractsPaid
   const quotesOrcado = activeQuotes.reduce((s, q) => s + Number(q.amount), 0)
   const totalOrcado = quotesOrcado + contractsOriginalTotal
-  const totalEconomia = totalOrcado - totalContratado
 
-  // Filtered & searched quotes (not contracted)
-  const pendingQuotes = useMemo(() => {
-    return quotes.filter(q => {
-      if (['contratado', 'pago'].includes(q.status)) return false
-      if (filterStatus && q.status !== filterStatus) return false
-      if (filterCategory && q.service_category_id !== filterCategory) return false
-      if (searchQuotes) {
-        const s = searchQuotes.toLowerCase()
-        const match = q.description?.toLowerCase().includes(s) ||
-          q.professional?.name?.toLowerCase().includes(s) ||
-          q.service_category?.name?.toLowerCase().includes(s)
-        if (!match) return false
-      }
-      return true
-    })
-  }, [quotes, filterStatus, filterCategory, searchQuotes])
+  const filteredQuotes = quotes.filter(q => {
+    if (['contratado', 'pago'].includes(q.status)) return false
+    if (filterStatus && q.status !== filterStatus) return false
+    if (filterCategory && q.service_category_id !== filterCategory) return false
+    return true
+  })
 
   const contratadoQuotes = quotes.filter(q => ['contratado', 'pago'].includes(q.status))
-
-  // Searched contracts
-  const filteredContracts = useMemo(() => {
-    if (!searchContracts) return contracts
-    const s = searchContracts.toLowerCase()
-    return contracts.filter(c => c.professional?.toLowerCase().includes(s) || c.role?.toLowerCase().includes(s))
-  }, [contracts, searchContracts])
-
-  const filteredContratadoQuotes = useMemo(() => {
-    if (!searchContracts) return contratadoQuotes
-    const s = searchContracts.toLowerCase()
-    return contratadoQuotes.filter(q =>
-      q.description?.toLowerCase().includes(s) || q.professional?.name?.toLowerCase().includes(s)
-    )
-  }, [contratadoQuotes, searchContracts])
-
-  // Searched professionals
-  const filteredPros = useMemo(() => {
-    if (!searchPros) return professionals
-    const s = searchPros.toLowerCase()
-    return professionals.filter(p =>
-      p.name?.toLowerCase().includes(s) || p.specialty?.toLowerCase().includes(s) ||
-      p.phone?.includes(s) || p.email?.toLowerCase().includes(s)
-    )
-  }, [professionals, searchPros])
-
-  const STATUS_CONFIG_FILTER: Record<string, { label: string; emoji: string }> = {
-    recebido: { label: 'Recebido', emoji: '📩' },
-    avaliando: { label: 'Avaliando', emoji: '🔍' },
-    aprovado: { label: 'Aprovado', emoji: '✅' },
-    recusado: { label: 'Recusado', emoji: '❌' },
-  }
 
   // === DOCUMENT HANDLERS ===
   const handleUploadDoc = async () => {
@@ -526,194 +369,189 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
     const profQuotes = quotes.filter(q => q.professional_id === professionalId)
     const hasContratado = profQuotes.some(q => ['contratado', 'pago'].includes(q.status))
     const hasContract = pro ? contracts.some(c => c.professional === pro.name) : false
-    if (hasContratado || hasContract) return { status: 'Contratado', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
-    if (profQuotes.length > 0) return { status: 'Orçando', color: 'bg-blue-50 text-blue-700 border-blue-200' }
-    return { status: 'Cadastrado', color: 'bg-gray-50 text-gray-600 border-gray-200' }
+    if (hasContratado || hasContract) return { status: 'Contratado', emoji: '✅' }
+    if (profQuotes.length > 0) return { status: 'Orçando', emoji: '📋' }
+    return { status: 'Cadastrado', emoji: '👤' }
   }
 
-  // Next payment alert
-  const nextPaymentGlobal = useMemo(() => {
-    const allPending = payments.filter(p => p.status === 'pendente').sort((a, b) => a.due_date.localeCompare(b.due_date))
-    return allPending[0] || null
-  }, [payments])
-
-  const daysUntilNextPayment = nextPaymentGlobal
-    ? Math.ceil((new Date(nextPaymentGlobal.due_date + 'T12:00:00').getTime() - Date.now()) / 86400000)
-    : null
+  const STATUS_CONFIG_FILTER: Record<string, { label: string; emoji: string }> = {
+    recebido: { label: 'Recebido', emoji: '📩' },
+    avaliando: { label: 'Avaliando', emoji: '🔍' },
+    aprovado: { label: 'Aprovado', emoji: '✅' },
+    recusado: { label: 'Recusado', emoji: '❌' },
+  }
 
   if (loading) return <PanelSkeleton />
 
-  const totalContracts = contracts.length + contratadoQuotes.length
-
   return (
     <div>
-      {/* ─── KPI Cards ─────────────────────────────────────────── */}
-      <div className="mb-5">
-      <KpiGrid cols={4}>
-        <KpiCard
-          icon={<FileText size={20} />}
-          label="Orçado"
-          value={formatCurrency(totalOrcado)}
-          accent="info"
-        />
-        <KpiCard
-          icon={<Briefcase size={20} />}
-          label="Contratado"
-          value={formatCurrency(totalContratado)}
-          accent="success"
-        />
-        <KpiCard
-          icon={<Check size={20} />}
-          label="Pago"
-          value={formatCurrency(totalPago)}
-          accent="primary"
-        />
-        <KpiCard
-          icon={<TrendingDown size={20} />}
-          label="Economia"
-          value={formatCurrency(totalEconomia > 0 ? totalEconomia : 0)}
-          accent={totalEconomia > 0 ? 'success' : 'warning'}
-          sub={totalEconomia > 0 ? `${Math.round((totalEconomia / (totalOrcado || 1)) * 100)}% economizado` : undefined}
-        />
-      </KpiGrid>
+      {/* KPI Cards */}
+      <div className="kpi-grid grid-cols-4">
+        <div className="kpi-card" data-accent="indigo">
+          <p className="kpi-label">Orçado</p>
+          <p className="kpi-value">{formatCurrency(totalOrcado)}</p>
+        </div>
+        <div className="kpi-card" data-accent="green">
+          <p className="kpi-label">Contratado</p>
+          <p className="kpi-value">{formatCurrency(totalContratado)}</p>
+        </div>
+        <div className="kpi-card" data-accent="blue">
+          <p className="kpi-label">Pago</p>
+          <p className="kpi-value">{formatCurrency(totalPago)}</p>
+        </div>
+        <div className="kpi-card" data-accent="amber">
+          <p className="kpi-label">Profissionais</p>
+          <p className="kpi-value">{activeQuotes.length}</p>
+          <p className="kpi-sub">orçamentos ativos</p>
+        </div>
       </div>
 
-      {/* ─── Next Payment Alert ────────────────────────────────── */}
-      {nextPaymentGlobal && daysUntilNextPayment !== null && daysUntilNextPayment <= 7 && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl mb-4 border ${
-            daysUntilNextPayment <= 2
-              ? 'bg-red-50 border-red-200'
-              : 'bg-amber-50 border-amber-200'
-          }`}
-        >
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-            daysUntilNextPayment <= 2 ? 'bg-red-100' : 'bg-amber-100'
-          }`}>
-            <span className="text-lg">{daysUntilNextPayment <= 0 ? '🚨' : '⏰'}</span>
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-bold text-on-surface m-0">
-              {daysUntilNextPayment <= 0 ? 'Pagamento vencido!' : daysUntilNextPayment === 0 ? 'Pagamento HOJE!' : `Pagamento em ${daysUntilNextPayment} dia${daysUntilNextPayment > 1 ? 's' : ''}`}
-            </p>
-            <p className="text-xs text-on-surface-variant mt-0.5 mb-0">
-              {fmtBRL(nextPaymentGlobal.amount)} — {nextPaymentGlobal.professional}
-            </p>
-          </div>
-        </motion.div>
-      )}
-
-      {/* ─── Quick Actions ─────────────────────────────────────── */}
-      <div className="flex gap-2 mb-5 flex-wrap">
-        <button
-          onClick={() => setShowOcrProSelect(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-none bg-gradient-to-r from-primary to-secondary text-white text-sm font-bold cursor-pointer shadow-[0_2px_8px_rgba(0,81,213,0.25)] hover:shadow-[0_4px_12px_rgba(0,81,213,0.35)] transition-all hover:-translate-y-0.5"
-        >
-          <ScanLine size={18} />
-          Subir Orçamento (OCR)
+      {/* Action Buttons */}
+      <div className="flex gap-3 mb-5 flex-wrap">
+        <button className="btn-primary" onClick={() => setShowAddQuote(!showAddQuote)}>
+          <Plus size={16} className="inline mr-1 align-middle" />
+          Novo Orçamento
         </button>
-        <button
-          onClick={() => setShowAddQuote(!showAddQuote)}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border-2 border-outline-variant/50 bg-white text-on-surface text-sm font-semibold cursor-pointer hover:border-secondary hover:text-secondary transition-all"
-        >
-          <Plus size={16} />
-          Orçamento Manual
+        <button onClick={() => setShowOcrProSelect(true)} className="btn-primary text-[13px]" title="Subir PDF de orçamento e extrair itens automaticamente com Gemini OCR">
+          📄 Subir Orçamento (OCR)
         </button>
-        <button
-          onClick={() => setShowAddProfessional(!showAddProfessional)}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border-2 border-outline-variant/50 bg-white text-on-surface text-sm font-semibold cursor-pointer hover:border-secondary hover:text-secondary transition-all"
-        >
-          <User size={16} />
+        <button onClick={() => setShowAddProfessional(!showAddProfessional)} className="btn-secondary">
+          <User size={16} className="inline mr-1 align-middle" />
           Novo Profissional
         </button>
       </div>
 
-      {/* ─── 1. Orçamentos em Análise ──────────────────────────── */}
-      <CollapsibleSection
-        title="Orçamentos em Análise"
-        icon={FileText}
-        count={pendingQuotes.length}
-        badge={pendingQuotes.length > 0 ? {
-          text: `${fmtBRL(pendingQuotes.reduce((s, q) => s + Number(q.amount), 0))}`,
-          variant: 'info'
-        } : undefined}
-        defaultOpen={true}
-      >
-        <SearchBar
-          value={searchQuotes}
-          onChange={setSearchQuotes}
-          placeholder="Buscar orçamento, profissional..."
+      {/* OCR Professional Selector Modal */}
+      {showOcrProSelect && (
+        <OcrProSelectModal
+          professionals={professionals}
+          quotes={quotes}
+          onSelect={(proId) => { setShowOcrProSelect(false); openOrcamentoFlow(proId) }}
+          onClose={() => setShowOcrProSelect(false)}
         />
+      )}
 
-        {/* Filters */}
-        <div className="flex gap-2 mb-3 flex-wrap">
-          <select
-            value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value)}
-            className="min-w-[130px] text-sm py-2 px-3"
-          >
-            <option value="">Todos os status</option>
-            {Object.entries(STATUS_CONFIG_FILTER).map(([key, cfg]) => (
-              <option key={key} value={key}>{cfg.emoji} {cfg.label}</option>
-            ))}
-          </select>
-          {serviceCategories.length > 0 && (
-            <select
-              value={filterCategory}
-              onChange={e => setFilterCategory(e.target.value)}
-              className="min-w-[150px] text-sm py-2 px-3"
-            >
+      {/* Documents Section */}
+      <DocumentSection
+        orcamentoDocs={orcamentoDocs}
+        currentUser={currentUser}
+        showAddDoc={showAddDoc}
+        uploadingDoc={uploadingDoc}
+        newDoc={newDoc}
+        onNewDocChange={setNewDoc}
+        onShowAddDoc={setShowAddDoc}
+        onUploadDoc={handleUploadDoc}
+        onDeleteDoc={handleDeleteDoc}
+      />
+
+      {/* Tab Toggle: Orçamentos / Profissionais */}
+      <div className="flex gap-2 mb-5">
+        <button
+          onClick={() => setShowProfessionalsList(false)}
+          className={`px-4 py-2 rounded-[20px] border-none text-[13px] font-semibold cursor-pointer transition-all ${!showProfessionalsList ? 'bg-[#2563EB] text-white' : 'bg-[#f3f4f6] text-[#6b7280]'}`}>
+          <BookOpen size={14} className="inline mr-1.5 align-middle" />
+          Orçamentos
+        </button>
+        <button
+          onClick={() => setShowProfessionalsList(true)}
+          className={`px-4 py-2 rounded-[20px] border-none text-[13px] font-semibold cursor-pointer transition-all ${showProfessionalsList ? 'bg-[#2563EB] text-white' : 'bg-[#f3f4f6] text-[#6b7280]'}`}>
+          <Users size={14} className="inline mr-1.5 align-middle" />
+          Profissionais
+        </button>
+      </div>
+
+      {/* Add Professional Form Modal */}
+      {showAddProfessional && (
+        <AddProfessionalForm
+          formError={formError}
+          saving={saving}
+          newProfessional={newProfessional}
+          onNewProfessionalChange={setNewProfessional}
+          onSave={handleAddProfessional}
+          onClose={() => { setShowAddProfessional(false); setFormError('') }}
+        />
+      )}
+
+      {/* Add Quote Form Modal */}
+      {showAddQuote && (
+        <AddQuoteForm
+          formError={formError}
+          saving={saving}
+          professionals={professionals}
+          serviceCategories={serviceCategories}
+          rooms={rooms}
+          newQuote={newQuote}
+          onNewQuoteChange={setNewQuote}
+          onSave={handleAddQuote}
+          onClose={() => { setShowAddQuote(false); setFormError('') }}
+          onOpenAddProfessional={() => { setShowAddQuote(false); setShowAddProfessional(true); setFormError('') }}
+        />
+      )}
+
+      {/* Payment Method Modal */}
+      {paymentModal && (
+        <PaymentModal
+          quoteId={paymentModal.quoteId}
+          targetStatus={paymentModal.targetStatus}
+          currentAmount={paymentModal.currentAmount}
+          saving={saving}
+          paymentForm={paymentForm}
+          onPaymentFormChange={setPaymentForm}
+          onConfirm={handlePaymentConfirm}
+          onClose={() => setPaymentModal(null)}
+        />
+      )}
+
+      {/* Orçamentos Tab */}
+      {!showProfessionalsList && (
+        <>
+          {/* Filters */}
+          <div className="flex gap-3 mb-4 flex-wrap">
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="min-w-[140px]">
+              <option value="">Todos os status</option>
+              {Object.entries(STATUS_CONFIG_FILTER).map(([key, cfg]) => (
+                <option key={key} value={key}>{cfg.emoji} {cfg.label}</option>
+              ))}
+            </select>
+            <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="min-w-[160px]">
               <option value="">Todos os serviços</option>
               {serviceCategories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
             </select>
-          )}
-        </div>
+          </div>
 
-        {pendingQuotes.length === 0 ? (
-          <div className="text-center py-8 px-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center mx-auto mb-3">
-              <FileText size={24} className="text-primary/40" />
+          {/* Quotes List */}
+          {filteredQuotes.length === 0 ? (
+            <div className="text-center p-10">
+              <div className="text-5xl mb-4">👷</div>
+              <h3 className="text-lg text-[#374151] mb-2">Nenhum orçamento ainda</h3>
+              <p className="text-[#6b7280]">Adicione profissionais e orçamentos para controlar os custos da reforma!</p>
             </div>
-            <h3 className="text-sm font-bold text-on-surface mb-1">Nenhum orçamento em análise</h3>
-            <p className="text-xs text-on-surface-variant m-0">
-              Adicione orçamentos para comparar preços e controlar custos.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2.5">
-            {pendingQuotes.map(quote => (
-              <QuoteCard
-                key={quote.id}
-                quote={quote}
-                currentUser={currentUser}
-                expandedQuote={expandedQuote}
-                onToggleExpand={setExpandedQuote}
-                onStatusChange={handleStatusChange}
-                onDeleteQuote={handleDeleteQuote}
-              />
-            ))}
-          </div>
-        )}
-      </CollapsibleSection>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {filteredQuotes.map(quote => (
+                <QuoteCard
+                  key={quote.id}
+                  quote={quote}
+                  currentUser={currentUser}
+                  expandedQuote={expandedQuote}
+                  onToggleExpand={setExpandedQuote}
+                  onStatusChange={handleStatusChange}
+                  onDeleteQuote={handleDeleteQuote}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
-      {/* ─── 2. Contratos Ativos ───────────────────────────────── */}
-      {totalContracts > 0 && (
-        <CollapsibleSection
-          title="Contratos Ativos"
-          icon={Briefcase}
-          count={totalContracts}
-          badge={{ text: fmtBRL(totalContratado), variant: 'success' }}
-          defaultOpen={false}
-        >
-          <SearchBar
-            value={searchContracts}
-            onChange={setSearchContracts}
-            placeholder="Buscar contrato, profissional..."
-          />
-          <div className="flex flex-col gap-3">
-            {filteredContracts.map(contract => (
+      {/* Contratos Fechados Section */}
+      {(contracts.length > 0 || contratadoQuotes.length > 0) && (
+        <div className="mt-7">
+          <h3 className="text-base font-bold text-[#374151] mb-3.5 flex items-center gap-2">
+            <FileText size={18} /> Contratos Fechados
+          </h3>
+          <div className="flex flex-col gap-3.5">
+            {contracts.map(contract => (
               <ContractFromTable
                 key={contract.id}
                 contract={contract}
@@ -731,7 +569,7 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
                 onMarkPaid={handleMarkPaid}
               />
             ))}
-            {filteredContratadoQuotes.map(quote => (
+            {contratadoQuotes.map(quote => (
               <ContractFromQuote
                 key={`quote-${quote.id}`}
                 quote={quote}
@@ -746,230 +584,10 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
               />
             ))}
           </div>
-        </CollapsibleSection>
+        </div>
       )}
 
-      {/* ─── 3. Profissionais Cadastrados ──────────────────────── */}
-      <CollapsibleSection
-        title="Profissionais"
-        icon={Users}
-        count={professionals.length}
-        defaultOpen={false}
-      >
-        <SearchBar
-          value={searchPros}
-          onChange={setSearchPros}
-          placeholder="Buscar profissional, especialidade..."
-        />
-        {filteredPros.length === 0 ? (
-          <div className="text-center py-8 px-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center mx-auto mb-3">
-              <Users size={24} className="text-primary/40" />
-            </div>
-            <h3 className="text-sm font-bold text-on-surface mb-1">
-              {professionals.length === 0 ? 'Nenhum profissional cadastrado' : 'Nenhum resultado encontrado'}
-            </h3>
-            <p className="text-xs text-on-surface-variant m-0">
-              {professionals.length === 0 ? 'Comece adicionando profissionais para seus orçamentos.' : 'Tente outra busca.'}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3">
-            {filteredPros.map(pro => {
-              const isExpanded = expandedProfessional === pro.id
-              const status = getProfessionalStatus(pro.id)
-              const proQuotes = quotes.filter(q => q.professional_id === pro.id)
-
-              return (
-                <div key={pro.id} className="bg-white rounded-xl border border-outline-variant/40 overflow-hidden hover:border-outline-variant transition-all">
-                  <button
-                    onClick={() => setExpandedProfessional(isExpanded ? null : pro.id)}
-                    className={`w-full p-3.5 cursor-pointer bg-transparent border-none flex justify-between items-start gap-3 text-left ${isExpanded ? 'border-b border-outline-variant/30' : ''}`}
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="m-0 text-sm font-bold text-on-surface">{pro.name}</h4>
-                        <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold border ${status.color}`}>
-                          {status.status}
-                        </span>
-                      </div>
-                      {pro.specialty && <p className="m-0 text-xs text-on-surface-variant">{pro.specialty}</p>}
-                      <p className="mt-1 mb-0 text-xs text-outline">
-                        {proQuotes.length} orçamento{proQuotes.length !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                    <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                      <ChevronDown size={16} className="text-outline" />
-                    </motion.div>
-                  </button>
-
-                  <AnimatePresence initial={false}>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="p-3.5">
-                          <div className="flex justify-between items-center mb-3 gap-2 flex-wrap">
-                            <button onClick={() => openOrcamentoFlow(pro.id)}
-                              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border-none bg-gradient-to-r from-primary to-secondary text-white text-xs font-bold cursor-pointer shadow-sm">
-                              <ScanLine size={13} /> Subir Orçamento (OCR)
-                            </button>
-                            {editingProfessional === pro.id ? (
-                              <div className="flex gap-1.5">
-                                <button onClick={handleSaveProfessional}
-                                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border-none bg-success text-white text-xs font-semibold cursor-pointer">
-                                  <Check size={12} /> Salvar
-                                </button>
-                                <button onClick={() => { setEditingProfessional(null); setEditProfessionalForm({}) }}
-                                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-outline-variant bg-white text-on-surface-variant text-xs font-semibold cursor-pointer">
-                                  <X size={12} /> Cancelar
-                                </button>
-                              </div>
-                            ) : (
-                              <button onClick={() => handleEditProfessional(pro)}
-                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-outline-variant bg-white text-on-surface text-xs font-semibold cursor-pointer hover:bg-surface-container-low transition-colors">
-                                <Edit3 size={12} /> Editar
-                              </button>
-                            )}
-                          </div>
-
-                          {editingProfessional === pro.id ? (
-                            <div className="flex flex-col gap-2 mb-4 p-3 bg-surface-container-low rounded-xl">
-                              <div>
-                                <label className="text-[11px] font-semibold text-on-surface-variant block mb-0.5">Nome</label>
-                                <input value={editProfessionalForm.name || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, name: e.target.value })} className="w-full p-2 rounded-lg border border-outline-variant text-sm" />
-                              </div>
-                              <div>
-                                <label className="text-[11px] font-semibold text-on-surface-variant block mb-0.5">Telefone</label>
-                                <input value={editProfessionalForm.phone || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, phone: e.target.value })} className="w-full p-2 rounded-lg border border-outline-variant text-sm" />
-                              </div>
-                              <div>
-                                <label className="text-[11px] font-semibold text-on-surface-variant block mb-0.5">Email</label>
-                                <input type="email" value={editProfessionalForm.email || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, email: e.target.value })} className="w-full p-2 rounded-lg border border-outline-variant text-sm" />
-                              </div>
-                              <div>
-                                <label className="text-[11px] font-semibold text-on-surface-variant block mb-0.5">Especialidade</label>
-                                <input value={editProfessionalForm.specialty || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, specialty: e.target.value })} className="w-full p-2 rounded-lg border border-outline-variant text-sm" />
-                              </div>
-                              <div>
-                                <label className="text-[11px] font-semibold text-on-surface-variant block mb-0.5">Indicado por</label>
-                                <input value={editProfessionalForm.recommended_by || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, recommended_by: e.target.value })} className="w-full p-2 rounded-lg border border-outline-variant text-sm" />
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="mb-3 p-2.5 bg-surface-container-low rounded-lg">
-                                {pro.phone && <p className="mt-0 mb-1 text-xs text-on-surface-variant"><Phone size={12} className="inline align-middle mr-1.5" />{pro.phone}</p>}
-                                {pro.email && <p className="mt-0 mb-1 text-xs text-on-surface-variant"><Mail size={12} className="inline align-middle mr-1.5" />{pro.email}</p>}
-                                {!pro.phone && !pro.email && <p className="m-0 text-xs text-outline italic">Sem informações de contato</p>}
-                                {pro.recommended_by && <p className="mt-1 mb-0 text-xs text-on-surface-variant">Indicado por: {pro.recommended_by}</p>}
-                              </div>
-                            </>
-                          )}
-
-                          {!editingProfessional && (
-                            <div>
-                              <h5 className="mt-0 mb-1 text-xs font-bold text-on-surface">Observações</h5>
-                              {editingNotes[pro.id] !== undefined ? (
-                                <div className="flex gap-1.5">
-                                  <textarea value={editingNotes[pro.id]} onChange={e => setEditingNotes({ ...editingNotes, [pro.id]: e.target.value })} rows={2} className="flex-1 text-xs p-2 rounded-lg border border-outline-variant" />
-                                  <div className="flex gap-1 flex-col">
-                                    <button onClick={() => handleSaveNotes(pro.id, editingNotes[pro.id])} className="px-2 py-1 rounded-lg border-none bg-success text-white text-[11px] font-semibold cursor-pointer"><Check size={12} /></button>
-                                    <button onClick={() => { const n = { ...editingNotes }; delete n[pro.id]; setEditingNotes(n) }} className="px-2 py-1 rounded-lg border-none bg-surface-container text-on-surface-variant text-[11px] font-semibold cursor-pointer"><X size={12} /></button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <p onClick={() => setEditingNotes({ ...editingNotes, [pro.id]: pro.notes || '' })}
-                                  className={`m-0 text-xs cursor-pointer p-2 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors ${pro.notes ? 'text-on-surface-variant' : 'text-outline italic'}`}>
-                                  {pro.notes || 'Clique para adicionar observações'}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </CollapsibleSection>
-
-      {/* ─── 4. Documentos & Memoriais ─────────────────────────── */}
-      <CollapsibleSection
-        title="Documentos & Memoriais"
-        icon={FolderOpen}
-        count={orcamentoDocs.length}
-        defaultOpen={false}
-      >
-        <DocumentSection
-          orcamentoDocs={orcamentoDocs}
-          currentUser={currentUser}
-          showAddDoc={showAddDoc}
-          uploadingDoc={uploadingDoc}
-          newDoc={newDoc}
-          onNewDocChange={setNewDoc}
-          onShowAddDoc={setShowAddDoc}
-          onUploadDoc={handleUploadDoc}
-          onDeleteDoc={handleDeleteDoc}
-        />
-      </CollapsibleSection>
-
-      {/* ─── Modals ────────────────────────────────────────────── */}
-      {showOcrProSelect && (
-        <OcrProSelectModal
-          professionals={professionals}
-          quotes={quotes}
-          onSelect={(proId) => { setShowOcrProSelect(false); openOrcamentoFlow(proId) }}
-          onClose={() => setShowOcrProSelect(false)}
-        />
-      )}
-
-      {showAddProfessional && (
-        <AddProfessionalForm
-          formError={formError}
-          saving={saving}
-          newProfessional={newProfessional}
-          onNewProfessionalChange={setNewProfessional}
-          onSave={handleAddProfessional}
-          onClose={() => { setShowAddProfessional(false); setFormError('') }}
-        />
-      )}
-
-      {showAddQuote && (
-        <AddQuoteForm
-          formError={formError}
-          saving={saving}
-          professionals={professionals}
-          serviceCategories={serviceCategories}
-          rooms={rooms}
-          newQuote={newQuote}
-          onNewQuoteChange={setNewQuote}
-          onSave={handleAddQuote}
-          onClose={() => { setShowAddQuote(false); setFormError('') }}
-          onOpenAddProfessional={() => { setShowAddQuote(false); setShowAddProfessional(true); setFormError('') }}
-        />
-      )}
-
-      {paymentModal && (
-        <PaymentModal
-          quoteId={paymentModal.quoteId}
-          targetStatus={paymentModal.targetStatus}
-          currentAmount={paymentModal.currentAmount}
-          saving={saving}
-          paymentForm={paymentForm}
-          onPaymentFormChange={setPaymentForm}
-          onConfirm={handlePaymentConfirm}
-          onClose={() => setPaymentModal(null)}
-        />
-      )}
-
+      {/* OCR Orçamento Modal */}
       {orcamentoFlow && (
         <OcrModal
           orcamentoFlow={orcamentoFlow}
@@ -984,6 +602,146 @@ export default function ProfessionalsPanel({ currentUser, rooms, projectId }: Pr
           onAddItem={addOrcItem}
           onDescriptionChange={(desc) => setOrcamentoFlow({ ...orcamentoFlow, description: desc })}
         />
+      )}
+
+      {/* Profissionais Cadastrados Section */}
+      {showProfessionalsList && (
+        <div className="mt-7">
+          <h3 className="text-base font-bold text-[#374151] mb-3.5 flex items-center gap-2">
+            <Users size={18} /> Profissionais Cadastrados
+          </h3>
+          {professionals.length === 0 ? (
+            <div className="text-center p-10">
+              <div className="text-5xl mb-4">👤</div>
+              <h3 className="text-lg text-[#374151] mb-2">Nenhum profissional cadastrado</h3>
+              <p className="text-[#6b7280]">Comece adicionando profissionais para seus orçamentos.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3">
+              {professionals.map(pro => {
+                const isExpanded = expandedProfessional === pro.id
+                const status = getProfessionalStatus(pro.id)
+                const proQuotes = quotes.filter(q => q.professional_id === pro.id)
+
+                return (
+                  <div key={pro.id} className="card p-0 overflow-hidden">
+                    <div
+                      onClick={() => setExpandedProfessional(isExpanded ? null : pro.id)}
+                      className={`p-3.5 cursor-pointer bg-[#F9FAFB] flex justify-between items-start gap-3 ${isExpanded ? 'border-b border-[#E5E7EB]' : ''}`}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="m-0 text-sm font-bold text-[#1F2937]">{pro.name}</h4>
+                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-[#E5E7EB] text-[#374151] font-semibold">
+                            {status.emoji} {status.status}
+                          </span>
+                        </div>
+                        {pro.specialty && <p className="m-0 text-xs text-[#6B7280]">{pro.specialty}</p>}
+                        <p className="mt-1 mb-0 text-xs text-[#9CA3AF]">
+                          {proQuotes.length} orçamento{proQuotes.length !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      {isExpanded ? <ChevronUp size={16} color="#9CA3AF" /> : <ChevronDown size={16} color="#9CA3AF" />}
+                    </div>
+
+                    {isExpanded && (
+                      <div className="p-3.5 border-t border-[#E5E7EB]">
+                        <div className="flex justify-between items-center mb-3 gap-2 flex-wrap">
+                          <button onClick={() => openOrcamentoFlow(pro.id)}
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border-none bg-gradient-to-br from-[#7c3aed] to-[#2563eb] text-white text-xs font-bold cursor-pointer shadow-[0_2px_4px_rgba(124,58,237,0.2)]">
+                            <Upload size={13} /> Subir Orçamento (OCR)
+                          </button>
+                          {editingProfessional === pro.id ? (
+                            <div className="flex gap-1.5">
+                              <button onClick={handleSaveProfessional}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-md border-none bg-[#10B981] text-white text-xs font-semibold cursor-pointer">
+                                <Check size={12} /> Salvar
+                              </button>
+                              <button onClick={() => { setEditingProfessional(null); setEditProfessionalForm({}) }}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-md border-none bg-[#E5E7EB] text-[#6B7280] text-xs font-semibold cursor-pointer">
+                                <X size={12} /> Cancelar
+                              </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => handleEditProfessional(pro)}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-[#D1D5DB] bg-white text-[#374151] text-xs font-semibold cursor-pointer">
+                              <Edit3 size={12} /> Editar
+                            </button>
+                          )}
+                        </div>
+
+                        {editingProfessional === pro.id ? (
+                          <div className="flex flex-col gap-2 mb-4 p-3 bg-[#F0FDF4] rounded-[10px]">
+                            <div>
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Nome</label>
+                              <input value={editProfessionalForm.name || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, name: e.target.value })}
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Telefone</label>
+                              <input value={editProfessionalForm.phone || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, phone: e.target.value })}
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Email</label>
+                              <input type="email" value={editProfessionalForm.email || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, email: e.target.value })}
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Especialidade</label>
+                              <input value={editProfessionalForm.specialty || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, specialty: e.target.value })}
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-semibold text-[#6B7280] block mb-0.5">Indicado por</label>
+                              <input value={editProfessionalForm.recommended_by || ''} onChange={e => setEditProfessionalForm({ ...editProfessionalForm, recommended_by: e.target.value })}
+                                className="w-full p-2 rounded-md border border-[#D1D5DB] text-[13px] box-border" />
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="mb-3">
+                              <h5 className="mt-0 mb-2 text-xs font-bold text-[#374151]">📞 Contato</h5>
+                              {pro.phone && <p className="mt-0 mb-1 text-xs text-[#6B7280]"><Phone size={12} className="inline align-middle mr-1" />{pro.phone}</p>}
+                              {pro.email && <p className="mt-0 mb-1 text-xs text-[#6B7280]"><Mail size={12} className="inline align-middle mr-1" />{pro.email}</p>}
+                              {!pro.phone && !pro.email && <p className="m-0 text-xs text-[#9CA3AF] italic">Sem informações de contato</p>}
+                            </div>
+                            {pro.recommended_by && (
+                              <div className="mb-3">
+                                <h5 className="mt-0 mb-1 text-xs font-bold text-[#374151]">👤 Indicado por</h5>
+                                <p className="m-0 text-xs text-[#6B7280]">{pro.recommended_by}</p>
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {!editingProfessional && (
+                          <div>
+                            <h5 className="mt-0 mb-1 text-xs font-bold text-[#374151]">📝 Observações</h5>
+                            {editingNotes[pro.id] !== undefined ? (
+                              <div className="flex gap-1.5">
+                                <textarea value={editingNotes[pro.id]} onChange={e => setEditingNotes({ ...editingNotes, [pro.id]: e.target.value })} rows={2} className="flex-1 text-xs p-1.5 rounded-md border border-[#E5E7EB]" />
+                                <div className="flex gap-1 flex-col">
+                                  <button onClick={() => handleSaveNotes(pro.id, editingNotes[pro.id])} className="px-2 py-1 rounded border-none bg-success text-white text-[11px] font-semibold cursor-pointer"><Check size={12} /></button>
+                                  <button onClick={() => { const n = { ...editingNotes }; delete n[pro.id]; setEditingNotes(n) }} className="px-2 py-1 rounded border-none bg-[#E5E7EB] text-[#6B7280] text-[11px] font-semibold cursor-pointer"><X size={12} /></button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p onClick={() => setEditingNotes({ ...editingNotes, [pro.id]: pro.notes || '' })}
+                                className={`m-0 text-xs cursor-pointer p-1.5 rounded bg-[#F9FAFB] ${pro.notes ? 'text-[#6B7280]' : 'text-[#9CA3AF] italic'}`}>
+                                {pro.notes || 'Clique para adicionar observações'}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

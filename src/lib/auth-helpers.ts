@@ -71,3 +71,34 @@ export async function getAuthUser(req: NextRequest): Promise<{
   // 3. No auth — return null (API routes can decide whether to allow anonymous)
   return null
 }
+
+/**
+ * Require authentication on an API route.
+ * Returns the auth user or a 401 response.
+ */
+export async function requireAuth(req: NextRequest): Promise<
+  | { user: NonNullable<Awaited<ReturnType<typeof getAuthUser>>>; error?: never }
+  | { user?: never; error: NextResponse }
+> {
+  const user = await getAuthUser(req)
+  if (!user) {
+    return {
+      error: NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      ),
+    }
+  }
+  return { user }
+}
+
+/**
+ * Check if user has access to a specific project.
+ */
+export function hasProjectAccess(
+  user: NonNullable<Awaited<ReturnType<typeof getAuthUser>>>,
+  projectId: string | null
+): boolean {
+  if (!projectId) return true // No project filter = allow
+  return user.projectIds.includes(projectId)
+}

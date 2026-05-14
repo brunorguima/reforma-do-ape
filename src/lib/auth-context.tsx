@@ -1,6 +1,7 @@
 'use client'
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
 import { supabaseBrowser } from './supabase-browser'
+import { installFetchInterceptor } from './fetch-interceptor'
 import type { Session, User } from '@supabase/supabase-js'
 
 export interface Profile {
@@ -116,6 +117,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Failed to load user data:', err)
     }
   }, [])
+
+  // Install global fetch interceptor (adds auth headers to /api/ calls)
+  useEffect(() => { installFetchInterceptor() }, [])
 
   // Initialize: check for existing Supabase session
   useEffect(() => {

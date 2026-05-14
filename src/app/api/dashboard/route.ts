@@ -1,11 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { requireAuth, hasProjectAccess } from '@/lib/auth-helpers'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const { user, error: authError } = await requireAuth(request)
+  if (authError) return authError
+
   const { searchParams } = new URL(request.url)
   const projectId = searchParams.get('project_id') || 'caf60523-28bd-4136-9663-0c6e417f41c3'
+
+  if (projectId && !hasProjectAccess(user, projectId)) {
+    return NextResponse.json({ error: 'Access denied to this project' }, { status: 403 })
+  }
 
   try {
     // Run all queries in parallel

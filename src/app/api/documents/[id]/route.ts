@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth-helpers'
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   const { id } = await params
 
   if (!id) {
@@ -29,6 +33,9 @@ const PATCHABLE_FIELDS = [
 ] as const
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { user: _user2, error: authError2 } = await requireAuth(req)
+  if (authError2) return authError2
+
   const { id } = await params
   if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth-helpers'
 
 // POST /api/upload — Upload image to Supabase Storage
 export async function POST(req: NextRequest) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null

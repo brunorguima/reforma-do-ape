@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth-helpers'
 
 // GET /api/notifications?project_id=xxx&recipient_type=owner&unread_only=true&limit=20
 export async function GET(req: NextRequest) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   const { searchParams } = new URL(req.url)
   const project_id = searchParams.get('project_id')
   const recipient_type = searchParams.get('recipient_type')
@@ -29,6 +33,9 @@ export async function GET(req: NextRequest) {
 
 // POST /api/notifications - Create a notification
 export async function POST(req: NextRequest) {
+  const { user: _user2, error: authError2 } = await requireAuth(req)
+  if (authError2) return authError2
+
   const body = await req.json()
 
   if (!body.project_id || !body.title || !body.body) {
@@ -57,6 +64,9 @@ export async function POST(req: NextRequest) {
 
 // PATCH /api/notifications - Mark notifications as read
 export async function PATCH(req: NextRequest) {
+  const { user: _user3, error: authError3 } = await requireAuth(req)
+  if (authError3) return authError3
+
   const body = await req.json()
 
   if (body.mark_all_read && body.project_id) {

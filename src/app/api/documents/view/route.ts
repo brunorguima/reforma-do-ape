@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth-helpers'
 
 const OFFICE_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
@@ -28,6 +29,9 @@ function isOfficeFile(fileType: string, fileName: string): boolean {
 }
 
 export async function GET(req: NextRequest) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   const id = req.nextUrl.searchParams.get('id')
   if (!id) {
     return NextResponse.json({ error: 'Missing document id' }, { status: 400 })

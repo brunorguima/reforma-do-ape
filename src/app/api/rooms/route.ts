@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getProjectId } from '@/lib/project'
+import { requireAuth, hasProjectAccess } from '@/lib/auth-helpers'
 
 export async function GET(req: NextRequest) {
+  const { user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   const projectId = getProjectId(req)
+  if (projectId && !hasProjectAccess(user, projectId)) {
+    return NextResponse.json({ error: 'Access denied to this project' }, { status: 403 })
+  }
   let query = supabase.from('rooms').select('*')
   if (projectId) query = query.eq('project_id', projectId)
   const { data, error } = await query.order('order_index')
@@ -13,6 +20,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { user: _user2, error: authError2 } = await requireAuth(req)
+  if (authError2) return authError2
+
   const body = await req.json()
   const { name, icon, order_index, project_id } = body
 
@@ -31,6 +41,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const { user: _user3, error: authError3 } = await requireAuth(req)
+  if (authError3) return authError3
+
   const body = await req.json()
   const { id, name, icon, order_index } = body
 
@@ -55,6 +68,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const { user: _user4, error: authError4 } = await requireAuth(req)
+  if (authError4) return authError4
+
   const id = req.nextUrl.searchParams.get('id')
   if (!id) {
     return NextResponse.json({ error: 'ID is required' }, { status: 400 })

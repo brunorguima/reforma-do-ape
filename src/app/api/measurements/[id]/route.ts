@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { sendNotification } from '@/lib/notify'
+import { requireAuth } from '@/lib/auth-helpers'
 
 // GET /api/measurements/[id] - Get a single measurement with items
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   const { id } = await params
 
   const { data, error } = await supabase
@@ -29,6 +33,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user: _user2, error: authError2 } = await requireAuth(req)
+  if (authError2) return authError2
+
   const { id } = await params
   const body = await req.json()
   const { items, ...updateData } = body
@@ -169,6 +176,9 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user: _user3, error: authError3 } = await requireAuth(req)
+  if (authError3) return authError3
+
   const { id } = await params
 
   // Only allow deleting draft measurements

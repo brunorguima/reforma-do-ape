@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getProjectId } from '@/lib/project'
+import { requireAuth, hasProjectAccess } from '@/lib/auth-helpers'
 
 export async function GET(req: NextRequest) {
+  const { user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   const projectId = getProjectId(req)
+  if (projectId && !hasProjectAccess(user, projectId)) {
+    return NextResponse.json({ error: 'Access denied to this project' }, { status: 403 })
+  }
   let query = supabase
     .from('contracts')
     .select('*')
@@ -15,6 +22,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   const body = await req.json()
   const { id, ...updates } = body
 

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { sendNotification } from '@/lib/notify'
+import { requireAuth } from '@/lib/auth-helpers'
 
 // GET /api/measurements?project_id=xxx&professional_id=xxx
 export async function GET(req: NextRequest) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   const { searchParams } = new URL(req.url)
   const project_id = searchParams.get('project_id')
   const professional_id = searchParams.get('professional_id')
@@ -33,6 +37,9 @@ export async function GET(req: NextRequest) {
 
 // POST /api/measurements - Create a new measurement with items
 export async function POST(req: NextRequest) {
+  const { user: _user2, error: authError2 } = await requireAuth(req)
+  if (authError2) return authError2
+
   const body = await req.json()
   const { items, ...measurementData } = body
 

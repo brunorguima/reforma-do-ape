@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth-helpers'
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { user: _user, error: authError } = await requireAuth(request)
+  if (authError) return authError
+
   const { id } = await params
   const body = await request.json()
   const { images, ...itemData } = body
@@ -81,6 +85,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { user: _user2, error: authError2 } = await requireAuth(request)
+  if (authError2) return authError2
+
   const { id } = await params
   const { searchParams } = new URL(request.url)
   const userName = searchParams.get('user') || 'sistema'
@@ -99,6 +106,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { user: _user3, error: authError3 } = await requireAuth(request)
+  if (authError3) return authError3
+
   const { id } = await params
   const body = await request.json()
 

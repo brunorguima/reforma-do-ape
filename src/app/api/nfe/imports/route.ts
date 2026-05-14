@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getProjectId } from '@/lib/project'
+import { requireAuth, hasProjectAccess } from '@/lib/auth-helpers'
 
 export const runtime = 'nodejs'
 
@@ -89,7 +90,13 @@ function computePaymentSchedule(
  * Lists all imported NF-e records with item counts.
  */
 export async function GET(req: NextRequest) {
+  const { user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   const projectId = getProjectId(req)
+  if (projectId && !hasProjectAccess(user, projectId)) {
+    return NextResponse.json({ error: 'Access denied to this project' }, { status: 403 })
+  }
   let query = supabase
     .from('nfe_imports')
     .select('*')
@@ -125,6 +132,9 @@ export async function GET(req: NextRequest) {
  * Creates nfe_imports row + materials rows for each item marked import=true.
  */
 export async function POST(req: NextRequest) {
+  const { user: _user2, error: authError2 } = await requireAuth(req)
+  if (authError2) return authError2
+
   try {
     const body = await req.json()
 

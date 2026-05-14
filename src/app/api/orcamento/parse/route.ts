@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseOrcamentoPdfWithGemini } from '@/lib/gemini-orcamento'
+import { requireAuth } from '@/lib/auth-helpers'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -13,6 +14,9 @@ export const maxDuration = 60
  * (Grátis em https://aistudio.google.com/apikey)
  */
 export async function POST(req: NextRequest) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   try {
     const contentType = req.headers.get('content-type') || ''
     if (!contentType.includes('multipart/form-data')) {

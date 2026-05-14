@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth-helpers'
 
 export const runtime = 'nodejs'
 
@@ -27,6 +28,9 @@ export const runtime = 'nodejs'
  * }
  */
 export async function POST(req: NextRequest) {
+  const { user: _user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   try {
     const body = await req.json()
     const {
