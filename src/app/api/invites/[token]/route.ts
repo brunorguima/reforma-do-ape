@@ -3,6 +3,18 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+// Admin client for privileged operations (user creation, email confirmation)
+function getAdminClient() {
+  if (!supabaseServiceKey) {
+    console.warn('SUPABASE_SERVICE_ROLE_KEY not set — falling back to anon key')
+    return createClient(supabaseUrl, supabaseAnonKey)
+  }
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  })
+}
 
 // GET — validate invite token and return invite data
 export async function GET(
@@ -12,7 +24,6 @@ export async function GET(
   const { token } = await params
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
   const { data, error } = await supabase
     .from('invites')
     .select(`
@@ -29,7 +40,6 @@ export async function GET(
 
   // Check if expired
   if (new Date(data.expires_at) < new Date()) {
-    // Mark as expired
     await supabase.from('invites').update({ status: 'expired' }).eq('id', data.id)
     return NextResponse.json({ error: 'Convite expirado' }, { status: 410 })
   }
@@ -75,107 +85,133 @@ export async function POST(
     return NextResponse.json({ error: 'Convite sem email configurado' }, { status: 400 })
   }
 
-  const signupRes = await fetch(`${supabaseUrl}/auth/v1/signup`, {
-    method: 'POST',
-    headers: {
-      'apikey': supabaseAnonKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      email,
-      password,
-      data: { name: name || invite.invitee_name },
-    }),
-  })
+  const admin = getAdminClient()
+  let userId: string
 
-  const signupData = await signupRes.json()
+  // Try admin.createUser first (reliable, sets password + confirms email in one step)
+  if (supabaseServiceKey) {
+    // Check if user already exists by trying to create — if exists, handle gracefully
+    const { data: existingList } = await admin.auth.admin.listUsers({ perPage: 50 })
+    const existingUser = existingList?.users?.find(u => u.email === email)
 
-  if (!signupRes.ok) {
-    // If user already exists, try to sign in instead
-    if (signupData.msg?.includes('already been registered') || signupData.error_code === 'user_already_exists') {
-      // User exists — sign them in and add to project
-      const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
-        email,
+    if (existingUser) {
+      // User exists — update their password and sign them in
+      await admin.auth.admin.updateUserById(existingUser.id, {
         password,
+        email_confirm: true,
       })
+      userId = existingUser.id
 
+      // Sign in with new password
+      const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
       if (signInErr) {
-        return NextResponse.json({ error: 'Usuário já existe. Faça login normalmente.' }, { status: 409 })
+        return NextResponse.json({ error: 'Erro ao autenticar. Tente fazer login normalmente.' }, { status: 500 })
       }
-
-      const userId = signInData.user.id
 
       // Add to project (if not already member)
-      const { error: memberErr } = await supabase
-        .from('project_members')
-        .upsert({
-          project_id: invite.project_id,
-          user_id: userId,
-          role: invite.role,
-          invited_by: invite.invited_by,
-        }, { onConflict: 'project_id,user_id' })
-
-      if (memberErr) {
-        console.error('Error adding member:', memberErr)
-      }
+      await admin.from('project_members').upsert({
+        project_id: invite.project_id,
+        user_id: userId,
+        role: invite.role,
+        invited_by: invite.invited_by,
+      }, { onConflict: 'project_id,user_id' })
 
       // Mark invite as accepted
-      await supabase.from('invites').update({
+      await admin.from('invites').update({
         status: 'accepted',
         accepted_by: userId,
         accepted_at: new Date().toISOString(),
       }).eq('id', invite.id)
 
+      // Audit
+      await admin.from('audit_logs').insert({
+        event_type: 'invite_accepted',
+        actor_id: userId,
+        actor_email: email,
+        target_type: 'invite',
+        target_id: invite.id,
+        project_id: invite.project_id,        actor_ip: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown',
+        actor_user_agent: req.headers.get('user-agent') || '',
+        metadata: { invite_token: token, role: invite.role, existing_user: true },
+      })
+
       return NextResponse.json({
         success: true,
         session: signInData.session,
-        message: 'Conta já existente — adicionado ao projeto',
+        message: 'Conta já existente — senha atualizada e adicionado ao projeto',
       })
     }
 
-    return NextResponse.json({ error: signupData.msg || 'Erro ao criar conta' }, { status: 500 })
-  }
-
-  const userId = signupData.id
-
-  // 3. Confirm email immediately (skip verification)
-  // We use a direct SQL approach since we trust invites
-  const { error: confirmErr } = await supabase.rpc('confirm_user_email', { user_id: userId })
-
-  // If RPC doesn't exist, we'll handle it via the admin flow
-  if (confirmErr) {
-    console.warn('Could not auto-confirm email via RPC:', confirmErr)
-  }
-
-  // 4. Add user to project
-  const { error: memberErr } = await supabase
-    .from('project_members')
-    .insert({
-      project_id: invite.project_id,
-      user_id: userId,
-      role: invite.role,
-      invited_by: invite.invited_by,
+    // New user — create with admin API (auto-confirms email)
+    const { data: newUser, error: createErr } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { name: name || invite.invitee_name },
     })
 
-  if (memberErr) {
-    console.error('Error adding project member:', memberErr)
+    if (createErr) {
+      console.error('Admin createUser error:', createErr)
+      return NextResponse.json({ error: 'Erro ao criar conta: ' + createErr.message }, { status: 500 })
+    }
+
+    userId = newUser.user.id
+  } else {    // Fallback: no service_role key — use client signUp + RPC confirm
+    const { data: signupData, error: signupErr } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name: name || invite.invitee_name } },
+    })
+
+    if (signupErr) {
+      // User might already exist
+      if (signupErr.message?.includes('already been registered')) {
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
+        if (signInErr) {
+          return NextResponse.json({ error: 'Usuário já existe. Faça login normalmente.' }, { status: 409 })
+        }
+        userId = signInData.user.id
+
+        await supabase.from('project_members').upsert({
+          project_id: invite.project_id, user_id: userId, role: invite.role, invited_by: invite.invited_by,
+        }, { onConflict: 'project_id,user_id' })
+
+        await supabase.from('invites').update({
+          status: 'accepted', accepted_by: userId, accepted_at: new Date().toISOString(),
+        }).eq('id', invite.id)
+
+        return NextResponse.json({ success: true, session: signInData.session, message: 'Conta já existente — adicionado ao projeto' })
+      }
+      return NextResponse.json({ error: signupErr.message || 'Erro ao criar conta' }, { status: 500 })
+    }
+    userId = signupData.user!.id
+
+    // Confirm email via SECURITY DEFINER RPC
+    const { error: confirmErr } = await supabase.rpc('confirm_user_email', { user_id: userId })
+    if (confirmErr) console.warn('Could not auto-confirm email via RPC:', confirmErr)
   }
 
-  // 5. Update profile with invite name + LGPD consent
-  await supabase
-    .from('profiles')
-    .update({
-      name: name || invite.invitee_name,
-      terms_accepted_at: new Date().toISOString(),
-      terms_version: '1.0',
-      signup_source: 'invite',
-    })
-    .eq('id', userId)
+  // 3. Add user to project
+  const dbClient = supabaseServiceKey ? admin : supabase
+  const { error: memberErr } = await dbClient.from('project_members').insert({
+    project_id: invite.project_id,
+    user_id: userId,
+    role: invite.role,
+    invited_by: invite.invited_by,
+  })
+  if (memberErr) console.error('Error adding project member:', memberErr)
 
-  // Audit log
-  await supabase.from('audit_logs').insert({
-    event_type: 'invite_accepted',
-    actor_id: userId,
+  // 4. Update profile with invite name + LGPD consent
+  await dbClient.from('profiles').update({
+    name: name || invite.invitee_name,
+    terms_accepted_at: new Date().toISOString(),
+    terms_version: '1.0',
+    signup_source: 'invite',
+  }).eq('id', userId)
+
+  // 5. Audit log
+  await dbClient.from('audit_logs').insert({
+    event_type: 'invite_accepted',    actor_id: userId,
     actor_email: email,
     target_type: 'invite',
     target_id: invite.id,
@@ -186,17 +222,14 @@ export async function POST(
   })
 
   // 6. Mark invite as accepted
-  await supabase.from('invites').update({
+  await dbClient.from('invites').update({
     status: 'accepted',
     accepted_by: userId,
     accepted_at: new Date().toISOString(),
   }).eq('id', invite.id)
 
   // 7. Sign in the new user
-  const { data: session, error: loginErr } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+  const { data: session, error: loginErr } = await supabase.auth.signInWithPassword({ email, password })
 
   if (loginErr) {
     return NextResponse.json({
