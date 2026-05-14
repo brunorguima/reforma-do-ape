@@ -40,6 +40,7 @@ export default function ConvitePage() {
   const [error, setError] = useState('')
 
   const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -68,7 +69,8 @@ export default function ConvitePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!password || !name) return
+    const finalEmail = invite?.invitee_email || email
+    if (!password || !name || !finalEmail) return
 
     if (password.length < 6) {
       setSubmitError('Senha deve ter no mínimo 6 caracteres')
@@ -86,7 +88,7 @@ export default function ConvitePage() {
       const res = await fetch(`/api/invites/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, name }),
+        body: JSON.stringify({ password, name, email: finalEmail }),
       })
 
       const data = await res.json()
@@ -199,15 +201,26 @@ export default function ConvitePage() {
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-            {/* Email (read-only) */}
-            {invite?.invitee_email && (
-              <div>
-                <label className="text-xs font-semibold text-on-surface-variant mb-1.5 block">Email</label>
+            {/* Email */}
+            <div>
+              <label className="text-xs font-semibold text-on-surface-variant mb-1.5 block">Email</label>
+              {invite?.invitee_email ? (
                 <div className="flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5">
                   <span className="text-sm text-on-surface-variant">{invite.invitee_email}</span>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="flex items-center gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border-2 border-transparent focus-within:border-secondary focus-within:bg-white transition-all">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                    className="flex-1 border-none bg-transparent outline-none text-sm text-on-surface p-0"
+                    required
+                  />
+                </div>
+              )}
+            </div>
 
             {/* Name */}
             <div>
@@ -276,7 +289,7 @@ export default function ConvitePage() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={submitting || !name || !password || !confirmPassword}
+              disabled={submitting || !name || !password || !confirmPassword || (!invite?.invitee_email && !email)}
               className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm border-none cursor-pointer hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 mt-1"
             >
               {submitting ? (

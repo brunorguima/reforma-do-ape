@@ -24,6 +24,7 @@ export async function GET(
   const { token } = await params
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
   const { data, error } = await supabase
     .from('invites')
     .select(`
@@ -40,6 +41,7 @@ export async function GET(
 
   // Check if expired
   if (new Date(data.expires_at) < new Date()) {
+    // Mark as expired
     await supabase.from('invites').update({ status: 'expired' }).eq('id', data.id)
     return NextResponse.json({ error: 'Convite expirado' }, { status: 410 })
   }
@@ -58,7 +60,7 @@ export async function POST(
 ) {
   const { token } = await params
   const body = await req.json()
-  const { password, name } = body
+  const { password, name, email: bodyEmail } = body
 
   if (!password || password.length < 6) {
     return NextResponse.json({ error: 'Senha deve ter no mínimo 6 caracteres' }, { status: 400 })
@@ -79,10 +81,10 @@ export async function POST(
     return NextResponse.json({ error: 'Convite inválido ou expirado' }, { status: 404 })
   }
 
-  // 2. Create user via Supabase Auth
-  const email = invite.invitee_email
+  // 2. Create user via Supabase Auth — use invite email or email from form
+  const email = invite.invitee_email || bodyEmail
   if (!email) {
-    return NextResponse.json({ error: 'Convite sem email configurado' }, { status: 400 })
+    return NextResponse.json({ error: 'Email é obrigatório' }, { status: 400 })
   }
 
   const admin = getAdminClient()
@@ -104,6 +106,7 @@ export async function POST(
 
       // Sign in with new password
       const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
+
       if (signInErr) {
         return NextResponse.json({ error: 'Erro ao autenticar. Tente fazer login normalmente.' }, { status: 500 })
       }
@@ -130,7 +133,8 @@ export async function POST(
         actor_email: email,
         target_type: 'invite',
         target_id: invite.id,
-        project_id: invite.project_id,        actor_ip: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown',
+        project_id: invite.project_id,
+        actor_ip: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown',
         actor_user_agent: req.headers.get('user-agent') || '',
         metadata: { invite_token: token, role: invite.role, existing_user: true },
       })
@@ -156,7 +160,8 @@ export async function POST(
     }
 
     userId = newUser.user.id
-  } else {    // Fallback: no service_role key — use client signUp + RPC confirm
+  } else {
+    // Fallback: no service_role key — use client signUp + RPC confirm
     const { data: signupData, error: signupErr } = await supabase.auth.signUp({
       email,
       password,
@@ -184,6 +189,7 @@ export async function POST(
       }
       return NextResponse.json({ error: signupErr.message || 'Erro ao criar conta' }, { status: 500 })
     }
+
     userId = signupData.user!.id
 
     // Confirm email via SECURITY DEFINER RPC
@@ -211,7 +217,8 @@ export async function POST(
 
   // 5. Audit log
   await dbClient.from('audit_logs').insert({
-    event_type: 'invite_accepted',    actor_id: userId,
+    event_type: 'invite_accepted',
+    actor_id: userId,
     actor_email: email,
     target_type: 'invite',
     target_id: invite.id,
